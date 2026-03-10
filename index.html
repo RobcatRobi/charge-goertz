@@ -166,7 +166,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .mt8{margin-top:8px}
 
 /* Supabase Status Banner */
-#status-banner{position:fixed;top:0;left:0;right:0;z-index:9999;padding:4px 12px;font-size:11px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:.05em;}
+#status-banner{position:fixed;top:0;left:0;right:0;z-index:9999;padding:3px 12px;font-size:10px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:.05em;overflow:hidden;transition:all 0.5s ease;}
 .sb-online{background:#003322;color:#00e87a;border-bottom:1px solid #00e87a44;}
 .sb-demo{background:#2a1500;color:#ff7c2a;border-bottom:1px solid #ff7c2a44;}
 
@@ -174,7 +174,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </head>
 <body>
 
-<div id="status-banner" class="sb-demo">● DEMO MODUS — Kein Backend verbunden</div>
+<div id="status-banner" class="sb-online" style="max-height:26px;overflow:hidden;">⏳ Verbinde...</div>
 
 <div id="header">
   <div class="logo">⚡ Charge<span>Görtz</span></div>
@@ -552,10 +552,23 @@ function setBanner(mode) {
   const b = document.getElementById('status-banner');
   if(mode==='online') {
     b.className='sb-online';
-    b.textContent='☁ SUPABASE CLOUD — Daten werden synchronisiert';
+    b.textContent='☁ SUPABASE CLOUD — Verbunden ✓';
+    // Nach 3 Sekunden ausblenden
+    setTimeout(() => {
+      b.style.transition='all 0.5s ease';
+      b.style.maxHeight='0';
+      b.style.padding='0';
+      b.style.opacity='0';
+      b.style.borderBottom='none';
+    }, 3000);
   } else if(mode==='demo') {
     b.className='sb-demo';
-    b.textContent='⚠ DEMO MODUS — Kein Supabase erreichbar';
+    b.style.maxHeight=''; b.style.padding=''; b.style.opacity=''; b.style.borderBottom='';
+    b.textContent='⚠ OFFLINE — Daten lokal gespeichert';
+  } else if(mode==='syncing') {
+    b.className='sb-online';
+    b.style.maxHeight=''; b.style.padding='4px 12px'; b.style.opacity='1';
+    b.textContent='⏳ Synchronisiere...';
   }
 }
 
