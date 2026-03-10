@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#060a0f">
-<title>Charge Görtz</title>
+<title>Charge Görtz ☁</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -164,6 +164,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .btn-exp{display:flex;align-items:center;gap:5px;padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:50px;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:var(--tr)}
 .btn-exp:hover{border-color:var(--accent);color:var(--accent)}
 .mt8{margin-top:8px}
+
+/* Supabase Status Banner */
+#status-banner{position:fixed;top:0;left:0;right:0;z-index:9999;padding:4px 12px;font-size:11px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:.05em;}
+.sb-online{background:#003322;color:#00e87a;border-bottom:1px solid #00e87a44;}
+.sb-demo{background:#2a1500;color:#ff7c2a;border-bottom:1px solid #ff7c2a44;}
+
 </style>
 </head>
 <body>
@@ -370,9 +376,56 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <script>
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// CHARGE GÖRTZ v9 — SUPABASE CLOUD EDITION
+// Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
+// ═══════════════════════════════════════════════════════════════
+
+const SUPA_URL = 'https://vloululxbazfcvlhmtzr.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsb3VsdWx4YmF6ZmN2bGhtdHpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNDEyOTcsImV4cCI6MjA4ODcxNzI5N30.pUrwkI2g2DpA7q7o0cSEWzXGeUiJxO74TdLj7iEd3N8';
+const SUPA_HDR = {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation'};
+
+// ─── Supabase API Helper ───────────────────────────────────────
+async function sbGet(table, params='') {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {headers: SUPA_HDR, signal: AbortSignal.timeout(5000)});
+    if(!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e) { console.warn('sbGet failed:', e); return null; }
+}
+
+async function sbPost(table, data) {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {method:'POST', headers: SUPA_HDR, body: JSON.stringify(data), signal: AbortSignal.timeout(5000)});
+    if(!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e) { console.warn('sbPost failed:', e); return null; }
+}
+
+async function sbPatch(table, filter, data) {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {method:'PATCH', headers: SUPA_HDR, body: JSON.stringify(data), signal: AbortSignal.timeout(5000)});
+    if(!r.ok) throw new Error(await r.text());
+    return await r.json();
+  } catch(e) { console.warn('sbPatch failed:', e); return null; }
+}
+
+async function sbDelete(table, filter) {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {method:'DELETE', headers: SUPA_HDR, signal: AbortSignal.timeout(5000)});
+    return r.ok;
+  } catch(e) { return false; }
+}
+
+// ─── SHA256 ────────────────────────────────────────────────────
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DATA
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 const ST = [
   {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.30},
   {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.30}
@@ -394,37 +447,121 @@ let cs=1,relayOn=false,activeSession=null,pinBuf='',modalUser=null;
 let sessions=[],users=[],cfg={},billingMode='individual';
 let billingMonth=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
 let chartInst=null;
+let supaOnline=false;
 
-// ═══════════════════════════════════════════
-// STORAGE
-// ═══════════════════════════════════════════
-function save(){
-  try{
-    localStorage.setItem('cg_u',JSON.stringify(users));
-    localStorage.setItem('cg_s',JSON.stringify(sessions));
-    localStorage.setItem('cg_c',JSON.stringify(cfg));
-    localStorage.setItem('cg_as',JSON.stringify(activeSession));
-    localStorage.setItem('cg_r',JSON.stringify(relayOn));
-  }catch(e){}
+// ═══════════════════════════════════════════════════════════════
+// STORAGE — Supabase + localStorage Fallback
+// ═══════════════════════════════════════════════════════════════
+async function save() {
+  try {
+    localStorage.setItem('cg_u', JSON.stringify(users));
+    localStorage.setItem('cg_s', JSON.stringify(sessions));
+    localStorage.setItem('cg_c', JSON.stringify(cfg));
+    localStorage.setItem('cg_as', JSON.stringify(activeSession));
+    localStorage.setItem('cg_r', JSON.stringify(relayOn));
+  } catch(e) {}
+  // Sync active session to Supabase
+  if(supaOnline && activeSession) {
+    await sbPatch('sessions', `id=eq.${activeSession.id}`,
+      {kwh: activeSession.kwh, chf: activeSession.chf});
+  }
 }
-function load(){
-  try{
-    users=JSON.parse(localStorage.getItem('cg_u'))||JSON.parse(JSON.stringify(UDFL));
-    sessions=JSON.parse(localStorage.getItem('cg_s'))||genDemo();
-    cfg=JSON.parse(localStorage.getItem('cg_c'))||{};
-    activeSession=JSON.parse(localStorage.getItem('cg_as'))||null;
-    relayOn=JSON.parse(localStorage.getItem('cg_r'))||false;
-  }catch(e){users=JSON.parse(JSON.stringify(UDFL));sessions=genDemo();cfg={};activeSession=null;}
-  if(cfg.ip3em1) ST[0].ip3em=cfg.ip3em1;
-  if(cfg.ipMini1) ST[0].ipMini=cfg.ipMini1;
-  if(cfg.tariff1) ST[0].tariff=parseFloat(cfg.tariff1);
-  if(cfg.ip3em2) ST[1].ip3em=cfg.ip3em2;
-  if(cfg.ipMini2) ST[1].ipMini=cfg.ipMini2;
-  if(cfg.tariff2) ST[1].tariff=parseFloat(cfg.tariff2);
+
+async function load() {
+  // Erst localStorage laden (sofort)
+  try {
+    users    = JSON.parse(localStorage.getItem('cg_u'))  || JSON.parse(JSON.stringify(UDFL));
+    sessions = JSON.parse(localStorage.getItem('cg_s'))  || genDemo();
+    cfg      = JSON.parse(localStorage.getItem('cg_c'))  || {};
+    activeSession = JSON.parse(localStorage.getItem('cg_as')) || null;
+    relayOn  = JSON.parse(localStorage.getItem('cg_r'))  || false;
+  } catch(e) { users=JSON.parse(JSON.stringify(UDFL)); sessions=genDemo(); cfg={}; activeSession=null; }
+
+  applyConfig();
+
+  // Dann Supabase laden (im Hintergrund)
+  await syncFromSupabase();
 }
-function genDemo(){
+
+function applyConfig() {
+  if(cfg.ip3em1)  ST[0].ip3em   = cfg.ip3em1;
+  if(cfg.ipMini1) ST[0].ipMini  = cfg.ipMini1;
+  if(cfg.tariff1) ST[0].tariff  = parseFloat(cfg.tariff1);
+  if(cfg.ip3em2)  ST[1].ip3em   = cfg.ip3em2;
+  if(cfg.ipMini2) ST[1].ipMini  = cfg.ipMini2;
+  if(cfg.tariff2) ST[1].tariff  = parseFloat(cfg.tariff2);
+}
+
+async function syncFromSupabase() {
+  // Supabase verbindung testen
+  const test = await sbGet('sessions', 'select=id&limit=1');
+  if(test === null) {
+    supaOnline = false;
+    setBanner('demo');
+    return;
+  }
+  supaOnline = true;
+
+  // Benutzer laden
+  const sbUsers = await sbGet('users', 'select=*,user_stations(station_id)&active=eq.true&order=id');
+  if(sbUsers && sbUsers.length > 0) {
+    users = sbUsers.map(u => ({
+      id: u.id, name: u.name, emoji: u.emoji, plate: u.plate || '—',
+      pin: u.pin_plain || '', role: u.role, color: u.color,
+      stations: (u.user_stations || []).map(s => s.station_id)
+    }));
+    localStorage.setItem('cg_u', JSON.stringify(users));
+  }
+
+  // Sessions laden (letzte 200)
+  const sbSess = await sbGet('sessions', 'select=*&order=started_at.desc&limit=200');
+  if(sbSess && sbSess.length > 0) {
+    sessions = sbSess.map(s => ({
+      id: s.id, userId: s.user_id, stationId: s.station_id,
+      startedAt: s.started_at, stoppedAt: s.stopped_at,
+      kwh: s.kwh || 0, chf: s.chf || 0, tariff: s.tariff || 0.30
+    }));
+    localStorage.setItem('cg_s', JSON.stringify(sessions));
+  }
+
+  // Aktive Session
+  const active = await sbGet('sessions', `select=*&stopped_at=is.null&station_id=eq.${cs}&limit=1`);
+  if(active && active.length > 0) {
+    const a = active[0];
+    activeSession = {id:a.id, userId:a.user_id, stationId:a.station_id,
+      startedAt:a.started_at, kwh:a.kwh||0, chf:a.chf||0, tariff:a.tariff||0.30};
+    relayOn = true;
+    localStorage.setItem('cg_as', JSON.stringify(activeSession));
+  }
+
+  // Stationen laden
+  const sbSt = await sbGet('stations', 'select=*&active=eq.true&order=id');
+  if(sbSt && sbSt.length > 0) {
+    sbSt.forEach(s => {
+      const st = ST.find(x => x.id === s.id);
+      if(st) { st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30; }
+    });
+  }
+
+  setBanner('online');
+  renderDashboard();
+  updateRelayUI();
+}
+
+function setBanner(mode) {
+  const b = document.getElementById('status-banner');
+  if(mode==='online') {
+    b.className='sb-online';
+    b.textContent='☁ SUPABASE CLOUD — Daten werden synchronisiert';
+  } else if(mode==='demo') {
+    b.className='sb-demo';
+    b.textContent='⚠ DEMO MODUS — Kein Supabase erreichbar';
+  }
+}
+
+function genDemo() {
   const d=[],now=Date.now(),uids=[1,2,3,4,5,6,7,8,9,10];
-  for(let i=0;i<32;i++){
+  for(let i=0;i<32;i++) {
     const uid=uids[Math.floor(Math.random()*uids.length)];
     const u=UDFL.find(x=>x.id===uid);
     const sid=u.stations[Math.floor(Math.random()*u.stations.length)];
@@ -435,6 +572,81 @@ function genDemo(){
       kwh,chf:parseFloat((kwh*ST[sid-1].tariff).toFixed(2)),tariff:ST[sid-1].tariff});
   }
   return d;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION START/STOP — mit Supabase Sync
+// ═══════════════════════════════════════════════════════════════
+async function startSession(u) {
+  const now = Date.now();
+  const sessData = {
+    user_id: u.id, station_id: cs, started_at: now,
+    tariff: ST[cs-1].tariff, kwh: 0, chf: 0
+  };
+
+  let sessId = Date.now(); // fallback ID
+  if(supaOnline) {
+    const res = await sbPost('sessions', sessData);
+    if(res && res[0]) sessId = res[0].id;
+  }
+
+  activeSession = {id:sessId, userId:u.id, stationId:cs, startedAt:now, kwh:0, chf:0, tariff:ST[cs-1].tariff};
+  relayOn = true;
+  save();
+  renderDashboard();
+  updateRelayUI();
+
+  const ip = ST[cs-1].ipMini;
+  if(ip) fetch(`http://${ip}/relay/0?turn=on`, {signal:AbortSignal.timeout(3000)}).catch(()=>{});
+}
+
+async function stopSession() {
+  if(!activeSession) return;
+  const el = (Date.now()-activeSession.startedAt)/3600000;
+  const kwh = parseFloat((7.4*el).toFixed(3));
+  const chf = parseFloat((kwh*activeSession.tariff).toFixed(2));
+
+  if(supaOnline) {
+    await sbPatch('sessions', `id=eq.${activeSession.id}`,
+      {stopped_at: Date.now(), kwh, chf});
+  }
+
+  sessions.unshift({...activeSession, stoppedAt:Date.now(), kwh, chf});
+  activeSession = null;
+  relayOn = false;
+
+  const ip = ST[cs-1].ipMini;
+  if(ip) fetch(`http://${ip}/relay/0?turn=off`, {signal:AbortSignal.timeout(3000)}).catch(()=>{});
+  save();
+  renderDashboard();
+  updateRelayUI();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS SAVE — auch zu Supabase
+// ═══════════════════════════════════════════════════════════════
+async function saveSettings() {
+  cfg.ip3em1  = document.getElementById('ip3em1').value;
+  cfg.ipMini1 = document.getElementById('ipMini1').value;
+  cfg.tariff1 = document.getElementById('tariff1').value;
+  cfg.ip3em2  = document.getElementById('ip3em2').value;
+  cfg.ipMini2 = document.getElementById('ipMini2').value;
+  cfg.tariff2 = document.getElementById('tariff2').value;
+  ST[0].ip3em=cfg.ip3em1; ST[0].ipMini=cfg.ipMini1; ST[0].tariff=parseFloat(cfg.tariff1)||.30;
+  ST[1].ip3em=cfg.ip3em2; ST[1].ipMini=cfg.ipMini2; ST[1].tariff=parseFloat(cfg.tariff2)||.30;
+
+  if(supaOnline) {
+    await sbPatch('stations','id=eq.1',{ip_3em:cfg.ip3em1,ip_mini:cfg.ipMini1,tariff:parseFloat(cfg.tariff1)||.30});
+    await sbPatch('stations','id=eq.2',{ip_3em:cfg.ip3em2,ip_mini:cfg.ipMini2,tariff:parseFloat(cfg.tariff2)||.30});
+  }
+  save();
+  alert('✓ Gespeichert' + (supaOnline ? ' (lokal + Supabase ☁)' : ' (nur lokal)'));
+}
+
+function saveTS() {
+  cfg.tsIp = document.getElementById('ts-ip').value;
+  save();
+  alert('✓ Tailscale IP gespeichert');
 }
 
 // ═══════════════════════════════════════════
@@ -608,13 +820,15 @@ function badPin(msg){
 }
 function closeModal(){document.getElementById('modal-ov').style.display='none';pinBuf='';}
 
-function startSession(u){
+// startSession is in Supabase section above
+function _UNUSED_startSession(u){
   activeSession={id:Date.now(),userId:u.id,stationId:cs,startedAt:Date.now(),kwh:0,chf:0,tariff:ST[cs-1].tariff};
   relayOn=true;save();renderDashboard();updateRelayUI();
   const ip=ST[cs-1].ipMini;
   if(ip) fetch(`http://${ip}/relay/0?turn=on`,{signal:AbortSignal.timeout(3000)}).catch(()=>{});
 }
-function stopSession(){
+// stopSession is in Supabase section above
+function _UNUSED_stopSession(){
   if(!activeSession)return;
   const el=(Date.now()-activeSession.startedAt)/3600000;
   const kwh=parseFloat((7.4*el).toFixed(3));
@@ -761,7 +975,8 @@ function exportCSV(){
 // ═══════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════
-function saveSettings(){
+// saveSettings is in Supabase section above
+function _UNUSED_saveSettings(){
   cfg.ip3em1=document.getElementById('ip3em1').value;
   cfg.ipMini1=document.getElementById('ipMini1').value;
   cfg.tariff1=document.getElementById('tariff1').value;
@@ -819,6 +1034,7 @@ document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kW
 pollShelly();
 setInterval(pollShelly, 5000);
 setInterval(()=>{if(activeSession)renderDashboard();},15000);
+
 </script>
 </body>
 </html>
