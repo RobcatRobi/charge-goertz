@@ -170,6 +170,50 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .sb-online{background:#003322;color:#00e87a;border-bottom:1px solid #00e87a44;}
 .sb-demo{background:#2a1500;color:#ff7c2a;border-bottom:1px solid #ff7c2a44;}
 
+
+/* Phasen */
+.phases-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.phase-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center}
+.phase-box.active{border-color:var(--accent);background:rgba(0,212,255,0.06)}
+.phase-label{font-size:9px;color:var(--text-dim);letter-spacing:.08em;margin-bottom:4px}
+.phase-kw{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent)}
+.phase-v{font-size:10px;color:var(--text-dim)}
+.phase-a{font-size:11px;color:var(--text);font-family:'Space Mono',monospace}
+/* Blink */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.blink{animation:blink 1s infinite}
+/* Auto */
+.car-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0;display:flex;align-items:center;gap:10px}
+.car-name{font-size:13px;font-weight:700;color:var(--text)}
+.car-bat{font-size:10px;color:var(--text-dim);margin-top:2px}
+.bat-bar{height:6px;background:var(--surface3);border-radius:3px;margin-top:4px;overflow:hidden}
+.bat-fill{height:100%;border-radius:3px;transition:width 1s ease}
+/* Total kWh */
+.total-kwh-box{background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);border-radius:10px;padding:8px 12px;margin:6px 0;display:flex;justify-content:space-between;align-items:center}
+.total-kwh-val{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)}
+.total-kwh-lbl{font-size:9px;color:var(--text-dim);letter-spacing:.06em}
+
+
+/* Energie-Bilanz */
+.bilanz-warn{background:rgba(255,160,0,0.12);border:2px solid #ffa000;border-radius:12px;padding:14px 16px;margin:10px 0;cursor:pointer}
+.bilanz-warn-title{font-size:13px;font-weight:700;color:#ffa000;display:flex;align-items:center;gap:8px}
+.bilanz-warn-detail{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.6}
+.bilanz-ok{background:rgba(0,212,100,0.08);border:1px solid rgba(0,212,100,0.3);border-radius:12px;padding:10px 16px;margin:10px 0}
+.bilanz-ok-title{font-size:11px;color:#00d464;display:flex;align-items:center;gap:6px}
+/* Nachtrag Modal */
+.nachtrag-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.nachtrag-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.nachtrag-title{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px}
+.nachtrag-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.nachtrag-full{margin-bottom:10px}
+.nachtrag-label{font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em}
+.nachtrag-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box}
+.nachtrag-input:focus{border-color:var(--accent);outline:none}
+.nachtrag-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;box-sizing:border-box}
+.btn-nachtrag-save{width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px}
+.nachtrag-hist{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.nachtrag-item{background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:11px;display:flex;justify-content:space-between;align-items:center}
+
 </style>
 
   <!-- PWA App Icon & Meta -->
@@ -674,6 +718,172 @@ function saveTS() {
   alert('✓ Tailscale IP gespeichert');
 }
 
+
+// ═══════════════════════════════════════════
+// FAHRZEUGE
+// ═══════════════════════════════════════════
+const CARS = [
+  {name:'Audi e-tron quattro', emoji:'🚙', battery:95.0, acMax:11.0, color:'#00d4ff',
+   minKw:6.0, maxKw:11.5, owner:'Robert Görtz'},
+  {name:'BMW iX1',         emoji:'🚗', battery:64.7,  acMax:11.0, color:'#ff7c2a',
+   minKw:6.0, maxKw:11.5, owner:'Cintia Görtz'},
+];
+
+function detectCar(powerKw) {
+  if(powerKw < 0.5) return null;
+  // Beide laden mit 11kW AC — unterscheide anhand aktiver Session-User
+  if(activeSession) {
+    const u = users.find(x=>x.id===activeSession.userId);
+    if(u && u.name.includes('Robert')) return CARS[0]; // BMW iX1
+    if(u && u.name.includes('Cintia')) return CARS[1]; // Audi e-tron
+  }
+  // Fallback: Leistung
+  return CARS.find(c => powerKw >= c.minKw && powerKw <= c.maxKw) || null;
+}
+
+function calcBattery(car, kwh) {
+  // Geschätzte Batterie % die geladen wurde
+  const pct = Math.min(100, Math.round((kwh / car.battery) * 100));
+  return pct;
+}
+
+
+// ═══════════════════════════════════════════
+// SUPABASE SHELLY LOGGING (alle 60s)
+// ═══════════════════════════════════════════
+let lastSupaLog = 0;
+async function logToSupabase() {
+  if(!supaOnline || livePhases.length===0) return;
+  const now = Date.now();
+  if(now - lastSupaLog < 58000) return; // max 1x pro Minute
+  lastSupaLog = now;
+  const totalW = livePhases.reduce((s,p)=>s+p.power,0);
+  if(totalW < 10) return; // nur loggen wenn was läuft
+  await sbPost('measurements', {
+    session_id: activeSession?.id || null,
+    ts: now,
+    power_w: Math.round(totalW),
+    voltage_v: parseFloat((livePhases[0]?.voltage||230).toFixed(1)),
+    current_a: parseFloat(livePhases.reduce((s,p)=>s+p.current,0).toFixed(2)),
+    total_kwh: parseFloat(liveTotalKwh.toFixed(2))
+  });
+}
+
+
+// ═══════════════════════════════════════════
+// ENERGIE-BILANZ
+// ═══════════════════════════════════════════
+let nachtraege = [];
+
+async function loadNachtraege() {
+  const rows = await sbGet('nachtraege', `select=*&station_id=eq.${cs}&order=ts.desc`);
+  if(rows) nachtraege = rows;
+}
+
+function calcBilanz() {
+  // Summe aller Sessions dieser Station
+  const sessSum = sessions
+    .filter(s => s.stationId === cs && s.kwh > 0)
+    .reduce((a, s) => a + s.kwh, 0);
+  // Summe aller Nachträge
+  const nachtragSum = nachtraege
+    .filter(n => n.station_id === cs)
+    .reduce((a, n) => a + (n.kwh || 0), 0);
+  const total = sessSum + nachtragSum;
+  const shellyTotal = liveTotalKwh;
+  const diff = shellyTotal - total;
+  return { sessSum, nachtragSum, total, shellyTotal, diff };
+}
+
+function renderBilanz() {
+  const el = document.getElementById('bilanz-box');
+  if(!el || liveTotalKwh === 0) return;
+  const b = calcBilanz();
+  if(Math.abs(b.diff) < 0.5) {
+    el.innerHTML = `<div class="bilanz-ok">
+      <div class="bilanz-ok-title">✅ Energiebilanz ausgeglichen — Shelly: ${b.shellyTotal.toFixed(1)} kWh / Erfasst: ${b.total.toFixed(1)} kWh</div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="bilanz-warn" onclick="openNachtrag()">
+      <div class="bilanz-warn-title">⚠️ Energielücke erkannt — ${b.diff.toFixed(1)} kWh nicht zugeordnet!</div>
+      <div class="bilanz-warn-detail">
+        Shelly Total: <b>${b.shellyTotal.toFixed(1)} kWh</b><br>
+        Sessions erfasst: ${b.sessSum.toFixed(1)} kWh + Nachträge: ${b.nachtragSum.toFixed(1)} kWh = ${b.total.toFixed(1)} kWh<br>
+        <span style="color:#ffa000">▶ Tippen um ${b.diff.toFixed(1)} kWh nachzutragen</span>
+      </div>
+    </div>`;
+  }
+}
+
+function openNachtrag() {
+  const b = calcBilanz();
+  const modal = document.getElementById('nachtrag-ov');
+  modal.style.display = 'flex';
+  // Benutzer-Optionen
+  const us = users.filter(u => u.stations.includes(cs));
+  document.getElementById('nachtrag-user').innerHTML =
+    `<option value="">— Benutzer wählen —</option>` +
+    us.map(u => `<option value="${u.id}">${u.emoji} ${u.name}</option>`).join('');
+  // Standard: Differenz vorausfüllen
+  document.getElementById('nachtrag-kwh').value = Math.max(0, b.diff).toFixed(1);
+  // Datum: heute
+  document.getElementById('nachtrag-date').value = new Date().toISOString().slice(0,10);
+  // Auto-Erkennung anzeigen
+  const autoEl = document.getElementById('nachtrag-car-hint');
+  const car = detectCar(liveKw);
+  autoEl.textContent = car ? `🚗 Erkannt: ${car.emoji} ${car.name} (${car.owner})` : '';
+  if(car) {
+    const u = users.find(x => x.name.includes(car.owner.split(' ')[0]));
+    if(u) document.getElementById('nachtrag-user').value = u.id;
+  }
+  renderNachtragHist();
+}
+
+function closeNachtrag() {
+  document.getElementById('nachtrag-ov').style.display = 'none';
+}
+
+async function saveNachtrag() {
+  const kwh = parseFloat(document.getElementById('nachtrag-kwh').value);
+  const userId = parseInt(document.getElementById('nachtrag-user').value);
+  const date = document.getElementById('nachtrag-date').value;
+  const note = document.getElementById('nachtrag-note').value;
+  if(!kwh || kwh <= 0 || !userId) { alert('Bitte kWh und Benutzer eingeben!'); return; }
+  const u = users.find(x => x.id === userId);
+  const car = u ? (u.name.includes('Robert') ? CARS[0] : CARS[1]) : null;
+  const entry = {
+    station_id: cs,
+    user_id: userId,
+    ts: new Date(date).getTime(),
+    kwh,
+    chf: parseFloat((kwh * (cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff)).toFixed(2)),
+    note: note || (car ? car.name : 'Manueller Nachtrag'),
+    created_at: Date.now()
+  };
+  const saved = await sbPost('nachtraege', entry);
+  if(saved) {
+    nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
+    renderNachtragHist();
+    renderBilanz();
+    alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
+  }
+}
+
+function renderNachtragHist() {
+  const el = document.getElementById('nachtrag-hist-list');
+  const list = nachtraege.filter(n => n.station_id === cs).slice(0, 5);
+  el.innerHTML = list.length === 0
+    ? '<div style="color:var(--text-dim);font-size:11px">Noch keine Nachträge</div>'
+    : list.map(n => {
+        const u = users.find(x => x.id === n.user_id);
+        const dt = new Date(n.ts).toLocaleDateString('de-CH');
+        return `<div class="nachtrag-item">
+          <span>${u?.emoji||'⚡'} ${u?.name||'?'} — ${n.kwh.toFixed(1)} kWh / ${n.chf?.toFixed(2)} CHF</span>
+          <span style="color:var(--text-dim)">${dt}</span>
+        </div>`;
+      }).join('');
+}
+
 // ═══════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════
@@ -728,7 +938,7 @@ function drawGauge(id,val,max,col){
     <circle cx="${cx}" cy="${cy}" r="1.5" fill="#060a0f"/>`;
 }
 
-let liveKw=0, liveKwh=0;
+let liveKw=0, liveKwh=0, livePhases=[], liveTotalKwh=0;
 function updateGauges(pw,vt,am){
   liveKw=pw;
   const col=ST[cs-1].color;
@@ -763,10 +973,21 @@ async function pollShelly(){
   try{
     const r=await fetch(`http://${ip}/status`,{signal:AbortSignal.timeout(3000)});
     const d=await r.json();
-    const tw=d.emeters.reduce((s,e)=>s+e.power,0);
-    const vt=d.emeters[0]?.voltage||230;
-    const am=Math.abs(tw/(vt*1.732));
+    const em=d.emeters||[];
+    const tw=em.reduce((s,e)=>s+e.power,0);
+    const vt=em[0]?.voltage||230;
+    const am=em.reduce((s,e)=>s+(e.current||0),0);
+    // Speichere Phasen-Daten
+    livePhases=em.map((e,i)=>({
+      phase:i+1, power:e.power||0, voltage:e.voltage||0,
+      current:e.current||0, active:Math.abs(e.power||0)>50
+    }));
+    // Total kWh vom Shelly (lifetime)
+    liveTotalKwh = em.reduce((s,e)=>s+(e.total||0),0)/1000;
     updateGauges(tw/1000,vt,am);
+    updatePhasesUI();
+    logToSupabase();
+    renderBilanz();
     document.getElementById('conn-dot').className='online';
     const b=document.getElementById('status-banner');
     b.style.maxHeight=''; b.style.padding='3px 12px'; b.style.opacity='1';
@@ -787,6 +1008,45 @@ async function pollShelly(){
     renderDashboard();
   }catch(e){demoGauges();}
 }
+
+function updatePhasesUI() {
+  const el = document.getElementById('phases-display');
+  if(!el || livePhases.length===0) return;
+  el.innerHTML = livePhases.map(p => `
+    <div class="phase-box ${p.active?'active':''}">
+      <div class="phase-label">L${p.phase}</div>
+      <div class="phase-kw">${(p.power/1000).toFixed(2)}<span style="font-size:9px;font-weight:400"> kW</span></div>
+      <div class="phase-a">${p.current.toFixed(1)}A</div>
+      <div class="phase-v">${p.voltage.toFixed(0)}V</div>
+    </div>`).join('');
+
+  // Total Shelly kWh
+  const tkEl = document.getElementById('shelly-total-kwh');
+  if(tkEl) tkEl.textContent = liveTotalKwh.toFixed(1) + ' kWh';
+
+  // Auto-Erkennung
+  const totalKw = livePhases.reduce((s,p)=>s+p.power,0)/1000;
+  const car = detectCar(totalKw);
+  const carEl = document.getElementById('car-display');
+  if(carEl && car) {
+    const sessKwh = activeSession ? activeSession.kwh : 0;
+    const batPct = calcBattery(car, sessKwh);
+    carEl.innerHTML = `
+      <div style="font-size:28px">${car.emoji}</div>
+      <div>
+        <div class="car-name">${car.name}</div>
+        <div class="car-bat">Batterie ${car.battery}kWh · AC max ${car.acMax}kW · ${car.owner}</div>
+        <div class="bat-bar" style="width:120px">
+          <div class="bat-fill" style="width:${batPct}%;background:${car.color}"></div>
+        </div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:2px">Diese Session: +${batPct}% geladen</div>
+      </div>`;
+    carEl.style.display='flex';
+  } else if(carEl) {
+    carEl.style.display='none';
+  }
+}
+
 function demoGauges(){
   const t=Date.now()/1000;
   const pw=activeSession&&activeSession.stationId===cs?7.2+Math.sin(t*.3)*.8:.1+Math.random()*.05;
@@ -814,7 +1074,7 @@ function renderDashboard(){
     const dur=Math.floor(el*60);
     wrap.innerHTML=`
       <div class="act-session" style="border-color:${col}">
-        <div class="act-badge">⚡ LÄDT</div>
+        <div class="act-badge blink">⚡ LÄDT</div>
         <div class="act-user">${u.emoji} ${u.name}</div>
         <div class="act-meta"><span>🕐 Seit ${st}</span><span>⏱ ${dur} Min</span><span>📍 ${ST[cs-1].loc}</span></div>
         <div class="act-kwh" id="act-kwh" style="color:${col}">${kwh.toFixed(2)} kWh</div>
@@ -1074,6 +1334,7 @@ document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kW
 
 pollShelly();
 setInterval(pollShelly, 5000);
+loadNachtraege();
 setInterval(()=>{if(activeSession)renderDashboard();},5000);
 
 </script>
