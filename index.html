@@ -728,7 +728,9 @@ function drawGauge(id,val,max,col){
     <circle cx="${cx}" cy="${cy}" r="1.5" fill="#060a0f"/>`;
 }
 
+let liveKw=0, liveKwh=0;
 function updateGauges(pw,vt,am){
+  liveKw=pw;
   const col=ST[cs-1].color;
   drawGauge('g-power',pw,22,col);
   drawGauge('g-volt',vt-180,80,vt>210?col:'#ff4444');
@@ -767,11 +769,22 @@ async function pollShelly(){
     updateGauges(tw/1000,vt,am);
     document.getElementById('conn-dot').className='online';
     const b=document.getElementById('status-banner');
-    b.className='sb-online';b.textContent=`● LIVE — Shelly 3EM ${ip}`;
+    b.style.maxHeight=''; b.style.padding='3px 12px'; b.style.opacity='1';
+    b.className='sb-online';b.textContent=`● LIVE — ${(tw/1000).toFixed(1)}kW / ${vt.toFixed(0)}V`;
+    // Accumulate kwh into active session
+    if(activeSession && activeSession.stationId===cs && tw > 50) {
+      const elH = (Date.now()-activeSession.startedAt)/3600000;
+      activeSession.kwh = parseFloat((tw/1000 * elH).toFixed(3));
+      activeSession.chf = parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
+    }
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString()}).reduce((a,s)=>a+s.kwh,0);
     const month=sessions.filter(s=>{const d=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()}).reduce((a,s)=>a+s.kwh,0);
     document.getElementById('v-today').textContent=today.toFixed(1)+' kWh';
     document.getElementById('v-month').textContent=month.toFixed(0)+' kWh';
+    const tariffNow = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
+    const tariffEl = document.getElementById('v-tariff');
+    if(tariffEl) tariffEl.textContent=tariffNow.toFixed(2)+' CHF/kWh';
+    renderDashboard();
   }catch(e){demoGauges();}
 }
 function demoGauges(){
@@ -792,8 +805,11 @@ function renderDashboard(){
     const u=users.find(x=>x.id===activeSession.userId);
     if(!u)return;
     const el=(Date.now()-activeSession.startedAt)/3600000;
-    const kwh=parseFloat((7.4*el).toFixed(2));
-    const chf=parseFloat((kwh*ST[cs-1].tariff).toFixed(2));
+    // Use live kW if available, else fallback to stored kwh or 7.4kW estimate
+    const kwh = activeSession.kwh > 0.01
+      ? parseFloat(activeSession.kwh.toFixed(2))
+      : parseFloat((liveKw>0 ? liveKw*el : 7.4*el).toFixed(2));
+    const chf=parseFloat((kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
     const st=new Date(activeSession.startedAt).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
     const dur=Math.floor(el*60);
     wrap.innerHTML=`
@@ -1058,7 +1074,7 @@ document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kW
 
 pollShelly();
 setInterval(pollShelly, 5000);
-setInterval(()=>{if(activeSession)renderDashboard();},15000);
+setInterval(()=>{if(activeSession)renderDashboard();},5000);
 
 </script>
 </body>
