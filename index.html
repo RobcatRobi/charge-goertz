@@ -278,6 +278,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div class="gauge-lbl">STROM</div>
       </div>
     </div>
+    <!-- Phasen L1/L2/L3 -->
+    <div id="phases-display" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px 0"></div>
+
     <div class="live-row">
       <div class="live-cell">
         <div class="gauge-lbl">HEUTE</div>
@@ -483,8 +486,8 @@ async function sha256(str) {
 // DATA
 // ═══════════════════════════════════════════════════════════════
 const ST = [
-  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.30},
-  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.30}
+  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25},
+  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25}
 ];
 const UDFL = [
   {id:1, name:'Robert Görtz', emoji:'⚡',plate:'ZH 100 RG',pin:'2204',role:'admin',stations:[1,2],color:'#00d4ff'},
@@ -734,8 +737,8 @@ function detectCar(powerKw) {
   // Beide laden mit 11kW AC — unterscheide anhand aktiver Session-User
   if(activeSession) {
     const u = users.find(x=>x.id===activeSession.userId);
-    if(u && u.name.includes('Robert')) return CARS[0]; // BMW iX1
-    if(u && u.name.includes('Cintia')) return CARS[1]; // Audi e-tron
+    if(u && u.name.includes('Robert')) return CARS[0]; // Audi
+    if(u && u.name.includes('Cintia')) return CARS[1]; // BMW iX1
   }
   // Fallback: Leistung
   return CARS.find(c => powerKw >= c.minKw && powerKw <= c.maxKw) || null;
@@ -884,6 +887,18 @@ function renderNachtragHist() {
       }).join('');
 }
 
+
+async function resetShelly() {
+  if(!confirm('Shelly Zähler wirklich zurücksetzen? Letzter Stand wird in Supabase gespeichert.')) return;
+  const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
+  try {
+    const r = await fetch(`${piBase}/api/shelly/reset/${cs}`, {method:'POST', signal:AbortSignal.timeout(5000)});
+    const d = await r.json();
+    if(d.ok) alert('✓ Shelly Zähler zurückgesetzt!');
+    else alert('Fehler: ' + (d.error||'unbekannt'));
+  } catch(e) { alert('Reset fehlgeschlagen: ' + e.message); }
+}
+
 // ═══════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════
@@ -968,55 +983,52 @@ function updateRelayUI(){
 // SHELLY POLLING
 // ═══════════════════════════════════════════
 async function pollShelly(){
-  // Versuche zuerst Flask API (Pi Backend) dann direkt
   const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
-  const ip=ST[cs-1].ip3em;
-  if(!ip && !piBase){demoGauges();return;}
   try{
-    // Flask API /api/energy gibt Gesamtwerte
-    const apiR = await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(4000)});
-    const apiD = await apiR.json();
-    if(!apiD.demo) {
-      // Hole auch Phasendaten direkt vom Shelly (gleiches Netz)
-      try {
-        const r=await fetch(`http://${ip}/status`,{signal:AbortSignal.timeout(2000)});
-        const d=await r.json();
-        const em=d.emeters||[];
-        livePhases=em.map((e,i)=>({
-          phase:i+1, power:e.power||0, voltage:e.voltage||0,
-          current:e.current||0, active:Math.abs(e.power||0)>50
-        }));
-        liveTotalKwh = em.reduce((s,e)=>s+(e.total||0),0)/1000;
-      } catch(e2) {
-        // Phasendaten nicht verfügbar — nur Gesamtwerte
-        livePhases = [{phase:1,power:apiD.power_w*0.33,voltage:apiD.voltage_v,current:apiD.current_a*0.33,active:true},
-                      {phase:2,power:apiD.power_w*0.34,voltage:apiD.voltage_v,current:apiD.current_a*0.34,active:true},
-                      {phase:3,power:apiD.power_w*0.33,voltage:apiD.voltage_v,current:apiD.current_a*0.33,active:true}];
-      }
-      updateGauges(apiD.power_kw, apiD.voltage_v, apiD.current_a);
+    // Flask API gibt Gesamtwerte + alle 3 Phasen
+    const apiR = await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
+    const d = await apiR.json();
+    if(d.demo) { demoGauges(); return; }
+
+    // Phasen aus Flask
+    if(d.phases && d.phases.length > 0) {
+      livePhases = d.phases.map(p => ({
+        phase: p.phase,
+        power: p.power_w,
+        voltage: p.voltage_v,
+        current: p.current_a,
+        active: p.active
+      }));
+      liveTotalKwh = d.total_kwh || 0;
+    }
+
+    updateGauges(d.power_kw, d.voltage_v, d.current_a);
     updatePhasesUI();
     logToSupabase();
     renderBilanz();
-      document.getElementById('conn-dot').className='online';
-      const b=document.getElementById('status-banner');
-      b.style.maxHeight=''; b.style.padding='3px 12px'; b.style.opacity='1';
-      b.className='sb-online';b.textContent=`● LIVE — ${apiD.power_kw.toFixed(1)}kW / ${apiD.voltage_v.toFixed(0)}V`;
-      // Accumulate kwh into active session
-      if(activeSession && activeSession.stationId===cs && apiD.power_w > 50) {
-        const elH = (Date.now()-activeSession.startedAt)/3600000;
-        activeSession.kwh = parseFloat((apiD.power_kw * elH).toFixed(3));
-        activeSession.chf = parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
-      }
-    } else { demoGauges(); return; }
+
+    document.getElementById('conn-dot').className='online';
+    const b=document.getElementById('status-banner');
+    b.style.maxHeight=''; b.style.padding='3px 12px'; b.style.opacity='1';
+    b.className='sb-online';
+    b.textContent=`⚡ LIVE — ${d.power_kw.toFixed(2)}kW / ${d.voltage_v.toFixed(0)}V / ${d.current_a.toFixed(1)}A`;
+
+    // kWh Session live berechnen
+    if(activeSession && activeSession.stationId===cs && d.power_w > 50) {
+      const elH = (Date.now()-activeSession.startedAt)/3600000;
+      activeSession.kwh = parseFloat((d.power_kw * elH).toFixed(3));
+      activeSession.chf = parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
+    }
+
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString()}).reduce((a,s)=>a+s.kwh,0);
-    const month=sessions.filter(s=>{const d=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()}).reduce((a,s)=>a+s.kwh,0);
+    const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear()}).reduce((a,s)=>a+s.kwh,0);
     document.getElementById('v-today').textContent=today.toFixed(1)+' kWh';
     document.getElementById('v-month').textContent=month.toFixed(0)+' kWh';
     const tariffNow = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
     const tariffEl = document.getElementById('v-tariff');
     if(tariffEl) tariffEl.textContent=tariffNow.toFixed(2)+' CHF/kWh';
     renderDashboard();
-  }catch(e){demoGauges();}
+  }catch(e){ demoGauges(); }
 }
 
 function updatePhasesUI() {
