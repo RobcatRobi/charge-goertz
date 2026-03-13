@@ -201,6 +201,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .bilanz-ok{background:rgba(0,212,100,0.08);border:1px solid rgba(0,212,100,0.3);border-radius:12px;padding:10px 16px;margin:10px 0}
 .bilanz-ok-title{font-size:11px;color:#00d464;display:flex;align-items:center;gap:6px}
 /* Nachtrag Modal */
+@media print{#tab-bar,.btn-stop,.btn-p,.btn-s,.btn-exp,#status-banner{display:none!important}body{background:#fff!important;color:#000!important}}
+.sess-group-hd{font-size:10px;color:var(--text-dim);letter-spacing:.1em;padding:10px 0 4px;text-transform:uppercase;font-weight:700}
+.sess-row-unknown{background:rgba(255,68,68,.05);border:1px solid rgba(255,68,68,.2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.badge-unknown{background:#ff4444;color:#fff;font-size:9px;font-weight:700;border-radius:4px;padding:2px 5px;margin-left:4px}
+.sess-duration{font-size:11px;color:var(--accent);font-family:'Space Mono',monospace}
+.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.bill-user-row:last-child{border-bottom:none}
 .nachtrag-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
 .nachtrag-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
 .nachtrag-title{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px}
@@ -278,9 +285,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div class="gauge-lbl">STROM</div>
       </div>
     </div>
-    <!-- Phasen L1/L2/L3 -->
-    <div id="phases-display" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px 0"></div>
-
     <div class="live-row">
       <div class="live-cell">
         <div class="gauge-lbl">HEUTE</div>
@@ -304,9 +308,27 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <!-- SESSIONS -->
 <div id="tab-sessions" class="tab-content">
-  <div class="section-hd">Sessions</div>
+  <div class="section-hd">Sessions & History</div>
   <div class="section-sub" id="sess-sub">Alle Ladesessions — Neerach</div>
+  <div id="bilanz-banner" style="display:none;background:rgba(255,160,0,.12);border:1px solid #ffa000;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px">
+    <div style="color:#ffa000;font-weight:700;margin-bottom:4px">⚠ ENERGIEBILANZ DIFFERENZ</div>
+    <div id="bilanz-text" style="color:var(--text-dim)"></div>
+    <button onclick="openNachtrag()" style="margin-top:6px;background:#ffa000;color:#000;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">+ Nachtrag erstellen</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+    <select id="sess-filter-user" onchange="renderSessions()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:12px">
+      <option value="all">Alle Benutzer</option>
+    </select>
+    <button onclick="printSessions()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12px;cursor:pointer">📄 Drucken</button>
+  </div>
   <div id="sess-list"></div>
+  <div id="unknown-section" style="display:none;margin-top:12px">
+    <div style="background:rgba(255,68,68,.08);border:1px solid #ff4444;border-radius:10px;padding:12px">
+      <div style="color:#ff4444;font-weight:700;font-size:13px;margin-bottom:6px">❓ UNBEKANNTE Ladeenergie</div>
+      <div id="unknown-text" style="font-size:12px;color:var(--text-dim);margin-bottom:8px"></div>
+      <button onclick="openNachtrag()" style="background:#ff4444;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Benutzer zuordnen</button>
+    </div>
+  </div>
 </div>
 
 <!-- BENUTZER -->
@@ -323,16 +345,47 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <!-- ABRECHNUNG -->
 <div id="tab-billing" class="tab-content">
   <div class="section-hd">Abrechnung</div>
-  <div class="section-sub" id="bill-sub">März 2026</div>
+  <div class="section-sub" id="bill-sub">Gesamtübersicht</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">⚡ SHELLY GESAMTZÄHLER</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div style="text-align:center">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">SHELLY TOTAL</div>
+        <div id="bill-shelly-kwh" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--accent)">— kWh</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">SESSIONS TOTAL</div>
+        <div id="bill-sess-kwh" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">— kWh</div>
+      </div>
+    </div>
+    <div id="bill-diff-row" style="display:none;margin-top:10px;padding:8px;background:rgba(255,160,0,.1);border-radius:8px;text-align:center">
+      <span style="color:#ffa000;font-size:12px;font-weight:700">⚠ Differenz: </span>
+      <span id="bill-diff-val" style="color:#ffa000;font-family:'Space Mono',monospace;font-size:12px"></span>
+      <button onclick="openNachtrag()" style="display:block;width:100%;margin-top:6px;background:#ffa000;color:#000;border:none;border-radius:8px;padding:6px;font-size:11px;font-weight:700;cursor:pointer">+ Nachtrag erstellen</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">👥 GESAMT PRO BENUTZER (alle Zeit)</div>
+    <div id="bill-per-user"></div>
+    <div id="bill-unknown-row" style="display:none;margin-top:8px;padding:8px;background:rgba(255,68,68,.08);border:1px solid #ff444433;border-radius:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px">❓ UNBEKANNT</span>
+        <span id="bill-unknown-kwh" style="font-family:'Space Mono',monospace;font-size:14px;color:#ff4444;font-weight:700"></span>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Energie ohne zugeordnete Session</div>
+      <button onclick="openNachtrag()" style="margin-top:6px;background:#ff4444;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">Zuordnen</button>
+    </div>
+    <div id="bill-total-check" style="margin-top:10px;padding:8px;background:var(--surface2);border-radius:8px;text-align:center;font-size:11px;color:var(--text-dim)"></div>
+  </div>
   <div class="billing-mode">
     <button class="bm-btn active" onclick="setBM('individual')">Individuell</button>
-    <button class="bm-btn" onclick="setBM('combined')">Kombiniert (beide Stationen)</button>
+    <button class="bm-btn" onclick="setBM('combined')">Kombiniert</button>
   </div>
   <div class="month-sel" id="month-sel"></div>
   <div id="bill-content"></div>
   <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:10px">
     <button class="btn-exp" onclick="exportCSV()">⬇ CSV</button>
-    <button class="btn-exp" onclick="window.print()">📄 Drucken</button>
+    <button class="btn-exp" onclick="printBilling()">📄 Drucken</button>
   </div>
 </div>
 
@@ -798,24 +851,9 @@ function calcBilanz() {
   return { sessSum, nachtragSum, total, shellyTotal, diff };
 }
 
-function renderBilanz() {
-  const el = document.getElementById('bilanz-box');
-  if(!el || liveTotalKwh === 0) return;
-  const b = calcBilanz();
-  if(Math.abs(b.diff) < 0.5) {
-    el.innerHTML = `<div class="bilanz-ok">
-      <div class="bilanz-ok-title">✅ Energiebilanz ausgeglichen — Shelly: ${b.shellyTotal.toFixed(1)} kWh / Erfasst: ${b.total.toFixed(1)} kWh</div>
-    </div>`;
-  } else {
-    el.innerHTML = `<div class="bilanz-warn" onclick="openNachtrag()">
-      <div class="bilanz-warn-title">⚠️ Energielücke erkannt — ${b.diff.toFixed(1)} kWh nicht zugeordnet!</div>
-      <div class="bilanz-warn-detail">
-        Shelly Total: <b>${b.shellyTotal.toFixed(1)} kWh</b><br>
-        Sessions erfasst: ${b.sessSum.toFixed(1)} kWh + Nachträge: ${b.nachtragSum.toFixed(1)} kWh = ${b.total.toFixed(1)} kWh<br>
-        <span style="color:#ffa000">▶ Tippen um ${b.diff.toFixed(1)} kWh nachzutragen</span>
-      </div>
-    </div>`;
-  }
+function renderBilanz(){
+  const bt=document.getElementById('tab-billing');
+  if(bt&&bt.classList.contains('active'))renderBilling();
 }
 
 function openNachtrag() {
@@ -1168,24 +1206,56 @@ function _UNUSED_stopSession(){
 function renderSessions(){
   document.getElementById('sess-sub').textContent=`Alle Sessions — ${ST[cs-1].loc}`;
   const list=document.getElementById('sess-list');
-  const ss=sessions.filter(s=>s.stationId===cs);
-  if(!ss.length){list.innerHTML=`<div class="no-data"><div class="big">📋</div>Noch keine Sessions</div>`;return;}
-  list.innerHTML=ss.map(s=>{
-    const u=users.find(x=>x.id===s.userId);if(!u)return'';
-    const d=new Date(s.startedAt);
-    const dur=s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000):'—';
-    return `<div class="sess-row">
-      <div style="font-size:19px">${u.emoji}</div>
-      <div style="flex:1">
-        <div class="sess-name">${u.name}</div>
-        <div class="sess-date">${d.toLocaleDateString('de-CH')} ${d.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})} · ${dur} Min</div>
-      </div>
-      <div style="text-align:right">
-        <div class="sess-kwh" style="color:${u.color}">${s.kwh.toFixed(2)} kWh</div>
-        <div class="sess-chf">${s.chf.toFixed(2)} CHF</div>
-      </div>
-    </div>`;
-  }).join('');
+  const filterSel=document.getElementById('sess-filter-user');
+  if(filterSel&&filterSel.options.length<=1){
+    users.filter(u=>u.stations.includes(cs)).forEach(u=>{
+      const o=document.createElement('option');o.value=u.id;o.textContent=u.emoji+' '+u.name;filterSel.appendChild(o);
+    });
+    const ou=document.createElement('option');ou.value='unknown';ou.textContent='❓ Unbekannt';filterSel.appendChild(ou);
+  }
+  const fv=filterSel?filterSel.value:'all';
+  let ss=sessions.filter(s=>s.stationId===cs);
+  if(fv==='unknown')ss=ss.filter(s=>!users.find(u=>u.id===s.userId));
+  else if(fv!=='all')ss=ss.filter(s=>s.userId===parseInt(fv));
+
+  const totSessKwh=sessions.filter(s=>s.stationId===cs).reduce((a,s)=>a+s.kwh,0);
+  const shellyKwh=liveTotalKwh||0;
+  const unkKwh=Math.max(0,shellyKwh-totSessKwh);
+  const bb=document.getElementById('bilanz-banner'),us=document.getElementById('unknown-section');
+  if(shellyKwh>0&&unkKwh>0.5){
+    if(bb){bb.style.display='block';document.getElementById('bilanz-text').textContent=`Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Differenz: ${unkKwh.toFixed(1)} kWh`;}
+    if(us){us.style.display='block';document.getElementById('unknown-text').textContent=`${unkKwh.toFixed(2)} kWh ohne Session — bitte zuordnen.`;}
+  }else{if(bb)bb.style.display='none';if(us)us.style.display='none';}
+
+  if(!ss.length){list.innerHTML='<div class="no-data"><div class="big">📋</div>Noch keine Sessions</div>';return;}
+  const groups={};
+  ss.forEach(s=>{const d=new Date(s.startedAt);const k=d.toLocaleDateString('de-CH',{weekday:'short',year:'numeric',month:'2-digit',day:'2-digit'});if(!groups[k])groups[k]=[];groups[k].push(s);});
+  let html='';
+  Object.keys(groups).forEach(dk=>{
+    const gs=groups[dk];const dkwh=gs.reduce((a,s)=>a+s.kwh,0);
+    html+=`<div class="sess-group-hd">${dk} — ${dkwh.toFixed(1)} kWh</div>`;
+    gs.forEach(s=>{
+      const u=users.find(x=>x.id===s.userId);
+      const d=new Date(s.startedAt);const t=d.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+      const dur=s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000)+'Min':'aktiv';
+      if(!u){
+        html+=`<div class="sess-row-unknown"><div style="font-size:19px">❓</div><div style="flex:1"><div class="sess-name">Unbekannt<span class="badge-unknown">KEIN LOGIN</span></div><div class="sess-date">${t} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:#ff4444">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div><button onclick="openNachtrag()" style="font-size:9px;background:#ff4444;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:2px">Zuordnen</button></div></div>`;
+      }else{
+        html+=`<div class="sess-row"><div style="font-size:19px">${u.emoji}</div><div style="flex:1"><div class="sess-name">${u.name}</div><div class="sess-date">${t} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:${u.color||'var(--accent)'}">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div></div></div>`;
+      }
+    });
+  });
+  const tk=ss.reduce((a,s)=>a+s.kwh,0);
+  html+=`<div style="padding:12px 0;border-top:1px solid var(--border);margin-top:8px;display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--text-dim)">TOTAL ${ss.length} Sessions</span><span style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent)">${tk.toFixed(2)} kWh</span></div>`;
+  list.innerHTML=html;
+}
+
+function printSessions(){
+  const sub=document.getElementById('sess-sub').textContent;
+  const list=document.getElementById('sess-list').innerHTML;
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</body></html>');
+  w.document.close();w.print();
 }
 
 // ═══════════════════════════════════════════
@@ -1245,43 +1315,68 @@ function setBM(m){
   renderBilling();
 }
 function renderBilling(){
-  const months=[...new Set(sessions.map(s=>{const d=new Date(s.startedAt);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}))].sort().reverse();
-  if(!months.includes(billingMonth)&&months.length)billingMonth=months[0];
-  const sel=document.getElementById('month-sel');
-  sel.innerHTML=months.slice(0,6).map(m=>{
-    const[y,mo]=m.split('-');
-    const lbl=new Date(y,mo-1,1).toLocaleString('de-CH',{month:'short',year:'2-digit'});
-    return `<button class="month-btn ${m===billingMonth?'active':''}" onclick="selMonth('${m}')">${lbl}</button>`;
-  }).join('');
-  const[y,mo]=billingMonth.split('-');
-  document.getElementById('bill-sub').textContent=new Date(y,mo-1,1).toLocaleString('de-CH',{month:'long',year:'numeric'});
-  const filt=s=>{const d=new Date(s.startedAt);const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;return k===billingMonth;};
-  const stFilt=billingMode==='individual'?s=>filt(s)&&s.stationId===cs:filt;
-  const ss=sessions.filter(stFilt);
-  const uu=(billingMode==='individual'?users.filter(u=>u.stations.includes(cs)):users).map(u=>{
-    const us=ss.filter(s=>s.userId===u.id);
-    return{...u,kwh:us.reduce((a,s)=>a+s.kwh,0),chf:us.reduce((a,s)=>a+s.chf,0),cnt:us.length};
-  }).filter(u=>u.kwh>0).sort((a,b)=>b.kwh-a.kwh);
-  const mx=Math.max(...uu.map(u=>u.kwh),.1);
-  const tkwh=uu.reduce((a,u)=>a+u.kwh,0),tchf=uu.reduce((a,u)=>a+u.chf,0);
-  const col=ST[cs-1].color;
-  const note=billingMode==='combined'?`<div style="font-family:'Oxanium',sans-serif;font-size:10px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em">Beide Stationen kombiniert</div>`:'';
-  document.getElementById('bill-content').innerHTML=note+uu.map(u=>`
-    <div class="b-row">
-      <div style="font-size:20px;width:26px">${u.emoji}</div>
-      <div class="b-bar-wrap">
-        <div class="b-name">${u.name} <span style="font-size:9px;color:var(--text-muted)">${u.cnt} Sessions</span></div>
-        <div class="b-bar-bg"><div class="b-bar-fill" style="width:${u.kwh/mx*100}%;background:${u.color}"></div></div>
-      </div>
-      <div>
-        <div class="b-amt" style="color:${u.color}">${u.chf.toFixed(2)}</div>
-        <div class="b-kwh">${u.kwh.toFixed(1)} kWh</div>
-      </div>
-    </div>`).join('')+`
-    <div class="total-row" style="border-color:${billingMode==='combined'?'var(--text-dim)':col}">
-      <div><div class="total-lbl">TOTAL</div><div style="font-size:10px;color:var(--text-dim)">${tkwh.toFixed(1)} kWh</div></div>
-      <div class="total-val" style="color:${billingMode==='combined'?'var(--text)':col}">${tchf.toFixed(2)} CHF</div>
-    </div>`;
+  const now=new Date(),tariff=cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff;
+  const mk=billingMonth||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const allSess=sessions.filter(s=>s.stationId===cs);
+  const totSessKwh=allSess.reduce((a,s)=>a+s.kwh,0);
+  const shellyKwh=liveTotalKwh||0;
+  const unkKwh=Math.max(0,shellyKwh-totSessKwh);
+
+  const bsk=document.getElementById('bill-shelly-kwh');
+  const bsess=document.getElementById('bill-sess-kwh');
+  if(bsk)bsk.textContent=shellyKwh>0?shellyKwh.toFixed(2)+' kWh':'(kein Shelly)';
+  if(bsess)bsess.textContent=totSessKwh.toFixed(2)+' kWh';
+  const dr=document.getElementById('bill-diff-row');
+  if(dr){if(shellyKwh>0&&unkKwh>0.5){dr.style.display='block';document.getElementById('bill-diff-val').textContent=unkKwh.toFixed(2)+' kWh nicht zugeordnet';}else dr.style.display='none';}
+
+  const uu=users.filter(u=>u.stations.includes(cs));
+  const pue=document.getElementById('bill-per-user');
+  if(pue){
+    let ta=0;
+    pue.innerHTML=uu.map(u=>{
+      const us=allSess.filter(s=>s.userId===u.id);
+      const kwh=us.reduce((a,s)=>a+s.kwh,0);
+      const mins=us.reduce((a,s)=>a+(s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000):0),0);
+      ta+=kwh;
+      return `<div class="bill-user-row"><div style="font-size:20px">${u.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:700">${u.name}</div><div style="font-size:10px;color:var(--text-dim)">${us.length} Sessions · ${mins} Min</div></div><div style="text-align:right"><div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:${u.color||'var(--accent)'}">${kwh.toFixed(2)} kWh</div><div style="font-size:11px;color:var(--text-dim)">${(kwh*tariff).toFixed(2)} CHF</div></div></div>`;
+    }).join('');
+    const ur=document.getElementById('bill-unknown-row');
+    if(ur){if(unkKwh>0.5){ur.style.display='block';document.getElementById('bill-unknown-kwh').textContent=unkKwh.toFixed(2)+' kWh';}else ur.style.display='none';}
+    const ce=document.getElementById('bill-total-check');
+    if(ce){const tot=ta+unkKwh;const ok=shellyKwh<=0||Math.abs(tot-shellyKwh)<0.5;ce.innerHTML=ok?`<span style="color:var(--green)">✓ Bilanz ok: ${tot.toFixed(2)} kWh</span>`:`<span style="color:#ffa000">⚠ Summe: ${tot.toFixed(2)} | Shelly: ${shellyKwh.toFixed(2)} kWh</span>`;}
+  }
+
+  const months=[...new Set(sessions.filter(s=>s.stationId===cs).map(s=>{const d=new Date(s.startedAt);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}))].sort().reverse();
+  if(!months.includes(mk))months.unshift(mk);
+  const mSel=document.getElementById('month-sel');
+  if(mSel)mSel.innerHTML=months.map(m=>{const[y,mo]=m.split('-');const n=new Date(y,parseInt(mo)-1,1).toLocaleDateString('de-CH',{month:'long',year:'numeric'});return `<button class="mb-btn ${m===mk?'active':''}" onclick="selMonth('${m}')">${n}</button>`;}).join('');
+
+  const mSess=sessions.filter(s=>{const d=new Date(s.startedAt);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return s.stationId===cs&&k===mk;});
+  const bc=document.getElementById('bill-content');if(!bc)return;
+  if(!mSess.length){bc.innerHTML='<div class="no-data" style="margin-top:10px">Keine Sessions in diesem Monat</div>';return;}
+  const uids=[...new Set(mSess.map(s=>s.userId))];
+  let html='<div style="margin-top:10px">';
+  uids.forEach(uid=>{
+    const u=users.find(x=>x.id===uid);
+    const us=mSess.filter(s=>s.userId===uid);
+    const kwh=us.reduce((a,s)=>a+s.kwh,0);
+    const mins=us.reduce((a,s)=>a+(s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000):0),0);
+    const nm=u?(u.emoji+' '+u.name):'❓ Unbekannt';const cl=u?(u.color||'var(--accent)'):'#ff4444';
+    html+=`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:700;font-size:14px">${nm}</div><div style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:${cl}">${kwh.toFixed(2)} kWh</div></div><div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">${us.length} Sessions · ${mins} Min · ${(kwh*tariff).toFixed(2)} CHF</div>`;
+    us.forEach(s=>{const d=new Date(s.startedAt);const dur=s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000)+'Min':'—';html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-top:1px solid var(--border)"><span>${d.toLocaleDateString('de-CH')} ${d.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})}</span><span style="color:var(--text-dim)">${dur}</span><span style="font-family:'Space Mono',monospace">${s.kwh.toFixed(2)} kWh</span></div>`;});
+    html+='</div>';
+  });
+  const mk2=mSess.reduce((a,s)=>a+s.kwh,0);
+  html+=`<div style="display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border)"><span style="font-size:12px;color:var(--text-dim)">MONATS-TOTAL</span><div style="text-align:right"><div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--accent)">${mk2.toFixed(2)} kWh</div><div style="font-size:12px;color:var(--text-dim)">${(mk2*tariff).toFixed(2)} CHF</div></div></div></div>`;
+  bc.innerHTML=html;
+}
+
+function printBilling(){
+  const pu=document.getElementById('bill-per-user')?document.getElementById('bill-per-user').innerHTML:'';
+  const bc=document.getElementById('bill-content')?document.getElementById('bill-content').innerHTML:'';
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Abrechnung</title><style>body{font-family:sans-serif;padding:20px;color:#000;max-width:800px;margin:auto}h2,h3{border-bottom:1px solid #ddd;padding-bottom:6px}.card{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:10px}.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}button{display:none}</style></head><body><h2>ChargeGörtz — Abrechnung</h2><p style="color:#666;font-size:11px">'+new Date().toLocaleString('de-CH')+'</p><h3>Gesamt pro Benutzer</h3>'+pu+'<h3>Monatsdetail</h3>'+bc+'</body></html>');
+  w.document.close();w.print();
 }
 function selMonth(m){billingMonth=m;renderBilling();}
 function exportCSV(){
