@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChargeGörtz EV — Start</title>
+<style>
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { background:#060a0f;color:#dce8f5;font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px; }
+  .logo { font-size:48px;margin-bottom:8px; }
+  h1 { font-size:28px;font-weight:800;margin-bottom:4px; }
+  h1 span { color:#00d4ff; }
+  .sub { font-size:14px;color:#6b8aaa;margin-bottom:32px; }
+  .card { background:#0d1520;border:1px solid #1e2f48;border-radius:16px;padding:20px;width:100%;max-width:360px;margin-bottom:16px; }
+  .card-title { font-size:11px;font-weight:700;color:#6b8aaa;letter-spacing:.08em;margin-bottom:12px; }
+  .btn { display:block;width:100%;background:#00d4ff;color:#000;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:8px; }
+  .btn.secondary { background:#1e2f48;color:#dce8f5; }
+  .url-box { background:#060a0f;border:1px solid #1e2f48;border-radius:8px;padding:10px;font-size:11px;color:#00d4ff;word-break:break-all;margin-bottom:12px;font-family:monospace; }
+  .step { display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:13px; }
+  .step-num { background:#00d4ff;color:#000;border-radius:50%;width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px; }
+  #qr { display:flex;justify-content:center;margin-bottom:12px; }
+</style>
+</head>
+<body>
+<div class="logo">⚡</div>
+<h1>Charge<span>Görtz</span></h1>
+<p class="sub">EV Laden · Neerach &amp; Brail</p>
+
+<div class="card">
+  <div class="card-title">📱 APP STARTEN</div>
+  <div id="qr"></div>
+  <div class="url-box" id="app-url">Wird geladen...</div>
+  <a id="open-btn" class="btn" href="#">⚡ App öffnen</a>
+</div>
+
+<div class="card">
+  <div class="card-title">📲 ALS APP SPEICHERN (kein Download!)</div>
+  <div class="step"><div class="step-num">1</div><div>App-Link oben öffnen</div></div>
+  <div class="step"><div class="step-num">2</div><div><b>iPhone:</b> Teilen ↑ → "Zum Home-Bildschirm"</div></div>
+  <div class="step"><div class="step-num">2</div><div><b>Android:</b> Menü ⋮ → "App installieren"</div></div>
+  <div class="step"><div class="step-num">3</div><div>ChargeGörtz EV erscheint als App-Icon!</div></div>
+</div>
+
+<script>
+// URLs in Priorität
+const URLS = [
+  'https://elder-camel-humans-medications.trycloudflare.com',
+  'http://100.103.254.108:8080',
+  'http://192.168.3.103:8080',
+];
+
+async function findBestUrl() {
+  for (const url of URLS) {
+    try {
+      const r = await fetch(url + '/api/status', {signal: AbortSignal.timeout(2000)});
+      const d = await r.json();
+      if (d.status === 'ok') return url;
+    } catch(e) {}
+  }
+  return URLS[0]; // Fallback
+}
+
+findBestUrl().then(url => {
+  document.getElementById('app-url').textContent = url;
+  document.getElementById('open-btn').href = url;
+  // QR Code
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url) + '&bgcolor=0d1520&color=00d4ff&margin=10';
+  document.getElementById('qr').innerHTML = `<img src="${qrUrl}" style="border-radius:8px" width="160" height="160">`;
+});
+</script>
+</body>
+</html>
