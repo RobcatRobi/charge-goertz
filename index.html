@@ -1272,8 +1272,15 @@ function tryAutoLogin(){
 // ═══════════════════════════════════════════
 async function toggleRelay(){
   relayOn=!relayOn; save(); updateRelayUI();
-  const ip=ST[cs-1].ipMini;
-  if(ip) try{await fetch(`http://${ip}/relay/0?turn=${relayOn?'on':'off'}`,{signal:AbortSignal.timeout(3000)})}catch(e){}
+  // Schalte über Flask (kein direkter Shelly-Zugriff möglich - Mixed Content)
+  const piBase=cfg.tsIp||'http://192.168.3.103:5000';
+  const act=relayOn?'on':'off';
+  try{
+    const r=await fetch(`${piBase}/api/relay/${cs}/${act}`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    if(d.success) setStatus('relay','ok',act.toUpperCase());
+    else setStatus('relay','warn','Schaltfehler');
+  }catch(e){setStatus('relay','warn','Nicht erreichbar');}
 }
 function updateRelayUI(){
   const k=document.getElementById('kipp');
@@ -1436,8 +1443,20 @@ function renderDashboard(){
       </div>`;
     sw.style.display='none';
   } else {
-    wrap.innerHTML=`<div class="no-data"><div class="big">🔌</div>Kein aktiver Ladevorgang</div>`;
-    sw.style.display='block';
+    if(liveKw > 0.5) {
+      // Strom fliesst aber keine Session — Warnung anzeigen
+      wrap.innerHTML=`<div class="act-session" style="border-color:#ff4444;background:rgba(255,68,68,.05)">
+        <div class="act-badge blink" style="background:#ff4444">⚠ UNBEKANNT</div>
+        <div class="act-user" style="color:#ff4444">Kein eingeloggter Benutzer</div>
+        <div class="act-meta"><span>⚡ ${liveKw.toFixed(2)} kW aktiv</span><span>📍 ${ST[cs-1].loc}</span></div>
+        <div class="act-kwh" style="color:#ff4444;font-size:16px">Bitte Session starten!</div>
+        <button class="btn-p" style="width:100%;margin-top:10px;background:#ff4444;border:none" onclick="openStartSession()">⚡ Session jetzt starten</button>
+      </div>`;
+      sw.style.display='none';
+    } else {
+      wrap.innerHTML=`<div class="no-data"><div class="big">🔌</div>Kein aktiver Ladevorgang</div>`;
+      sw.style.display='block';
+    }
   }
   updateRelayUI();
 }
@@ -1746,11 +1765,17 @@ detectConnectivity();
 pollShelly();
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
-setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert (Brail)');
-// Relay Status live prüfen
-if(_rm){fetch('http://'+_rm+'/relay/0',{signal:AbortSignal.timeout(2000)})
-  .then(r=>r.json()).then(d=>setStatus('relay',d.ison!==undefined?'ok':'warn',d.ison?'EIN':'AUS'))
-  .catch(()=>setStatus('relay','warn','Nicht erreichbar'));
+setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert');
+// Relay Status über Flask prüfen (nicht direkt — Mixed Content)
+if(_rm){
+  const _pb=cfg.tsIp||'http://192.168.3.103:5000';
+  fetch(`${_pb}/api/stations`,{signal:AbortSignal.timeout(3000)})
+    .then(r=>r.json())
+    .then(d=>{
+      const st=d.find&&d.find(s=>s.id===cs);
+      if(st)setStatus('relay','ok',st.relay_on?'EIN':'AUS');
+    })
+    .catch(()=>{});
 }
 setInterval(pollShelly,5000);
 setInterval(detectConnectivity,30000);
