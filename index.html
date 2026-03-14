@@ -1857,8 +1857,14 @@ async function admResetShelly(){
   try{
     const r=await fetch(`${piBase}/api/shelly/reset/${adminStation}`,{method:'POST',signal:AbortSignal.timeout(5000)});
     const d=await r.json();
-    if(d.ok){alert('✓ Shelly Zähler zurückgesetzt!');liveTotalKwh=0;updateAdminCounters();}
-    else alert('Fehler: '+(d.error||'unbekannt'));
+    if(d.ok){
+      const msg='✓ '+d.message+'\n\nAlle 3 Phasen zurückgesetzt: '+(d.phases_reset||[]).map((p,i)=>p?'L'+(i+1)+'✓':'L'+(i+1)+'✗').join(' ');
+      alert(msg);
+      liveTotalKwh=0;
+      const el=document.getElementById('shelly-total-kwh');
+      if(el)el.textContent='0.00 kWh';
+      updateAdminCounters();
+    } else alert('Fehler: '+(d.error||d.message||'unbekannt'));
   }catch(e){alert('Verbindung fehlgeschlagen: '+e.message);}
 }
 
@@ -2124,5 +2130,33 @@ function checkPushHint(){
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
 
 </script>
+<!-- NACHTRAG MODAL -->
+<div id="nachtrag-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
+  <div id="nachtrag-box" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px">➕ Energienachtrag</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">Energie einem Benutzer zuordnen die ohne Session geladen wurde.</div>
+    
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BENUTZER</div>
+    <select id="nachtrag-user" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box"></select>
+    
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">ENERGIE (kWh)</div>
+    <input type="number" id="nachtrag-kwh" step="0.01" min="0" placeholder="z.B. 12.5"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
+    
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">DATUM</div>
+    <input type="date" id="nachtrag-date"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
+    
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BEMERKUNG (optional)</div>
+    <input type="text" id="nachtrag-note" placeholder="z.B. Laden ohne Login"
+      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box">
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button onclick="saveNachtrag()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">💾 Speichern</button>
+      <button onclick="closeNachtrag()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:14px;cursor:pointer">✕ Abbrechen</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
