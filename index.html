@@ -211,6 +211,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .adm-sess-row:hover{background:var(--surface2);border-radius:6px;padding-left:6px}
 .adm-user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
 .adm-user-row:hover{background:var(--surface2);border-radius:6px;padding-left:6px}
+.st-row{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--surface2);border-radius:7px;font-size:11px}
+.st-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:.3s}
+.st-dot.ok{background:#00e676}.st-dot.warn{background:#ffa000}.st-dot.err{background:#ff4444}
+.st-lbl{flex:1;color:var(--text-dim)}.st-val{font-size:10px;color:var(--text-dim);font-family:'Space Mono',monospace}
+.live-badge-active{background:rgba(0,212,255,.15)!important;color:var(--accent)!important}
 @media print{#tab-bar,.btn-stop,.btn-p,.btn-s,.btn-exp,#status-banner{display:none!important}body{background:#fff!important;color:#000!important}}
 .sess-group-hd{font-size:10px;color:var(--text-dim);letter-spacing:.1em;padding:10px 0 4px;text-transform:uppercase;font-weight:700}
 .sess-row-unknown{background:rgba(255,68,68,.05);border:1px solid rgba(255,68,68,.2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
@@ -260,29 +265,40 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
-
   <div id="act-session-wrap"></div>
-
-  <div class="card" style="padding:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.08em">⚡ LIVE — <span id="gauge-st-name">NEERACH</span></div>
-      <div style="display:flex;align-items:center;gap:5px">
-        <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span>
-        <span id="live-summary" style="font-size:11px;color:var(--text-dim)">—</span>
+  <div id="status-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px">
+    <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">SYSTEM STATUS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div class="st-row"><span class="st-dot" id="st-pi"></span><span class="st-lbl">Pi Backend</span><span class="st-val" id="stv-pi">—</span></div>
+      <div class="st-row"><span class="st-dot" id="st-shelly"></span><span class="st-lbl">Shelly 3EM</span><span class="st-val" id="stv-shelly">—</span></div>
+      <div class="st-row"><span class="st-dot" id="st-db"></span><span class="st-lbl">Datenbank</span><span class="st-val" id="stv-db">—</span></div>
+      <div class="st-row"><span class="st-dot" id="st-relay"></span><span class="st-lbl">Shelly Mini</span><span class="st-val" id="stv-relay">—</span></div>
+    </div>
+    <div id="status-help" style="display:none;margin-top:8px;padding:8px;background:rgba(255,160,0,.08);border-radius:8px;font-size:11px;color:#ffa000;line-height:1.6"></div>
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
+      <div id="live-badge" style="font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text-dim)">STANDBY</div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:8px">
+      <div id="v-power" style="font-family:'Space Mono',monospace;font-size:52px;font-weight:700;color:var(--accent);line-height:1">—</div>
+      <div style="margin-bottom:8px;color:var(--text-dim);font-size:16px">kW</div>
+      <div style="margin-left:auto;display:flex;gap:12px;margin-bottom:4px">
+        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">VOLT</div><div id="v-volt" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700">—</div></div>
+        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">AMP</div><div id="v-amp" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700">—</div></div>
       </div>
     </div>
-    <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
-      <div id="v-power" style="font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--accent);line-height:1">0.0</div>
-      <div style="margin-bottom:6px;color:var(--text-dim);font-size:15px">kW</div>
-      <div style="margin-left:auto;display:flex;gap:14px">
-        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">V</div><div id="v-volt" style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700">230</div></div>
-        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">A</div><div id="v-amp" style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700">0.0</div></div>
+    <div id="phases-display" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)">
+      <div>
+        <div style="font-size:9px;color:var(--text-dim);letter-spacing:.06em;margin-bottom:2px">STATIONSGESAMTZÄHLER</div>
+        <div style="font-size:10px;color:var(--text-dim)" id="shelly-status-txt">Shelly 3EM</div>
       </div>
-    </div>
-    <div id="phases-display" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:10px">
-      <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em">GESAMTZÄHLER</div>
-      <div id="shelly-total-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)">— kWh</div>
+      <div style="text-align:right">
+        <div id="shelly-total-kwh" style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent)">— kWh</div>
+        <div id="shelly-last-update" style="font-size:9px;color:var(--text-dim)"></div>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
       <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:8px 4px">
@@ -299,23 +315,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
     </div>
   </div>
-
-  <div class="relay-card" id="relay-card" style="margin-top:10px">
+  <div class="relay-card" id="relay-card" style="margin-bottom:10px">
     <div><div class="relay-lbl" id="relay-lbl">🔌 Kabelfreigabe</div>
     <div class="relay-sub" id="relay-sub">Shelly 1 Mini — 192.168.3.224</div></div>
     <div class="kipp" id="kipp" onclick="toggleRelay()"><div class="kipp-track"></div><div class="kipp-thumb"></div></div>
   </div>
-
-  <div id="start-wrap" style="margin-top:10px">
+  <div id="start-wrap">
     <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
   </div>
-
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
     <br><button onclick="requestPush()" style="margin-top:6px;background:#ffa000;color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Aktivieren</button>
   </div>
-
-</div>
 
 <!-- SESSIONS -->
 <div id="tab-sessions" class="tab-content">
@@ -830,11 +841,13 @@ async function syncFromSupabase() {
   // Supabase verbindung testen
   const test = await sbGet('sessions', 'select=id&limit=1');
   if(test === null) {
-    supaOnline = false;
+    supaOnline=false;
+  setStatus('db','err','Offline');
     setBanner('demo');
     return;
   }
-  supaOnline = true;
+  supaOnline=true;
+  setStatus('db','ok','Supabase');
 
   // Benutzer laden
   const sbUsers = await sbGet('users', 'select=*,user_stations(station_id)&active=eq.true&order=id');
@@ -1224,17 +1237,62 @@ function drawGauge(id,val,max,col){
 
 let liveKw=0, liveKwh=0, livePhases=[], liveTotalKwh=0;
 function updateGauges(kw,volt,amp){
-  const pw=document.getElementById('v-power');if(pw)pw.textContent=kw.toFixed(kw>=10?1:2);
-  const vv=document.getElementById('v-volt');if(vv)vv.textContent=volt.toFixed(0);
-  const av=document.getElementById('v-amp');if(av)av.textContent=amp.toFixed(1);
-  const sm=document.getElementById('live-summary');
-  if(sm)sm.textContent=kw>0.05?(kw.toFixed(2)+'kW · '+volt.toFixed(0)+'V'):'Standby';
-  const cd=document.getElementById('conn-dot');
-  if(cd)cd.style.background=kw>0.05?'var(--accent)':'#00e676';
+  const pw=document.getElementById('v-power');if(pw)pw.textContent=kw>0?kw.toFixed(kw>=10?1:2):'0.0';
+  const vv=document.getElementById('v-volt');if(vv)vv.textContent=volt>100?volt.toFixed(0):'—';
+  const av=document.getElementById('v-amp');if(av)av.textContent=amp>0?amp.toFixed(1):'—';
+  const lb=document.getElementById('live-badge');
+  if(lb){if(kw>0.1){lb.textContent='● LÄDT '+kw.toFixed(2)+' kW';lb.className='live-badge-active';}
+    else if(volt>100){lb.textContent='STANDBY '+volt.toFixed(0)+'V';lb.style.cssText='font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--green)';}
+    else{lb.textContent='OFFLINE';lb.style.cssText='font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text-dim)';}}
   liveKw=kw;
   drawGauge('g-power',kw,0,12,'var(--accent)');
   drawGauge('g-volt',volt,200,260,'#7c83ff');
   drawGauge('g-amp',amp,0,32,'#00e676');
+}
+const statusState={pi:'unknown',shelly:'unknown',db:'unknown',relay:'unknown'};
+function setStatus(key,state,val){
+  statusState[key]=state;
+  const dot=document.getElementById('st-'+key);const stv=document.getElementById('stv-'+key);
+  if(dot)dot.className='st-dot '+state;if(stv)stv.textContent=val||'';
+  updateStatusHelp();
+}
+function updateStatusHelp(){
+  const h=document.getElementById('status-help');if(!h)return;
+  const msgs=[];
+  if(statusState.pi==='err')msgs.push('❌ Pi nicht erreichbar — WLAN/Tailscale prüfen');
+  if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM offline — Sicherungsautomat aus?');
+  if(statusState.shelly==='warn')msgs.push('⚠ Shelly 3EM: Phase fehlt oder schwach');
+  if(statusState.db==='err')msgs.push('❌ Supabase offline — Internet prüfen');
+  if(statusState.relay==='warn')msgs.push('⚠ Shelly Mini: IP nicht konfiguriert');
+  if(msgs.length){h.style.display='block';h.innerHTML=msgs.join('<br>');}else h.style.display='none';
+}
+function updatePhasesUI(){
+  const el=document.getElementById('phases-display');if(!el)return;
+  if(!livePhases||livePhases.length===0){el.innerHTML='';return;}
+  const anyActive=livePhases.some(p=>p.active);
+  el.innerHTML=livePhases.map(p=>{
+    const missing=anyActive&&!p.active;
+    return `<div class="phase-box ${p.active?'active':''}" style="${missing?'border-color:#ff4444;background:rgba(255,68,68,.08)':''}">
+      <div class="phase-label" style="color:${missing?'#ff4444':''}">L${p.phase}${missing?' ⚠':''}</div>
+      <div class="phase-kw" style="color:${missing?'#ff4444':'var(--accent)'}">${(p.power/1000).toFixed(2)}<span style="font-size:9px;font-weight:400"> kW</span></div>
+      <div class="phase-a">${p.current.toFixed(1)}A</div>
+      <div class="phase-v">${p.voltage.toFixed(0)}V</div>
+    </div>`;
+  }).join('');
+  const missing=livePhases.filter(p=>anyActive&&!p.active);
+  if(missing.length)setStatus('shelly','warn','L'+missing.map(p=>p.phase).join(',')+' fehlt');
+  const tkEl=document.getElementById('shelly-total-kwh');
+  if(tkEl&&liveTotalKwh>0){tkEl.textContent=liveTotalKwh.toFixed(2)+' kWh';}
+  const lu=document.getElementById('shelly-last-update');
+  if(lu)lu.textContent='Stand '+new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+}
+function tryAutoLogin(){
+  const saved=localStorage.getItem('cg_last_user');if(!saved)return;
+  const u=users.find(x=>x.id===parseInt(saved));if(!u)return;
+  const b=document.getElementById('status-banner');
+  if(b){b.textContent='👋 '+u.emoji+' '+u.name.split(' ')[0];b.className='sb-online';
+    b.style.maxHeight='30px';b.style.padding='3px 12px';b.style.opacity='1';
+    setTimeout(()=>{b.style.opacity='0';b.style.maxHeight='0';b.style.padding='0';},3000);}
 }
 
 // ═══════════════════════════════════════════
@@ -1258,9 +1316,12 @@ async function pollShelly(){
   const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
   try{
     // Flask API gibt Gesamtwerte + alle 3 Phasen
-    const apiR = await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
-    const d = await apiR.json();
-    if(d.demo) { demoGauges(); return; }
+    setStatus('pi','ok','Online');
+    const apiR=await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
+    const d=await apiR.json();
+    if(d.demo){setStatus('shelly','err','Stromlos?');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();return;}
+    setStatus('shelly',d.phases&&d.phases.some(p=>p.active)?'ok':'warn',d.power_kw?d.power_kw.toFixed(2)+'kW':'0W');
+    const stxt=document.getElementById('shelly-status-txt');if(stxt)stxt.textContent='Shelly 3EM · '+new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
 
     // Phasen aus Flask
     if(d.phases && d.phases.length > 0) {
@@ -1300,7 +1361,12 @@ async function pollShelly(){
     const tariffEl = document.getElementById('v-tariff');
     if(tariffEl) tariffEl.textContent=tariffNow.toFixed(2)+' CHF/kWh';
     renderDashboard();
-  }catch(e){ demoGauges(); }
+  }catch(e){
+    setStatus('pi','err','Offline');
+    if(supaOnline){const kwh=await getSupaTotalKwh();if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh';setStatus('shelly','warn','DB-Wert');}}
+    demoGauges();
+  }
+  checkUnknownCharging();
 }
 
 function updatePhasesUI() {
@@ -1685,6 +1751,8 @@ document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kW
 
 detectConnectivity();
 pollShelly();
+setTimeout(tryAutoLogin,1500);
+const _rm=ST[cs-1]?ST[cs-1].ipMini:'';setStatus('relay',_rm?'ok':'warn',_rm||'Nicht konfiguriert');
 setInterval(pollShelly,5000);
 setInterval(detectConnectivity,30000);
 setTimeout(checkPushHint,3000);
