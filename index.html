@@ -201,6 +201,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .bilanz-ok{background:rgba(0,212,100,0.08);border:1px solid rgba(0,212,100,0.3);border-radius:12px;padding:10px 16px;margin:10px 0}
 .bilanz-ok-title{font-size:11px;color:#00d464;display:flex;align-items:center;gap:6px}
 /* Nachtrag Modal */
+.adm-st-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;transition:.2s}
+.adm-st-btn.active{background:var(--accent)1a;border-color:var(--accent);color:var(--accent)}
+.theme-btn{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:10px 8px;color:var(--text);font-size:11px;cursor:pointer;text-align:center;transition:.2s}
+.theme-btn.active{border-color:var(--accent);background:var(--accent)1a}
+.adm-sess-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.adm-sess-row:hover{background:var(--surface2);border-radius:6px;padding-left:6px}
+.adm-user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.adm-user-row:hover{background:var(--surface2);border-radius:6px;padding-left:6px}
 @media print{#tab-bar,.btn-stop,.btn-p,.btn-s,.btn-exp,#status-banner{display:none!important}body{background:#fff!important;color:#000!important}}
 .sess-group-hd{font-size:10px;color:var(--text-dim);letter-spacing:.1em;padding:10px 0 4px;text-transform:uppercase;font-weight:700}
 .sess-row-unknown{background:rgba(255,68,68,.05);border:1px solid rgba(255,68,68,.2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
@@ -441,6 +449,210 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
 </div>
 
+
+<!-- ADMIN PANEL -->
+<div id="tab-admin" class="tab-content">
+  <div class="section-hd">⚙ Admin-Panel</div>
+  <div class="section-sub">Nur für Administratoren</div>
+
+  <!-- Admin Lock -->
+  <div id="admin-lock" style="text-align:center;padding:40px 20px">
+    <div style="font-size:48px;margin-bottom:16px">🔐</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px">Admin-Zugang</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:20px">PIN eingeben (Robert oder Cintia)</div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:16px">
+      <div class="pin-dot" id="apd0"></div><div class="pin-dot" id="apd1"></div>
+      <div class="pin-dot" id="apd2"></div><div class="pin-dot" id="apd3"></div>
+    </div>
+    <div id="admin-pin-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:10px"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
+      <button class="pin-key" onclick="adminPP(1)">1</button><button class="pin-key" onclick="adminPP(2)">2</button><button class="pin-key" onclick="adminPP(3)">3</button>
+      <button class="pin-key" onclick="adminPP(4)">4</button><button class="pin-key" onclick="adminPP(5)">5</button><button class="pin-key" onclick="adminPP(6)">6</button>
+      <button class="pin-key" onclick="adminPP(7)">7</button><button class="pin-key" onclick="adminPP(8)">8</button><button class="pin-key" onclick="adminPP(9)">9</button>
+      <button class="pin-key" onclick="adminPDel()" style="font-size:16px">⌫</button>
+      <button class="pin-key" onclick="adminPP(0)">0</button>
+      <button class="pin-key" style="opacity:0"></button>
+    </div>
+  </div>
+
+  <!-- Admin Content (nach Login) -->
+  <div id="admin-content" style="display:none">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--green)">✓ Angemeldet als <span id="admin-logged-name"></span></div>
+      <button onclick="adminLogout()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text-dim);font-size:11px;cursor:pointer">Abmelden</button>
+    </div>
+
+    <!-- STATION WÄHLEN -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button id="adm-st1" onclick="setAdminStation(1)" class="adm-st-btn active">🏠 Neerach</button>
+      <button id="adm-st2" onclick="setAdminStation(2)" class="adm-st-btn">🌿 Brail</button>
+    </div>
+
+    <!-- ZÄHLER RESET -->
+    <div class="card">
+      <div class="card-title">🔄 ZÄHLER ZURÜCKSTELLEN</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Shelly Energiezähler <b>und</b> alle Sessions für diese Station zurücksetzen.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text-dim)">SHELLY ZÄHLER</div>
+          <div id="adm-shelly-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent);margin-top:2px">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text-dim)">SESSIONS TOTAL</div>
+          <div id="adm-sess-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--green);margin-top:2px">—</div>
+        </div>
+      </div>
+
+      <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
+        🔄 Shelly Zähler nullen (Station <span class="adm-st-label">Neerach</span>)
+      </button>
+      <button onclick="admResetSessions()" style="width:100%;background:rgba(255,160,0,.1);border:1px solid #ffa000;color:#ffa000;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">
+        🗑 Alle Sessions löschen (Station <span class="adm-st-label">Neerach</span>)
+      </button>
+    </div>
+
+    <!-- SESSIONS EDITIEREN -->
+    <div class="card">
+      <div class="card-title">✏ SESSIONS EDITIEREN</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Session auswählen → kWh oder Benutzer korrigieren</div>
+      <div id="adm-sess-list" style="max-height:300px;overflow-y:auto"></div>
+    </div>
+
+    <!-- BENUTZER VERWALTEN -->
+    <div class="card">
+      <div class="card-title">👥 BENUTZER VERWALTEN</div>
+      <div id="adm-users-list"></div>
+      <button onclick="admAddUser()" style="width:100%;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">+ Benutzer hinzufügen</button>
+    </div>
+
+    <!-- DESIGN ANPASSEN -->
+    <div class="card">
+      <div class="card-title">🎨 DESIGN ANPASSEN</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Theme pro Station wählen</div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:6px;letter-spacing:.06em">NEERACH</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <button onclick="setTheme(1,'cyan')" class="theme-btn" id="th1-cyan" style="--tc:#00d4ff">
+          <div style="width:24px;height:24px;border-radius:50%;background:#00d4ff;margin:0 auto 4px"></div>Cyan (Standard)
+        </button>
+        <button onclick="setTheme(1,'green')" class="theme-btn" id="th1-green" style="--tc:#00e676">
+          <div style="width:24px;height:24px;border-radius:50%;background:#00e676;margin:0 auto 4px"></div>Grün
+        </button>
+        <button onclick="setTheme(1,'orange')" class="theme-btn" id="th1-orange" style="--tc:#ff7c2a">
+          <div style="width:24px;height:24px;border-radius:50%;background:#ff7c2a;margin:0 auto 4px"></div>Orange
+        </button>
+        <button onclick="setTheme(1,'purple')" class="theme-btn" id="th1-purple" style="--tc:#b388ff">
+          <div style="width:24px;height:24px;border-radius:50%;background:#b388ff;margin:0 auto 4px"></div>Violett
+        </button>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:6px;letter-spacing:.06em">BRAIL</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="setTheme(2,'cyan')" class="theme-btn" id="th2-cyan">
+          <div style="width:24px;height:24px;border-radius:50%;background:#00d4ff;margin:0 auto 4px"></div>Cyan
+        </button>
+        <button onclick="setTheme(2,'green')" class="theme-btn" id="th2-green">
+          <div style="width:24px;height:24px;border-radius:50%;background:#00e676;margin:0 auto 4px"></div>Grün
+        </button>
+        <button onclick="setTheme(2,'orange')" class="theme-btn" id="th2-orange" style="border-color:#ff7c2a">
+          <div style="width:24px;height:24px;border-radius:50%;background:#ff7c2a;margin:0 auto 4px"></div>Orange (Standard)
+        </button>
+        <button onclick="setTheme(2,'purple')" class="theme-btn" id="th2-purple">
+          <div style="width:24px;height:24px;border-radius:50%;background:#b388ff;margin:0 auto 4px"></div>Violett
+        </button>
+      </div>
+    </div>
+
+    <!-- IP / TARIF PRO STATION -->
+    <div class="card">
+      <div class="card-title">⚙ STATION KONFIGURATION</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">STATION</div>
+          <div id="adm-cfg-name" style="font-weight:700">Neerach</div>
+        </div>
+      </div>
+      <div class="s-label">Shelly 3EM IP</div>
+      <input class="s-input" id="adm-ip3em">
+      <div class="s-label mt8">Shelly 1 Mini IP</div>
+      <input class="s-input" id="adm-ipMini">
+      <div class="s-label mt8">Tarif (CHF/kWh)</div>
+      <input class="s-input" id="adm-tariff" type="number" step="0.01">
+      <div class="s-label mt8">Stationsname</div>
+      <input class="s-input" id="adm-stname">
+      <button onclick="admSaveCfg()" style="width:100%;margin-top:10px;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Speichern</button>
+    </div>
+
+  </div><!-- /admin-content -->
+</div><!-- /tab-admin -->
+
+<!-- SESSION EDIT MODAL -->
+<div id="sess-edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:380px">
+    <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px">✏ Session editieren</div>
+    <input type="hidden" id="edit-sess-id">
+    <div class="s-label">Benutzer</div>
+    <select id="edit-sess-user" class="s-input" style="width:100%;margin-bottom:10px"></select>
+    <div class="s-label">kWh</div>
+    <input type="number" id="edit-sess-kwh" class="s-input" step="0.01" style="width:100%;margin-bottom:10px">
+    <div class="s-label">Start (ISO)</div>
+    <input type="datetime-local" id="edit-sess-start" class="s-input" style="width:100%;margin-bottom:10px">
+    <div class="s-label">Ende (ISO)</div>
+    <input type="datetime-local" id="edit-sess-end" class="s-input" style="width:100%;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <button onclick="admSessSave()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">💾 Speichern</button>
+      <button onclick="admSessDelete()" style="background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑 Löschen</button>
+      <button onclick="closeSessEdit()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:12px;cursor:pointer">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER EDIT MODAL -->
+<div id="user-edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:380px">
+    <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px" id="user-edit-title">Benutzer editieren</div>
+    <input type="hidden" id="edit-user-id">
+    <div class="s-label">Name</div>
+    <input type="text" id="edit-user-name" class="s-input" style="width:100%;margin-bottom:8px">
+    <div class="s-label">Emoji</div>
+    <input type="text" id="edit-user-emoji" class="s-input" style="width:100%;margin-bottom:8px" maxlength="2">
+    <div class="s-label">PIN (4 Ziffern)</div>
+    <input type="text" id="edit-user-pin" class="s-input" style="width:100%;margin-bottom:8px" maxlength="4" pattern="[0-9]{4}">
+    <div class="s-label">Rolle</div>
+    <select id="edit-user-role" class="s-input" style="width:100%;margin-bottom:8px">
+      <option value="user">Benutzer</option>
+      <option value="admin">Admin</option>
+    </select>
+    <div class="s-label">Stationen</div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+        <input type="checkbox" id="edit-user-st1" value="1"> Neerach
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px">
+        <input type="checkbox" id="edit-user-st2" value="2"> Brail
+      </label>
+    </div>
+    <div class="s-label">Farbe</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="color-picker">
+      <div onclick="selColor('#00d4ff')" style="width:28px;height:28px;border-radius:50%;background:#00d4ff;cursor:pointer;border:2px solid transparent" data-col="#00d4ff"></div>
+      <div onclick="selColor('#00e676')" style="width:28px;height:28px;border-radius:50%;background:#00e676;cursor:pointer;border:2px solid transparent" data-col="#00e676"></div>
+      <div onclick="selColor('#ff7c2a')" style="width:28px;height:28px;border-radius:50%;background:#ff7c2a;cursor:pointer;border:2px solid transparent" data-col="#ff7c2a"></div>
+      <div onclick="selColor('#ff4444')" style="width:28px;height:28px;border-radius:50%;background:#ff4444;cursor:pointer;border:2px solid transparent" data-col="#ff4444"></div>
+      <div onclick="selColor('#ffd740')" style="width:28px;height:28px;border-radius:50%;background:#ffd740;cursor:pointer;border:2px solid transparent" data-col="#ffd740"></div>
+      <div onclick="selColor('#b388ff')" style="width:28px;height:28px;border-radius:50%;background:#b388ff;cursor:pointer;border:2px solid transparent" data-col="#b388ff"></div>
+      <div onclick="selColor('#f06292')" style="width:28px;height:28px;border-radius:50%;background:#f06292;cursor:pointer;border:2px solid transparent" data-col="#f06292"></div>
+      <input type="color" id="edit-user-color-custom" style="width:28px;height:28px;border:none;background:none;cursor:pointer;padding:0" onchange="selColor(this.value)">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <button onclick="admUserSave()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">💾 Speichern</button>
+      <button onclick="admUserDelete()" id="btn-user-delete" style="background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑 Löschen</button>
+      <button onclick="closeUserEdit()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:12px;cursor:pointer">✕</button>
+    </div>
+  </div>
+</div>
+
 <!-- TAB BAR -->
 <div id="tab-bar">
   <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
@@ -457,6 +669,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </button>
   <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
     <span class="ti">⚙️</span>Konfig
+  </button>
+  <button class="tab-btn" data-tab="admin" onclick="switchTab('admin')">
+    <span class="ti">🔐</span>Admin
   </button>
 </div>
 
@@ -1453,6 +1668,318 @@ pollShelly();
 setInterval(pollShelly, 5000);
 loadNachtraege();
 setInterval(()=>{if(activeSession)renderDashboard();},5000);
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN PANEL
+// ═══════════════════════════════════════════════════════════════
+const THEMES = {
+  cyan:   {accent:'#00d4ff', name:'Cyan'},
+  green:  {accent:'#00e676', name:'Grün'},
+  orange: {accent:'#ff7c2a', name:'Orange'},
+  purple: {accent:'#b388ff', name:'Violett'}
+};
+let adminUser=null, adminBuf='', adminStation=1, editSessObj=null, editUserObj=null, editUserColor='#00d4ff';
+const stThemes = {1:'cyan', 2:'orange'}; // Default
+
+// ── Admin PIN ──────────────────────────────────────────────────
+function adminPP(n){
+  if(adminBuf.length>=4)return;
+  adminBuf+=n;
+  for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot'+(i<adminBuf.length?' filled':'');}
+  if(adminBuf.length===4)setTimeout(checkAdminPin,150);
+}
+function adminPDel(){adminBuf=adminBuf.slice(0,-1);for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot'+(i<adminBuf.length?' filled':'');}}
+function checkAdminPin(){
+  const u=users.find(x=>x.role==='admin'&&x.pin===adminBuf);
+  adminBuf='';for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot';}
+  if(u){
+    adminUser=u;
+    document.getElementById('admin-lock').style.display='none';
+    document.getElementById('admin-content').style.display='block';
+    document.getElementById('admin-logged-name').textContent=u.emoji+' '+u.name;
+    refreshAdminContent();
+  }else{
+    const e=document.getElementById('admin-pin-err');
+    e.textContent='❌ Falscher PIN';setTimeout(()=>{e.textContent='';},1500);
+  }
+}
+function adminLogout(){
+  adminUser=null;
+  document.getElementById('admin-lock').style.display='block';
+  document.getElementById('admin-content').style.display='none';
+}
+
+// ── Admin Station switch ───────────────────────────────────────
+function setAdminStation(sid){
+  adminStation=sid;
+  document.getElementById('adm-st1').className='adm-st-btn'+(sid===1?' active':'');
+  document.getElementById('adm-st2').className='adm-st-btn'+(sid===2?' active':'');
+  document.querySelectorAll('.adm-st-label').forEach(el=>el.textContent=ST[sid-1].loc);
+  refreshAdminContent();
+}
+
+function refreshAdminContent(){
+  updateAdminCounters();
+  renderAdmSessions();
+  renderAdmUsers();
+  updateAdminCfg();
+  updateThemeButtons();
+}
+
+function updateAdminCounters(){
+  const allSess=sessions.filter(s=>s.stationId===adminStation);
+  const totKwh=allSess.reduce((a,s)=>a+s.kwh,0);
+  const sEl=document.getElementById('adm-shelly-kwh');
+  const ssEl=document.getElementById('adm-sess-kwh');
+  if(adminStation===1&&liveTotalKwh>0){if(sEl)sEl.textContent=liveTotalKwh.toFixed(2)+' kWh';}
+  else{if(sEl)sEl.textContent='(kein Shelly)';}
+  if(ssEl)ssEl.textContent=totKwh.toFixed(2)+' kWh';
+}
+
+// ── Shelly Reset ───────────────────────────────────────────────
+async function admResetShelly(){
+  if(!confirm(`⚠ Shelly Zähler für ${ST[adminStation-1].loc} wirklich auf NULL setzen?\nDieser Vorgang kann nicht rückgängig gemacht werden!`))return;
+  const piBase=cfg.tsIp||'http://192.168.3.103:5000';
+  try{
+    const r=await fetch(`${piBase}/api/shelly/reset/${adminStation}`,{method:'POST',signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d.ok){alert('✓ Shelly Zähler zurückgesetzt!');liveTotalKwh=0;updateAdminCounters();}
+    else alert('Fehler: '+(d.error||'unbekannt'));
+  }catch(e){alert('Verbindung fehlgeschlagen: '+e.message);}
+}
+
+// ── Sessions löschen ──────────────────────────────────────────
+async function admResetSessions(){
+  const cnt=sessions.filter(s=>s.stationId===adminStation).length;
+  if(!confirm(`⚠ ALLE ${cnt} Sessions für ${ST[adminStation-1].loc} löschen?\nDieser Vorgang kann nicht rückgängig gemacht werden!`))return;
+  sessions=sessions.filter(s=>s.stationId!==adminStation);
+  save();
+  if(supaOnline){
+    try{
+      await sbDelete('sessions',`station_id=eq.${adminStation}`);
+    }catch(e){console.warn('Supabase delete failed',e);}
+  }
+  updateAdminCounters();
+  renderAdmSessions();
+  alert('✓ Sessions gelöscht.');
+}
+
+// ── Sessions Liste (editierbar) ────────────────────────────────
+function renderAdmSessions(){
+  const el=document.getElementById('adm-sess-list');if(!el)return;
+  const ss=sessions.filter(s=>s.stationId===adminStation).slice(0,50);
+  if(!ss.length){el.innerHTML='<div style="color:var(--text-dim);font-size:12px;padding:10px 0">Keine Sessions</div>';return;}
+  el.innerHTML=ss.map(s=>{
+    const u=users.find(x=>x.id===s.userId);
+    const d=new Date(s.startedAt);
+    const dur=s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000)+'min':'—';
+    const nm=u?(u.emoji+' '+u.name):'❓ Unbek.';
+    return `<div class="adm-sess-row" onclick="openSessEdit(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div style="font-size:11px;color:var(--text-dim);width:80px">${d.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit'})}<br>${d.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="flex:1;font-size:12px;font-weight:700">${nm}</div>
+      <div style="font-size:11px;color:var(--text-dim)">${dur}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">${s.kwh.toFixed(2)}<span style="font-size:9px">kWh</span></div>
+      <div style="font-size:16px;color:var(--text-dim);margin-left:4px">›</div>
+    </div>`;
+  }).join('');
+}
+
+function openSessEdit(s){
+  editSessObj=s;
+  document.getElementById('edit-sess-id').value=s.id||s.startedAt;
+  document.getElementById('edit-sess-kwh').value=s.kwh;
+  // Benutzer Dropdown
+  const sel=document.getElementById('edit-sess-user');
+  sel.innerHTML=users.map(u=>`<option value="${u.id}" ${u.id===s.userId?'selected':''}>${u.emoji} ${u.name}</option>`).join('');
+  // Datum/Zeit
+  const toLocal=ts=>{const d=new Date(ts);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);};
+  document.getElementById('edit-sess-start').value=toLocal(s.startedAt);
+  document.getElementById('edit-sess-end').value=s.stoppedAt?toLocal(s.stoppedAt):'';
+  const ov=document.getElementById('sess-edit-ov');ov.style.display='flex';
+}
+function closeSessEdit(){document.getElementById('sess-edit-ov').style.display='none';editSessObj=null;}
+
+async function admSessSave(){
+  if(!editSessObj)return;
+  const uid=parseInt(document.getElementById('edit-sess-user').value);
+  const kwh=parseFloat(document.getElementById('edit-sess-kwh').value)||0;
+  const startStr=document.getElementById('edit-sess-start').value;
+  const endStr=document.getElementById('edit-sess-end').value;
+  const tariff=cfg.tariff1?parseFloat(cfg.tariff1):ST[adminStation-1].tariff;
+  const startedAt=startStr?new Date(startStr).getTime():editSessObj.startedAt;
+  const stoppedAt=endStr?new Date(endStr).getTime():editSessObj.stoppedAt;
+  const chf=parseFloat((kwh*tariff).toFixed(2));
+
+  // Update im lokalen Array
+  const idx=sessions.findIndex(s=>s.startedAt===editSessObj.startedAt);
+  if(idx>=0) sessions[idx]={...sessions[idx],userId:uid,kwh,chf,startedAt,stoppedAt};
+  save();
+
+  if(supaOnline&&editSessObj.id){
+    try{
+      await sbPatch('sessions',`id=eq.${editSessObj.id}`,
+        {user_id:uid,kwh,chf,started_at:new Date(startedAt).toISOString(),stopped_at:stoppedAt?new Date(stoppedAt).toISOString():null});
+    }catch(e){console.warn(e);}
+  }
+  closeSessEdit();renderAdmSessions();updateAdminCounters();
+  renderSessions();renderBilling();
+  alert('✓ Session gespeichert.');
+}
+
+async function admSessDelete(){
+  if(!editSessObj||!confirm('Session wirklich löschen?'))return;
+  const idx=sessions.findIndex(s=>s.startedAt===editSessObj.startedAt);
+  if(idx>=0)sessions.splice(idx,1);
+  save();
+  if(supaOnline&&editSessObj.id){
+    try{await sbDelete('sessions',`id=eq.${editSessObj.id}`);}catch(e){console.warn(e);}
+  }
+  closeSessEdit();renderAdmSessions();updateAdminCounters();
+  renderSessions();renderBilling();
+  alert('✓ Session gelöscht.');
+}
+
+// ── Benutzer ───────────────────────────────────────────────────
+function renderAdmUsers(){
+  const el=document.getElementById('adm-users-list');if(!el)return;
+  el.innerHTML=users.map(u=>`
+    <div class="adm-user-row" onclick="openUserEdit(${u.id})">
+      <div style="width:36px;height:36px;border-radius:50%;background:${u.color}22;border:1px solid ${u.color}44;display:flex;align-items:center;justify-content:center;font-size:18px">${u.emoji}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${u.name} ${u.role==='admin'?'<span style="font-size:9px;background:#ffd740;color:#000;border-radius:3px;padding:1px 4px;font-weight:700">ADMIN</span>':''}</div>
+        <div style="font-size:10px;color:var(--text-dim)">PIN: ${u.pin} · ${u.stations.map(s=>ST[s-1].loc).join(', ')}</div>
+      </div>
+      <div style="font-size:16px;color:var(--text-dim)">›</div>
+    </div>`).join('');
+}
+
+function openUserEdit(uid){
+  const u=uid?users.find(x=>x.id===uid):null;
+  editUserObj=u||null;
+  document.getElementById('user-edit-title').textContent=u?'Benutzer editieren':'Neuer Benutzer';
+  document.getElementById('edit-user-id').value=u?u.id:'';
+  document.getElementById('edit-user-name').value=u?u.name:'';
+  document.getElementById('edit-user-emoji').value=u?u.emoji:'👤';
+  document.getElementById('edit-user-pin').value=u?u.pin:'';
+  document.getElementById('edit-user-role').value=u?u.role:'user';
+  document.getElementById('edit-user-st1').checked=u?u.stations.includes(1):true;
+  document.getElementById('edit-user-st2').checked=u?u.stations.includes(2):false;
+  document.getElementById('btn-user-delete').style.display=u?'block':'none';
+  editUserColor=u?u.color:'#00d4ff';
+  selColor(editUserColor);
+  document.getElementById('user-edit-ov').style.display='flex';
+}
+function admAddUser(){openUserEdit(null);}
+function closeUserEdit(){document.getElementById('user-edit-ov').style.display='none';editUserObj=null;}
+
+function selColor(c){
+  editUserColor=c;
+  document.querySelectorAll('#color-picker [data-col]').forEach(el=>{
+    el.style.border=el.dataset.col===c?`3px solid #fff`:`2px solid transparent`;
+  });
+}
+
+async function admUserSave(){
+  const name=document.getElementById('edit-user-name').value.trim();
+  const emoji=document.getElementById('edit-user-emoji').value.trim()||'👤';
+  const pin=document.getElementById('edit-user-pin').value.trim();
+  const role=document.getElementById('edit-user-role').value;
+  const sts=[document.getElementById('edit-user-st1').checked?1:null,document.getElementById('edit-user-st2').checked?2:null].filter(Boolean);
+  if(!name||pin.length!==4){alert('Name und 4-stellige PIN erforderlich!');return;}
+  if(!sts.length){alert('Mindestens eine Station wählen!');return;}
+
+  if(editUserObj){
+    const idx=users.findIndex(u=>u.id===editUserObj.id);
+    if(idx>=0)users[idx]={...users[idx],name,emoji,pin,role,stations:sts,color:editUserColor};
+  }else{
+    const newId=Math.max(...users.map(u=>u.id),0)+1;
+    users.push({id:newId,name,emoji,pin,role,stations:sts,color:editUserColor,plate:'—'});
+  }
+  save();closeUserEdit();renderAdmUsers();renderUsers();
+  alert('✓ Benutzer gespeichert.');
+}
+
+async function admUserDelete(){
+  if(!editUserObj||!confirm(`Benutzer "${editUserObj.name}" wirklich löschen?\nAlle Sessions bleiben erhalten, werden aber als "Unbekannt" angezeigt.`))return;
+  users=users.filter(u=>u.id!==editUserObj.id);
+  save();closeUserEdit();renderAdmUsers();renderUsers();
+  alert('✓ Benutzer gelöscht.');
+}
+
+// ── Design / Theme ─────────────────────────────────────────────
+function setTheme(stid, theme){
+  stThemes[stid]=theme;
+  if(cfg.themes===undefined)cfg.themes={};
+  cfg.themes[stid]=theme;
+  localStorage.setItem('cg_cfg',JSON.stringify(cfg));
+  applyTheme();
+  updateThemeButtons();
+  alert(`✓ Theme für ${ST[stid-1].loc} auf ${THEMES[theme].name} gesetzt.\nGilt beim nächsten Stationswechsel.`);
+}
+
+function applyTheme(){
+  const theme=THEMES[stThemes[cs]||'cyan'];
+  document.documentElement.style.setProperty('--accent',theme.accent);
+  // Station color
+  ST[0].color=cfg.themes&&cfg.themes[1]?THEMES[cfg.themes[1]].accent:'#00d4ff';
+  ST[1].color=cfg.themes&&cfg.themes[2]?THEMES[cfg.themes[2]].accent:'#ff7c2a';
+}
+
+function updateThemeButtons(){
+  [1,2].forEach(sid=>{
+    ['cyan','green','orange','purple'].forEach(t=>{
+      const el=document.getElementById(`th${sid}-${t}`);
+      if(el)el.className='theme-btn'+(stThemes[sid]===t?' active':'');
+    });
+  });
+}
+
+// ── Station Config ─────────────────────────────────────────────
+function updateAdminCfg(){
+  const st=ST[adminStation-1];
+  document.getElementById('adm-cfg-name').textContent=st.loc;
+  document.getElementById('adm-ip3em').value=st.ip3em||'';
+  document.getElementById('adm-ipMini').value=st.ipMini||'';
+  document.getElementById('adm-tariff').value=(cfg[`tariff${adminStation}`]||st.tariff).toFixed(2);
+  document.getElementById('adm-stname').value=st.loc;
+}
+
+function admSaveCfg(){
+  const ip3em=document.getElementById('adm-ip3em').value.trim();
+  const ipMini=document.getElementById('adm-ipMini').value.trim();
+  const tariff=parseFloat(document.getElementById('adm-tariff').value)||0.25;
+  const stnm=document.getElementById('adm-stname').value.trim()||ST[adminStation-1].loc;
+  ST[adminStation-1].ip3em=ip3em;
+  ST[adminStation-1].ipMini=ipMini;
+  ST[adminStation-1].loc=stnm;
+  cfg[`ip3em${adminStation}`]=ip3em;
+  cfg[`ipMini${adminStation}`]=ipMini;
+  cfg[`tariff${adminStation}`]=tariff.toFixed(2);
+  cfg[`loc${adminStation}`]=stnm;
+  localStorage.setItem('cg_cfg',JSON.stringify(cfg));
+  alert('✓ Konfiguration gespeichert.');
+}
+
+// ── switchTab admin hook ───────────────────────────────────────
+const _origSwitchTab=switchTab;
+function switchTab(tab){
+  _origSwitchTab(tab);
+  if(tab==='admin'){
+    // Reset PIN screen wenn neu aufgerufen
+    if(!adminUser){
+      adminBuf='';
+      for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot';}
+    } else {
+      refreshAdminContent();
+    }
+  }
+}
+
+// Beim Start Theme anwenden
+document.addEventListener('DOMContentLoaded',()=>{
+  if(cfg.themes){Object.assign(stThemes,cfg.themes);}
+  applyTheme();
+});
 
 </script>
 </body>
