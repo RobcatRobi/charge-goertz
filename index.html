@@ -1613,10 +1613,16 @@ function selMU(id){
 function pp(n){if(pinBuf.length>=4)return;pinBuf+=n;updatePD();if(pinBuf.length===4)setTimeout(checkPin,150);}
 function pdel(){pinBuf=pinBuf.slice(0,-1);updatePD();}
 function updatePD(){for(let i=0;i<4;i++){const d=document.getElementById(`pd${i}`);if(d)d.className='pin-dot'+(i<pinBuf.length?' filled':'');}}
-function checkPin(){
+async function checkPin(){
   if(!modalUser){badPin('Bitte zuerst Benutzer wählen');return;}
-  if(pinBuf===modalUser.pin){startSession(modalUser);closeModal();}
-  else{pinBuf='';updatePD();badPin('❌ Falscher PIN');}
+  const ok = await verifyPinSupabase(modalUser.id, pinBuf);
+  if(ok){
+    // Gerät registrieren für künftigen Auto-Login
+    registerDevice(modalUser.id);
+    startSession(modalUser);closeModal();
+  } else {
+    pinBuf='';updatePD();badPin('❌ Falscher PIN');
+  }
 }
 function badPin(msg){
   const s=document.getElementById('modal-sub');
@@ -1905,7 +1911,11 @@ if(window.location.hostname.includes('trycloudflare.com') ||
   setStatus('pi','ok','Cloudflare ☁');
   pollShelly();
 } else {
-  autoDetectNetwork().then(()=>pollShelly());
+  autoDetectNetwork().then(async ()=>{
+  await loadUsersFromSupabase();
+  pollShelly();
+  setTimeout(()=>checkDeviceAutoLogin(), 2000);
+});
 }
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
@@ -2178,14 +2188,40 @@ async function admUserSave(){
     const newId=Math.max(...users.map(u=>u.id),0)+1;
     users.push({id:newId,name,emoji,pin,role,stations:sts,color:editUserColor,plate:'—'});
   }
-  save();closeUserEdit();renderAdmUsers();renderUsers();
+  save();
+  // Auch in Supabase speichern
+  try{
+    const piBase=piBaseUrl||'http://192.168.3.103:5000';
+    if(editUserObj){
+      await fetch(`${piBase}/api/users/${editUserObj.id}`,{method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,emoji,role,stations:sts,color:editUserColor,plate:'—'}),
+        signal:AbortSignal.timeout(5000)});
+    } else {
+      const r=await fetch(`${piBase}/api/users`,{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,emoji,pin,role,stations:sts,color:editUserColor}),
+        signal:AbortSignal.timeout(5000)});
+      const nu=await r.json();
+      if(nu.id){const existing=users.find(u=>u.name===name&&u.emoji===emoji);if(existing)existing.id=nu.id;}
+    }
+    // Neu laden
+    await loadUsersFromSupabase();
+  }catch(e){console.warn('Supabase user save failed:',e);}
+  closeUserEdit();renderAdmUsers();renderUsers();
   alert('✓ Benutzer gespeichert.');
 }
 
 async function admUserDelete(){
   if(!editUserObj||!confirm(`Benutzer "${editUserObj.name}" wirklich löschen?\nAlle Sessions bleiben erhalten, werden aber als "Unbekannt" angezeigt.`))return;
   users=users.filter(u=>u.id!==editUserObj.id);
-  save();closeUserEdit();renderAdmUsers();renderUsers();
+  save();
+  try{
+    const piBase=piBaseUrl||'http://192.168.3.103:5000';
+    await fetch(`${piBase}/api/users/${editUserObj.id}`,{method:'DELETE',signal:AbortSignal.timeout(5000)});
+    await loadUsersFromSupabase();
+  }catch(e){}
+  closeUserEdit();renderAdmUsers();renderUsers();
   alert('✓ Benutzer gelöscht.');
 }
 
@@ -2333,3 +2369,68 @@ if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catc
 
 </body>
 </html>
+// ═══ BENUTZER AUS SUPABASE + DEVICE AUTO-LOGIN ═══
+let deviceId = localStorage.getItem('cg_device_id');
+if(!deviceId){
+  deviceId = 'dev_' + Math.random().toString(36).substr(2,9) + '_' + Date.now();
+  localStorage.setItem('cg_device_id', deviceId);
+}
+
+async function loadUsersFromSupabase(){
+  try{
+    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
+    const r = await fetch(`${piBase}/api/users`, {signal:AbortSignal.timeout(5000)});
+    const supa_users = await r.json();
+    if(supa_users && supa_users.length > 0){
+      users = supa_users.map(u => ({
+        id: u.id, name: u.name, emoji: u.emoji||'👤', pin: '',
+        role: u.role||'user', stations: Array.isArray(u.stations)?u.stations:[1],
+        color: u.color||'#00d4ff', plate: u.plate||'—'
+      }));
+      save();
+      console.log('✓ Benutzer aus Supabase:', users.length);
+    }
+  }catch(e){ console.warn('Users load failed:', e.message); }
+}
+
+async function checkDeviceAutoLogin(){
+  try{
+    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
+    const r = await fetch(`${piBase}/api/device/${deviceId}`, {signal:AbortSignal.timeout(3000)});
+    const d = await r.json();
+    if(d.user){
+      const u = users.find(x=>x.id===d.user.id) || d.user;
+      const b = document.getElementById('status-banner');
+      if(b){ b.textContent=`👋 ${u.emoji} ${u.name.split(' ')[0]}`;
+        b.className='sb-online';b.style.maxHeight='30px';b.style.padding='3px 12px';b.style.opacity='1';
+        setTimeout(()=>{b.style.opacity='0';b.style.maxHeight='0';b.style.padding='0';},4000); }
+      localStorage.setItem('cg_last_user', u.id);
+      return u;
+    }
+  }catch(e){}
+  return null;
+}
+
+async function registerDevice(userId){
+  try{
+    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
+    const dn = /iPhone/.test(navigator.userAgent)?'iPhone':/Android/.test(navigator.userAgent)?'Android':/iPad/.test(navigator.userAgent)?'iPad':'Browser';
+    await fetch(`${piBase}/api/device/register`,{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({device_id:deviceId,user_id:userId,device_name:dn}),
+      signal:AbortSignal.timeout(3000)});
+  }catch(e){}
+}
+
+async function verifyPinSupabase(userId, pin){
+  try{
+    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
+    const r = await fetch(`${piBase}/api/users/verify`,{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:userId,pin:pin}),signal:AbortSignal.timeout(3000)});
+    return (await r.json()).ok;
+  }catch(e){
+    const u=users.find(x=>x.id===userId);return u&&u.pin===pin;
+  }
+}
+
