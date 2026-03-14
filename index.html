@@ -1327,6 +1327,11 @@ async function pollShelly(){
         active: p.active
       }));
       liveTotalKwh = d.total_kwh || 0;
+    // Offset (Nullpunkt) anwenden
+    const _offset = parseFloat(cfg['shellyOffset_'+cs]||0);
+    if(_offset > 0 && liveTotalKwh >= _offset) {
+      liveTotalKwh = parseFloat((liveTotalKwh - _offset).toFixed(3));
+    }
     }
 
     updateGauges(d.power_kw, d.voltage_v, d.current_a);
@@ -1852,20 +1857,39 @@ function updateAdminCounters(){
 
 // ── Shelly Reset ───────────────────────────────────────────────
 async function admResetShelly(){
-  if(!confirm(`⚠ Shelly Zähler für ${ST[adminStation-1].loc} wirklich auf NULL setzen?\nDieser Vorgang kann nicht rückgängig gemacht werden!`))return;
-  const piBase=cfg.tsIp||'http://192.168.3.103:5000';
-  try{
-    const r=await fetch(`${piBase}/api/shelly/reset/${adminStation}`,{method:'POST',signal:AbortSignal.timeout(5000)});
-    const d=await r.json();
-    if(d.ok){
-      const msg='✓ '+d.message+'\n\nAlle 3 Phasen zurückgesetzt: '+(d.phases_reset||[]).map((p,i)=>p?'L'+(i+1)+'✓':'L'+(i+1)+'✗').join(' ');
-      alert(msg);
-      liveTotalKwh=0;
-      const el=document.getElementById('shelly-total-kwh');
-      if(el)el.textContent='0.00 kWh';
-      updateAdminCounters();
-    } else alert('Fehler: '+(d.error||d.message||'unbekannt'));
-  }catch(e){alert('Verbindung fehlgeschlagen: '+e.message);}
+  // Erkläre was passiert
+  const curKwh = liveTotalKwh;
+  if(!confirm(
+    `Shelly Gesamtzähler für ${ST[adminStation-1].loc} zurücksetzen?\n\n` +
+    `Aktueller Stand: ${curKwh.toFixed(2)} kWh\n` +
+    `Nach Reset: Anzeige startet bei 0.00 kWh\n\n` +
+    `⚠ Hinweis: Da gerade geladen wird, zählt der Shelly intern weiter.\n` +
+    `Wir setzen einen Nullpunkt — die Anzeige beginnt bei 0.`
+  )) return;
+  
+  // Offset in cfg speichern (Nullpunkt)
+  const key = 'shellyOffset_' + adminStation;
+  cfg[key] = curKwh;
+  localStorage.setItem('cg_cfg', JSON.stringify(cfg));
+  
+  // Auch in Supabase loggen
+  try {
+    await sbPost('energy_log', {
+      station_id: adminStation,
+      ts: Date.now(),
+      power_w: 0,
+      total_kwh: curKwh,
+      note: 'RESET (Nullpunkt gesetzt)'
+    });
+  } catch(e) {}
+  
+  // Anzeige zurücksetzen
+  liveTotalKwh = 0;
+  const el = document.getElementById('shelly-total-kwh');
+  if(el) el.textContent = '0.00 kWh';
+  updateAdminCounters();
+  
+  alert(`✓ Nullpunkt gesetzt!\nAnzeige startet bei 0.00 kWh.\nShelly zählt intern ab ${curKwh.toFixed(2)} kWh weiter.`);
 }
 
 // ── Sessions löschen ──────────────────────────────────────────
