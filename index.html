@@ -276,6 +276,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
     <div id="status-help" style="display:none;margin-top:8px;padding:8px;background:rgba(255,160,0,.08);border-radius:8px;font-size:11px;color:#ffa000;line-height:1.6"></div>
   </div>
+    <div id="net-mode-banner" style="display:none"></div>
+    <div id="net-help-box" style="display:none;padding:10px;background:rgba(255,160,0,.08);border:1px solid #ffa00044;border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:8px"></div>
   <div class="card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
@@ -573,6 +575,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <button onclick="admSaveCfg()" style="width:100%;margin-top:10px;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">&#128190; Speichern</button>
     </div>
 
+
+    <div class="card">
+      <div class="card-title">🔒 TAILSCALE — FERNZUGRIFF</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.6">Für Fernzugriff von überall — Pi wird deine private Cloud:</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;font-size:10px;font-family:'Space Mono',monospace;color:var(--accent);line-height:1.8">
+        curl -fsSL https://tailscale.com/install.sh | sh<br>sudo tailscale up<br>tailscale ip -4
+      </div>
+      <div class="s-label">Tailscale-IP eingeben:</div>
+      <input class="s-input" id="ts-ip-admin" placeholder="100.x.x.x:5000" style="width:100%;margin-bottom:8px">
+      <button onclick="saveTailscaleIP()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Speichern &amp; Testen</button>
+      <div id="ts-test-result" style="margin-top:8px;font-size:11px;text-align:center"></div>
+    </div>
     <div class="card">
       <div class="card-title">&#9881; EINSTELLUNGEN</div>
       <button onclick="switchTab('settings')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Erweiterte Einstellungen öffnen</button>
@@ -1291,78 +1305,128 @@ function updateRelayUI(){
 // ═══════════════════════════════════════════
 // SHELLY POLLING
 // ═══════════════════════════════════════════
-async function pollShelly(){
-  const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
+
+// ═══ AUTO NETZWERK ═══
+let netMode='detecting', piBaseUrl='http://192.168.3.103:5000';
+
+async function autoDetectNetwork(){
+  showNetBanner('detecting');
+  // 1. Heimnetz
   try{
-    // Flask API gibt Gesamtwerte + alle 3 Phasen
+    const r=await fetch('http://192.168.3.103:5000/api/status',{signal:AbortSignal.timeout(2000)});
+    if((await r.json()).status==='ok'){
+      netMode='local';piBaseUrl='http://192.168.3.103:5000';
+      cfg.tsIp=piBaseUrl;showNetBanner('local');setStatus('pi','ok','Heimnetz');return;
+    }
+  }catch(e){}
+  // 2. Tailscale
+  const tsUrl=cfg.tsIp&&cfg.tsIp!=='http://192.168.3.103:5000'?cfg.tsIp:null;
+  if(tsUrl){
+    try{
+      const r=await fetch(`${tsUrl}/api/status`,{signal:AbortSignal.timeout(3000)});
+      if((await r.json()).status==='ok'){
+        netMode='tailscale';piBaseUrl=tsUrl;showNetBanner('tailscale');setStatus('pi','ok','Tailscale');return;
+      }
+    }catch(e){}
+  }
+  // 3. Cloud only
+  if(supaOnline){
+    netMode='cloud';piBaseUrl=null;showNetBanner('cloud');setStatus('pi','warn','Nur Cloud');
+    const kwh=await getSupaTotalKwh();
+    if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
+    return;
+  }
+  // 4. Offline
+  netMode='offline';piBaseUrl=null;showNetBanner('offline');setStatus('pi','err','Offline');
+}
+
+function showNetBanner(mode){
+  const b=document.getElementById('net-mode-banner');
+  const h=document.getElementById('net-help-box');
+  if(!b)return;
+  const M={
+    detecting:{t:'🔍 Netzwerk erkennen...',bg:'rgba(255,160,0,.12)',c:'#ffa000'},
+    local:    {t:'🏠 Heimnetz',bg:'rgba(0,230,118,.08)',c:'#00e676'},
+    tailscale:{t:'🔒 Tailscale VPN',bg:'rgba(0,212,255,.08)',c:'#00d4ff'},
+    cloud:    {t:'☁ Cloud-Modus — Pi offline',bg:'rgba(255,160,0,.1)',c:'#ffa000'},
+    offline:  {t:'❌ Offline',bg:'rgba(255,68,68,.1)',c:'#ff4444'},
+  };
+  const m=M[mode]||M.offline;
+  b.textContent=m.t;b.style.cssText=`display:block;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:8px;text-align:center;background:${m.bg};color:${m.c}`;
+  if(!h)return;
+  if(mode==='cloud'||mode==='offline'){
+    h.style.display='block';
+    h.innerHTML=mode==='cloud'
+      ?'<b>Pi nicht erreichbar</b> — Was tun?<br>'+
+       '① Im Heimnetz? → Neu laden<br>'+
+       '② Unterwegs? → Tailscale auf Pi installieren:<br>'+
+       '<code style="background:rgba(0,0,0,.3);padding:2px 5px;border-radius:4px;display:block;margin:4px 0;font-size:10px">curl -fsSL https://tailscale.com/install.sh | sh</code>'+
+       '<code style="background:rgba(0,0,0,.3);padding:2px 5px;border-radius:4px;display:block;margin-bottom:4px;font-size:10px">sudo tailscale up</code>'+
+       '③ Tailscale-IP unter Admin → Konfig eingeben'
+      :'<b>Keine Verbindung</b> — Zuletzt gespeicherte Daten.';
+  }else{h.style.display='none';}
+}
+
+function saveTailscaleIP(){
+  const inp=document.getElementById('ts-ip-admin');
+  const res=document.getElementById('ts-test-result');
+  let ip=inp?inp.value.trim():'';
+  if(!ip){if(res){res.textContent='❌ IP eingeben';res.style.color='#ff4444';}return;}
+  if(!ip.startsWith('http'))ip='http://'+ip;
+  if(res){res.textContent='🔍 Teste...';res.style.color='#ffa000';}
+  fetch(ip+'/api/status',{signal:AbortSignal.timeout(4000)})
+    .then(r=>r.json()).then(d=>{
+      if(d.status==='ok'){
+        cfg.tsIp=ip;localStorage.setItem('cg_cfg',JSON.stringify(cfg));
+        piBaseUrl=ip;netMode='tailscale';showNetBanner('tailscale');
+        if(res){res.textContent='✓ Verbunden!';res.style.color='#00e676';}
+      }else{if(res){res.textContent='❌ Keine Antwort';res.style.color='#ff4444';}}
+    }).catch(()=>{if(res){res.textContent='❌ Nicht erreichbar — Tailscale installiert?';res.style.color='#ff4444';}});
+}
+
+async function pollShelly(){
+  if(!piBaseUrl){
+    const kwh=await getSupaTotalKwh();
+    if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
+    demoGauges();checkUnknownCharging();return;
+  }
+  try{
     setStatus('pi','ok','Online');
-    const apiR=await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
+    const apiR=await fetch(`${piBaseUrl}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
     const d=await apiR.json();
-    if(d.demo){
-      setStatus('shelly','err','Nicht erreichbar');
-      const st=document.getElementById('shelly-status-txt');
-      if(st)st.textContent='Pi kann Shelly nicht erreichen';
-      demoGauges();return;
+    if(d.demo){setStatus('shelly','err','Nicht erreichbar');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();checkUnknownCharging();return;}
+    const isC=d.power_kw>0.5;
+    if(isC)setStatus('shelly','ok',d.power_kw.toFixed(2)+' kW');
+    else setStatus('shelly','ok',d.power_kw>0.05?'Standby':'Online · 0W');
+    const stxt=document.getElementById('shelly-status-txt');
+    if(stxt)stxt.textContent='Shelly 3EM · '+new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+    if(d.phases&&d.phases.length>0){
+      livePhases=d.phases.map(p=>({phase:p.phase,power:p.power_w,voltage:p.voltage_v,current:p.current_a,active:p.active}));
+      liveTotalKwh=d.total_kwh||0;
+      const _off=parseFloat(cfg['shellyOffset_'+cs]||0);
+      if(_off>0&&liveTotalKwh>=_off)liveTotalKwh=parseFloat((liveTotalKwh-_off).toFixed(3));
     }
-    // Shelly erreichbar — unterscheide Laden vs Standby vs Ladekreis aus
-    const shellyOnline = !d.demo;
-    const isCharging = d.power_kw > 0.5;
-    const hasHousePower = d.power_kw > 0.05;
-    if(isCharging){
-      setStatus('shelly','ok', d.power_kw.toFixed(2)+' kW');
-    } else if(hasHousePower){
-      setStatus('shelly','ok','Standby '+d.power_kw.toFixed(2)+'kW');
-    } else {
-      setStatus('shelly','ok','Online · 0W');
+    updateGauges(d.power_kw,d.voltage_v,d.current_a);
+    updatePhasesUI();logToSupabase();renderBilanz();
+    const cd=document.getElementById('conn-dot');if(cd)cd.style.background='var(--accent)';
+    const banner=document.getElementById('status-banner');
+    if(banner){banner.textContent=`⚡ LIVE — ${d.power_kw.toFixed(2)}kW / ${d.voltage_v.toFixed(0)}V / ${d.current_a.toFixed(1)}A`;banner.className='sb-online';banner.style.maxHeight='30px';banner.style.padding='3px 12px';banner.style.opacity='1';}
+    if(activeSession&&activeSession.stationId===cs&&d.power_w>50){
+      const elH=(Date.now()-activeSession.startedAt)/3600000;
+      activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
+      activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
     }
-    const stxt=document.getElementById('shelly-status-txt');if(stxt)stxt.textContent='Shelly 3EM · '+new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
-
-    // Phasen aus Flask
-    if(d.phases && d.phases.length > 0) {
-      livePhases = d.phases.map(p => ({
-        phase: p.phase,
-        power: p.power_w,
-        voltage: p.voltage_v,
-        current: p.current_a,
-        active: p.active
-      }));
-      liveTotalKwh = d.total_kwh || 0;
-    // Offset (Nullpunkt) anwenden
-    const _offset = parseFloat(cfg['shellyOffset_'+cs]||0);
-    if(_offset > 0 && liveTotalKwh >= _offset) {
-      liveTotalKwh = parseFloat((liveTotalKwh - _offset).toFixed(3));
-    }
-    }
-
-    updateGauges(d.power_kw, d.voltage_v, d.current_a);
-    updatePhasesUI();
-    logToSupabase();
-    renderBilanz();
-
-    document.getElementById('conn-dot').className='online';
-    const b=document.getElementById('status-banner');
-    b.style.maxHeight=''; b.style.padding='3px 12px'; b.style.opacity='1';
-    b.className='sb-online';
-    b.textContent=`⚡ LIVE — ${d.power_kw.toFixed(2)}kW / ${d.voltage_v.toFixed(0)}V / ${d.current_a.toFixed(1)}A`;
-
-    // kWh Session live berechnen
-    if(activeSession && activeSession.stationId===cs && d.power_w > 50) {
-      const elH = (Date.now()-activeSession.startedAt)/3600000;
-      activeSession.kwh = parseFloat((d.power_kw * elH).toFixed(3));
-      activeSession.chf = parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
-    }
-
-    const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString()}).reduce((a,s)=>a+s.kwh,0);
-    const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear()}).reduce((a,s)=>a+s.kwh,0);
+    const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString();}).reduce((a,s)=>a+s.kwh,0);
+    const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+s.kwh,0);
     document.getElementById('v-today').textContent=today.toFixed(1)+' kWh';
     document.getElementById('v-month').textContent=month.toFixed(0)+' kWh';
-    const tariffNow = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
-    const tariffEl = document.getElementById('v-tariff');
-    if(tariffEl) tariffEl.textContent=tariffNow.toFixed(2)+' CHF/kWh';
+    const tEl=document.getElementById('v-tariff');if(tEl)tEl.textContent=(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff).toFixed(2)+' CHF/kWh';
     renderDashboard();
   }catch(e){
     setStatus('pi','err','Offline');
-    if(supaOnline){const kwh=await getSupaTotalKwh();if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh';setStatus('shelly','warn','DB-Wert');}}
+    if(netMode==='local'||netMode==='tailscale'){netMode='detecting';setTimeout(()=>autoDetectNetwork(),1000);}
+    const kwh=await getSupaTotalKwh();
+    if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
     demoGauges();
   }
   checkUnknownCharging();
@@ -1766,8 +1830,7 @@ document.getElementById('tariff2').value=ST[1].tariff;
 if(cfg.tsIp) document.getElementById('ts-ip').value=cfg.tsIp;
 document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kWh';
 
-detectConnectivity();
-pollShelly();
+autoDetectNetwork().then(()=>pollShelly());
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
 setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert');
@@ -1783,7 +1846,7 @@ if(_rm){
     .catch(()=>{});
 }
 setInterval(pollShelly,5000);
-setInterval(detectConnectivity,30000);
+setInterval(()=>autoDetectNetwork(),30000);
 setTimeout(checkPushHint,3000);
 loadNachtraege();
 setInterval(()=>{if(activeSession)renderDashboard();},5000);
@@ -2114,14 +2177,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 // ═══ PUSH + CONNECTIVITY ═══
 let connectMode="pi";
-async function detectConnectivity(){
-  const piBase=cfg.tsIp||"http://192.168.3.103:5000";
-  try{
-    const r=await fetch(`${piBase}/api/status`,{signal:AbortSignal.timeout(2000)});
-    if((await r.json()).status==="ok"){connectMode="pi";return;}
-  }catch(e){}
-  connectMode=supaOnline?"supabase":"offline";
-}
+
 async function getSupaTotalKwh(){
   try{
     const r=await sbGet("energy_log",`select=total_kwh&station_id=eq.${cs}&order=ts.desc&limit=1`);
