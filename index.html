@@ -1077,28 +1077,42 @@ function renderBilanz(){
   if(bt&&bt.classList.contains('active'))renderBilling();
 }
 
-function openNachtrag() {
-  const b = calcBilanz();
-  const modal = document.getElementById('nachtrag-ov');
-  modal.style.display = 'flex';
-  // Benutzer-Optionen
-  const us = users.filter(u => u.stations.includes(cs));
-  document.getElementById('nachtrag-user').innerHTML =
-    `<option value="">— Benutzer wählen —</option>` +
-    us.map(u => `<option value="${u.id}">${u.emoji} ${u.name}</option>`).join('');
-  // Standard: Differenz vorausfüllen
-  document.getElementById('nachtrag-kwh').value = Math.max(0, b.diff).toFixed(1);
-  // Datum: heute
-  document.getElementById('nachtrag-date').value = new Date().toISOString().slice(0,10);
-  // Auto-Erkennung anzeigen
-  const autoEl = document.getElementById('nachtrag-car-hint');
-  const car = detectCar(liveKw);
-  autoEl.textContent = car ? `🚗 Erkannt: ${car.emoji} ${car.name} (${car.owner})` : '';
-  if(car) {
-    const u = users.find(x => x.name.includes(car.owner.split(' ')[0]));
-    if(u) document.getElementById('nachtrag-user').value = u.id;
+function openNachtrag(){
+  const ov=document.getElementById('nachtrag-ov');
+  if(!ov){alert('Nachtrag Modal nicht gefunden!');return;}
+  
+  // Shelly Total anzeigen
+  const shellyEl=document.getElementById('nachtrag-shelly-total');
+  if(shellyEl)shellyEl.textContent=liveTotalKwh.toFixed(2)+' kWh';
+  
+  // Sessions Total anzeigen
+  const sessTot=sessions.filter(s=>s.stationId===cs).reduce((a,s)=>a+s.kwh,0);
+  const sessEl=document.getElementById('nachtrag-sess-total');
+  if(sessEl)sessEl.textContent=sessTot.toFixed(2)+' kWh';
+  
+  // Differenz
+  const diff=Math.max(0,liveTotalKwh-sessTot);
+  const diffEl=document.getElementById('nachtrag-diff');
+  if(diffEl){
+    diffEl.textContent=diff.toFixed(2)+' kWh';
+    diffEl.style.color=diff>0.5?'#ffa000':'var(--green)';
   }
-  renderNachtragHist();
+  const kwhEl=document.getElementById('nachtrag-kwh');
+  if(kwhEl&&diff>0.5)kwhEl.value=diff.toFixed(2);
+  
+  // User dropdown
+  const sel=document.getElementById('nachtrag-user');
+  if(sel){
+    sel.innerHTML='<option value="0">❓ Unbekannt</option>'+
+      users.filter(u=>u.stations.includes(cs))
+        .map(u=>`<option value="${u.id}">${u.emoji} ${u.name}</option>`).join('');
+  }
+  
+  // Datum heute
+  const dateEl=document.getElementById('nachtrag-date');
+  if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
+  
+  ov.style.display='flex';
 }
 
 function closeNachtrag() {
@@ -2248,12 +2262,29 @@ if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catc
 </script>
 <!-- NACHTRAG MODAL -->
 <div id="nachtrag-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
-  <div id="nachtrag-box" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
-    <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px">➕ Energienachtrag</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">Energie einem Benutzer zuordnen die ohne Session geladen wurde.</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:12px">➕ Energienachtrag</div>
+    
+    <!-- Bilanz Übersicht -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim)">SHELLY TOTAL</div>
+        <div id="nachtrag-shelly-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">—</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim)">SESSIONS</div>
+        <div id="nachtrag-sess-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--green)">—</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim)">DIFFERENZ</div>
+        <div id="nachtrag-diff" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700">—</div>
+      </div>
+    </div>
     
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BENUTZER</div>
-    <select id="nachtrag-user" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box"></select>
+    <select id="nachtrag-user" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
+      <option value="0">❓ Unbekannt</option>
+    </select>
     
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">ENERGIE (kWh)</div>
     <input type="number" id="nachtrag-kwh" step="0.01" min="0" placeholder="z.B. 12.5"
@@ -2263,8 +2294,8 @@ if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catc
     <input type="date" id="nachtrag-date"
       style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
     
-    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BEMERKUNG (optional)</div>
-    <input type="text" id="nachtrag-note" placeholder="z.B. Laden ohne Login"
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BEMERKUNG</div>
+    <input type="text" id="nachtrag-note" placeholder="z.B. Laden ohne Login, Brail manuell"
       style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box">
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
