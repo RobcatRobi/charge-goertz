@@ -1260,7 +1260,7 @@ function updateStatusHelp(){
   const h=document.getElementById('status-help');if(!h)return;
   const msgs=[];
   if(statusState.pi==='err')msgs.push('❌ Pi nicht erreichbar — WLAN/Tailscale prüfen');
-  if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM offline — Sicherungsautomat aus?');
+  if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM nicht erreichbar — Pi kann Shelly nicht pingen. IP prüfen: 192.168.3.223');
   if(statusState.shelly==='warn')msgs.push('⚠ Shelly 3EM: Phase fehlt oder schwach');
   if(statusState.db==='err')msgs.push('❌ Supabase offline — Internet prüfen');
   if(statusState.relay==='warn')msgs.push('⚠ Shelly Mini: IP nicht konfiguriert');
@@ -1319,8 +1319,23 @@ async function pollShelly(){
     setStatus('pi','ok','Online');
     const apiR=await fetch(`${piBase}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
     const d=await apiR.json();
-    if(d.demo){setStatus('shelly','err','Stromlos?');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();return;}
-    setStatus('shelly',d.phases&&d.phases.some(p=>p.active)?'ok':'warn',d.power_kw?d.power_kw.toFixed(2)+'kW':'0W');
+    if(d.demo){
+      setStatus('shelly','err','Nicht erreichbar');
+      const st=document.getElementById('shelly-status-txt');
+      if(st)st.textContent='Pi kann Shelly nicht erreichen';
+      demoGauges();return;
+    }
+    // Shelly erreichbar — unterscheide Laden vs Standby vs Ladekreis aus
+    const shellyOnline = !d.demo;
+    const isCharging = d.power_kw > 0.5;
+    const hasHousePower = d.power_kw > 0.05;
+    if(isCharging){
+      setStatus('shelly','ok', d.power_kw.toFixed(2)+' kW');
+    } else if(hasHousePower){
+      setStatus('shelly','ok','Standby '+d.power_kw.toFixed(2)+'kW');
+    } else {
+      setStatus('shelly','ok','Online · 0W');
+    }
     const stxt=document.getElementById('shelly-status-txt');if(stxt)stxt.textContent='Shelly 3EM · '+new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
 
     // Phasen aus Flask
@@ -1408,6 +1423,12 @@ function updatePhasesUI() {
 }
 
 function demoGauges(){
+  // Simulation Banner anzeigen wenn Pi offline
+  const lb=document.getElementById('live-badge');
+  if(lb){lb.textContent='⚠ SIMULATION';lb.style.cssText='font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,160,0,.15);color:#ffa000;border:1px solid #ffa000';}
+  // Shelly-Status-Text
+  const stxt=document.getElementById('shelly-status-txt');
+  if(stxt&&statusState.pi==='err')stxt.textContent='Pi offline — Simulation aktiv';
   const t=Date.now()/1000;
   const pw=activeSession&&activeSession.stationId===cs?7.2+Math.sin(t*.3)*.8:.1+Math.random()*.05;
   const vt=229+Math.sin(t*.7)*2;
@@ -1752,7 +1773,13 @@ document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kW
 detectConnectivity();
 pollShelly();
 setTimeout(tryAutoLogin,1500);
-const _rm=ST[cs-1]?ST[cs-1].ipMini:'';setStatus('relay',_rm?'ok':'warn',_rm||'Nicht konfiguriert');
+const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
+setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert (Brail)');
+// Relay Status live prüfen
+if(_rm){fetch('http://'+_rm+'/relay/0',{signal:AbortSignal.timeout(2000)})
+  .then(r=>r.json()).then(d=>setStatus('relay',d.ison!==undefined?'ok':'warn',d.ison?'EIN':'AUS'))
+  .catch(()=>setStatus('relay','warn','Nicht erreichbar'));
+}
 setInterval(pollShelly,5000);
 setInterval(detectConnectivity,30000);
 setTimeout(checkPushHint,3000);
