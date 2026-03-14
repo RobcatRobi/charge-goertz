@@ -37,6 +37,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 /* STATUS BANNER */
 #status-banner{padding:7px 16px;font-family:'Space Mono',monospace;font-size:10px;text-align:center;letter-spacing:.08em;transition:var(--tr)}
 .sb-demo{background:rgba(245,197,24,.08);color:var(--yellow);border-bottom:1px solid rgba(245,197,24,.2)}
+.sb-warning{background:rgba(255,68,68,.15);color:#ff4444;border-bottom:1px solid rgba(255,68,68,.4)}
 .sb-online{background:rgba(0,232,122,.08);color:var(--green);border-bottom:1px solid rgba(0,232,122,.2)}
 
 /* TABS */
@@ -167,6 +168,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 /* Supabase Status Banner */
 #status-banner{position:fixed;top:0;left:0;right:0;z-index:9999;padding:3px 12px;font-size:10px;font-family:'Space Mono',monospace;text-align:center;letter-spacing:.05em;overflow:hidden;transition:all 0.5s ease;}
+.sb-warning{background:rgba(255,68,68,.15);color:#ff4444;border-bottom:1px solid rgba(255,68,68,.4)}
 .sb-online{background:#003322;color:#00e87a;border-bottom:1px solid #00e87a44;}
 .sb-demo{background:#2a1500;color:#ff7c2a;border-bottom:1px solid #ff7c2a44;}
 
@@ -258,60 +260,61 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
+
   <div id="act-session-wrap"></div>
 
-  <div class="relay-card" id="relay-card">
-    <div>
-      <div class="relay-lbl" id="relay-lbl">🔌 Freigabe Kabel</div>
-      <div class="relay-sub" id="relay-sub">Shelly 1 Mini — 192.168.3.224</div>
-    </div>
-    <div class="kipp" id="kipp" onclick="toggleRelay()">
-      <div class="kipp-track"></div>
-      <div class="kipp-thumb"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">⚡ LIVE — <span id="gauge-st-name">Görtz Home Neerach</span></div>
-    <div class="gauges-row">
-      <div class="gauge-wrap">
-        <svg id="g-power" width="86" height="86" viewBox="0 0 86 86"></svg>
-        <div class="gauge-val" id="v-power">0.0</div>
-        <div class="gauge-unit">kW</div>
-        <div class="gauge-lbl">LEISTUNG</div>
-      </div>
-      <div class="gauge-wrap">
-        <svg id="g-volt" width="86" height="86" viewBox="0 0 86 86"></svg>
-        <div class="gauge-val" id="v-volt">230</div>
-        <div class="gauge-unit">V</div>
-        <div class="gauge-lbl">SPANNUNG</div>
-      </div>
-      <div class="gauge-wrap">
-        <svg id="g-amp" width="86" height="86" viewBox="0 0 86 86"></svg>
-        <div class="gauge-val" id="v-amp">0.0</div>
-        <div class="gauge-unit">A</div>
-        <div class="gauge-lbl">STROM</div>
+  <div class="card" style="padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.08em">⚡ LIVE — <span id="gauge-st-name">NEERACH</span></div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span>
+        <span id="live-summary" style="font-size:11px;color:var(--text-dim)">—</span>
       </div>
     </div>
-    <div class="live-row">
-      <div class="live-cell">
-        <div class="gauge-lbl">HEUTE</div>
-        <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent)" id="v-today">0.0 kWh</div>
+    <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px">
+      <div id="v-power" style="font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--accent);line-height:1">0.0</div>
+      <div style="margin-bottom:6px;color:var(--text-dim);font-size:15px">kW</div>
+      <div style="margin-left:auto;display:flex;gap:14px">
+        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">V</div><div id="v-volt" style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700">230</div></div>
+        <div style="text-align:right"><div style="font-size:9px;color:var(--text-dim)">A</div><div id="v-amp" style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700">0.0</div></div>
       </div>
-      <div class="live-cell">
-        <div class="gauge-lbl">MONAT</div>
-        <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700" id="v-month">0.0 kWh</div>
+    </div>
+    <div id="phases-display" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border-radius:8px;margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text-dim);letter-spacing:.06em">GESAMTZÄHLER</div>
+      <div id="shelly-total-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)">— kWh</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:8px 4px">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">HEUTE</div>
+        <div id="v-today" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">0.0 kWh</div>
       </div>
-      <div class="live-cell">
-        <div class="gauge-lbl">TARIF</div>
-        <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--yellow)" id="v-tariff">0.30 CHF/kWh</div>
+      <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:8px 4px">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">MONAT</div>
+        <div id="v-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700">0 kWh</div>
+      </div>
+      <div style="text-align:center;background:var(--surface2);border-radius:8px;padding:8px 4px">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">TARIF</div>
+        <div id="v-tariff" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--yellow)">0.25</div>
       </div>
     </div>
   </div>
 
-  <div id="start-wrap">
-    <button class="btn-p" style="width:100%;padding:15px;font-size:15px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
+  <div class="relay-card" id="relay-card" style="margin-top:10px">
+    <div><div class="relay-lbl" id="relay-lbl">🔌 Kabelfreigabe</div>
+    <div class="relay-sub" id="relay-sub">Shelly 1 Mini — 192.168.3.224</div></div>
+    <div class="kipp" id="kipp" onclick="toggleRelay()"><div class="kipp-track"></div><div class="kipp-thumb"></div></div>
   </div>
+
+  <div id="start-wrap" style="margin-top:10px">
+    <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
+  </div>
+
+  <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
+    🔔 Push aktivieren — Alarm bei unbekanntem Laden
+    <br><button onclick="requestPush()" style="margin-top:6px;background:#ffa000;color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Aktivieren</button>
+  </div>
+
 </div>
 
 <!-- SESSIONS -->
@@ -1220,15 +1223,18 @@ function drawGauge(id,val,max,col){
 }
 
 let liveKw=0, liveKwh=0, livePhases=[], liveTotalKwh=0;
-function updateGauges(pw,vt,am){
-  liveKw=pw;
-  const col=ST[cs-1].color;
-  drawGauge('g-power',pw,22,col);
-  drawGauge('g-volt',vt-180,80,vt>210?col:'#ff4444');
-  drawGauge('g-amp',am,32,col);
-  document.getElementById('v-power').textContent=pw.toFixed(1);
-  document.getElementById('v-volt').textContent=Math.round(vt);
-  document.getElementById('v-amp').textContent=am.toFixed(1);
+function updateGauges(kw,volt,amp){
+  const pw=document.getElementById('v-power');if(pw)pw.textContent=kw.toFixed(kw>=10?1:2);
+  const vv=document.getElementById('v-volt');if(vv)vv.textContent=volt.toFixed(0);
+  const av=document.getElementById('v-amp');if(av)av.textContent=amp.toFixed(1);
+  const sm=document.getElementById('live-summary');
+  if(sm)sm.textContent=kw>0.05?(kw.toFixed(2)+'kW · '+volt.toFixed(0)+'V'):'Standby';
+  const cd=document.getElementById('conn-dot');
+  if(cd)cd.style.background=kw>0.05?'var(--accent)':'#00e676';
+  liveKw=kw;
+  drawGauge('g-power',kw,0,12,'var(--accent)');
+  drawGauge('g-volt',volt,200,260,'#7c83ff');
+  drawGauge('g-amp',amp,0,32,'#00e676');
 }
 
 // ═══════════════════════════════════════════
@@ -1677,8 +1683,11 @@ document.getElementById('tariff2').value=ST[1].tariff;
 if(cfg.tsIp) document.getElementById('ts-ip').value=cfg.tsIp;
 document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kWh';
 
+detectConnectivity();
 pollShelly();
-setInterval(pollShelly, 5000);
+setInterval(pollShelly,5000);
+setInterval(detectConnectivity,30000);
+setTimeout(checkPushHint,3000);
 loadNachtraege();
 setInterval(()=>{if(activeSession)renderDashboard();},5000);
 
@@ -1980,6 +1989,47 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(cfg.themes){Object.assign(stThemes,cfg.themes);}
   applyTheme();
 });
+
+// ═══ PUSH + CONNECTIVITY ═══
+let connectMode="pi";
+async function detectConnectivity(){
+  const piBase=cfg.tsIp||"http://192.168.3.103:5000";
+  try{
+    const r=await fetch(`${piBase}/api/status`,{signal:AbortSignal.timeout(2000)});
+    if((await r.json()).status==="ok"){connectMode="pi";return;}
+  }catch(e){}
+  connectMode=supaOnline?"supabase":"offline";
+}
+async function getSupaTotalKwh(){
+  try{
+    const r=await sbGet("energy_log",`select=total_kwh&station_id=eq.${cs}&order=ts.desc&limit=1`);
+    if(r&&r.length)return r[0].total_kwh||0;
+  }catch(e){}
+  return 0;
+}
+async function checkUnknownCharging(){
+  if(!activeSession&&liveKw>0.3){
+    const b=document.getElementById("status-banner");
+    if(b){b.textContent="⚠ UNBEKANNTES LADEN — "+liveKw.toFixed(2)+"kW!";b.className="sb-warning";b.style.maxHeight="30px";b.style.padding="3px 12px";b.style.opacity="1";}
+  }
+}
+async function requestPush(){
+  if(!("serviceWorker" in navigator)||!("PushManager" in window)){alert("Push nicht unterstützt.");return;}
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){alert("Berechtigung verweigert.");return;}
+    reg.showNotification("ChargeGörtz",{body:"Push aktiv! ✓",icon:"/icon-192.png"});
+    localStorage.setItem("cg_push","1");
+    document.getElementById("push-hint").style.display="none";
+    alert("✓ Push aktiviert!");
+  }catch(e){alert("Fehler: "+e.message);}
+}
+function checkPushHint(){
+  const h=document.getElementById("push-hint");
+  if(h&&!localStorage.getItem("cg_push")&&"Notification" in window&&Notification.permission==="default")h.style.display="block";
+}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
 
 </script>
 </body>
