@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#060a0f" rx="80"/>
+  
+  <!-- Blitz Symbol -->
+  <g transform="translate(256, 180)">
+    <path d="M 0,-80 L -30,0 L 10,0 L 0,80 L 30,0 L -10,0 Z" 
+          fill="#00d4ff" 
+          stroke="#00d4ff" 
+          stroke-width="4"/>
+  </g>
+  
+  <!-- Text "Charge" -->
+  <text x="256" y="340" 
+        font-family="'Oxanium', sans-serif" 
+        font-size="52" 
+        font-weight="800" 
+        fill="#00d4ff" 
+        text-anchor="middle" 
+        letter-spacing="2">Charge</text>
+  
+  <!-- Text "Görtz" -->
+  <text x="256" y="395" 
+        font-family="'Oxanium', sans-serif" 
+        font-size="52" 
+        font-weight="300" 
+        fill="#5a7a9a" 
+        text-anchor="middle" 
+        letter-spacing="1">Görtz</text>
+  
+  <!-- Glow effect for lightning -->
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g filter="url(#glow)">
+    <path d="M 256,100 L 226,180 L 266,180 L 256,260 L 286,180 L 246,180 Z" 
+          fill="#00d4ff" 
+          opacity="0.6"/>
+  </g>
+</svg>
