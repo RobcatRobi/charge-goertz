@@ -266,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v16</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -336,9 +336,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <div id="start-wrap">
     <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
-  </div>
-  <div style="margin-top:8px">
-    <button class="btn-s" style="width:100%;padding:10px;font-size:13px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -520,6 +517,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div style="font-size:12px;color:var(--green)">&#10003; <span id="admin-logged-name"></span></div>
       <button onclick="adminLogout()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text-dim);font-size:11px;cursor:pointer">Abmelden</button>
     </div>
+    
+    <!-- PIN ändern Button -->
+    <button class="btn-s" style="width:100%;padding:10px;font-size:13px;margin-bottom:12px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
 
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button id="adm-st1" onclick="setAdminStation(1)" class="adm-st-btn active">&#127968; Neerach</button>
@@ -789,7 +789,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v16 — PIN-ÄNDERUNG FEATURE
+// CHARGE GÖRTZ v17 — QUICK WINS: Auto-Hide Banner, Auto-Relay, PIN in Admin
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1023,8 +1023,13 @@ async function startSession(u) {
   renderDashboard();
   updateRelayUI();
 
-  const ip = ST[cs-1].ipMini;
-  if(ip) fetch(`http://${ip}/relay/0?turn=on`, {signal:AbortSignal.timeout(3000)}).catch(()=>{});
+  // Auto-Freigabe: Relay einschalten
+  const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
+  try{
+    const r=await fetch(`${piBase}/api/relay/${cs}/on`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    if(d.success) setStatus('relay','ok','EIN');
+  }catch(e){console.error('Relay ON failed:',e);}
 }
 
 async function stopSession() {
@@ -1042,7 +1047,14 @@ async function stopSession() {
   activeSession = null;
   relayOn = false;
 
-  try{ fetch(`${piBaseUrl}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)}).catch(()=>{}); }catch(e){}
+  // Auto-Freigabe: Relay ausschalten
+  const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
+  try{
+    const r=await fetch(`${piBase}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    if(d.success) setStatus('relay','ok','AUS');
+  }catch(e){console.error('Relay OFF failed:',e);}
+  
   save();
   renderDashboard();
   updateRelayUI();
@@ -1529,11 +1541,16 @@ async function pollShelly(){
     const banner=document.getElementById('status-banner');
     if(banner){
       if(d.power_kw > 0.5){
-        // Aktives Laden — zeige Werte
+        // Aktives Laden — zeige Werte für 3 Sekunden
         banner.textContent=`⚡ ${d.power_kw.toFixed(2)}kW · ${d.voltage_v.toFixed(0)}V · ${d.current_a.toFixed(1)}A`;
         banner.className='sb-online';banner.style.maxHeight='30px';banner.style.padding='3px 12px';banner.style.opacity='1';
+        // Auto-hide nach 3 Sekunden
+        clearTimeout(window.bannerHideTimer);
+        window.bannerHideTimer = setTimeout(() => {
+          banner.style.opacity='0';banner.style.maxHeight='0';banner.style.padding='0';
+        }, 3000);
       } else {
-        // Standby — Banner verstecken
+        // Standby — Banner sofort verstecken
         banner.style.opacity='0';banner.style.maxHeight='0';banner.style.padding='0';
       }
     }
