@@ -266,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v15</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v16</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -336,6 +336,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <div id="start-wrap">
     <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
+  </div>
+  <div style="margin-top:8px">
+    <button class="btn-s" style="width:100%;padding:10px;font-size:13px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -732,9 +735,61 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
 </div>
 
+<!-- CHANGE PIN MODAL -->
+<div id="change-pin-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-title">🔐 PIN ändern</div>
+    <div class="modal-sub" id="change-pin-step">Schritt 1/3: Aktuellen PIN eingeben</div>
+    
+    <!-- Step 1: Current PIN -->
+    <div id="change-pin-step1" style="display:block">
+      <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:12px">Zur Sicherheit: Gib deinen aktuellen PIN ein</div>
+      <div class="pin-display">
+        <div class="pin-dot" id="cpd0"></div><div class="pin-dot" id="cpd1"></div>
+        <div class="pin-dot" id="cpd2"></div><div class="pin-dot" id="cpd3"></div>
+      </div>
+      <div id="change-pin-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-top:8px"></div>
+    </div>
+    
+    <!-- Step 2: New PIN -->
+    <div id="change-pin-step2" style="display:none">
+      <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:12px">Gib deinen neuen 4-stelligen PIN ein</div>
+      <div class="pin-display">
+        <div class="pin-dot" id="npd0"></div><div class="pin-dot" id="npd1"></div>
+        <div class="pin-dot" id="npd2"></div><div class="pin-dot" id="npd3"></div>
+      </div>
+    </div>
+    
+    <!-- Step 3: Confirm new PIN -->
+    <div id="change-pin-step3" style="display:none">
+      <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:12px">Bestätige deinen neuen PIN</div>
+      <div class="pin-display">
+        <div class="pin-dot" id="cpf0"></div><div class="pin-dot" id="cpf1"></div>
+        <div class="pin-dot" id="cpf2"></div><div class="pin-dot" id="cpf3"></div>
+      </div>
+      <div id="confirm-pin-err" style="font-size:12px;color:var(--red);text-align:center;min-height:16px;margin-top:8px"></div>
+    </div>
+    
+    <div class="pin-grid">
+      <button class="pin-key" onclick="changePinPress('1')">1</button>
+      <button class="pin-key" onclick="changePinPress('2')">2</button>
+      <button class="pin-key" onclick="changePinPress('3')">3</button>
+      <button class="pin-key" onclick="changePinPress('4')">4</button>
+      <button class="pin-key" onclick="changePinPress('5')">5</button>
+      <button class="pin-key" onclick="changePinPress('6')">6</button>
+      <button class="pin-key" onclick="changePinPress('7')">7</button>
+      <button class="pin-key" onclick="changePinPress('8')">8</button>
+      <button class="pin-key" onclick="changePinPress('9')">9</button>
+      <button class="pin-key cancel" onclick="closeChangePinModal()">✕</button>
+      <button class="pin-key" onclick="changePinPress('0')">0</button>
+      <button class="pin-key del" onclick="changePinDel()">⌫</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v15 — ADMIN PIN FIX + DB CLEANUP
+// CHARGE GÖRTZ v16 — PIN-ÄNDERUNG FEATURE
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1643,6 +1698,132 @@ function badPin(msg){
 }
 function closeModal(){document.getElementById('modal-ov').style.display='none';pinBuf='';}
 
+// ═══════════════════════════════════════════
+// CHANGE PIN MODAL
+// ═══════════════════════════════════════════
+let changePinStep=1, changePinBuf='', changePinOld='', changePinNew='', changePinUser=null;
+
+function openChangePinModal(){
+  // User muss eingeloggt sein (Handy registriert)
+  const deviceId=localStorage.getItem('deviceId');
+  if(!deviceId){alert('Bitte erst einloggen (Ladevorgang starten)');return;}
+  const userId=localStorage.getItem('userId');
+  if(!userId){alert('Bitte erst einloggen (Ladevorgang starten)');return;}
+  changePinUser=users.find(u=>u.id==userId);
+  if(!changePinUser){alert('User nicht gefunden');return;}
+  
+  changePinStep=1;
+  changePinBuf='';
+  changePinOld='';
+  changePinNew='';
+  document.getElementById('change-pin-modal').style.display='flex';
+  document.getElementById('change-pin-step').textContent='Schritt 1/3: Aktuellen PIN eingeben';
+  document.getElementById('change-pin-step1').style.display='block';
+  document.getElementById('change-pin-step2').style.display='none';
+  document.getElementById('change-pin-step3').style.display='none';
+  document.getElementById('change-pin-err').textContent='';
+  document.getElementById('confirm-pin-err').textContent='';
+  updateChangePinDots();
+}
+
+function closeChangePinModal(){
+  document.getElementById('change-pin-modal').style.display='none';
+  changePinStep=1;
+  changePinBuf='';
+  changePinOld='';
+  changePinNew='';
+}
+
+function changePinPress(n){
+  if(changePinBuf.length>=4)return;
+  changePinBuf+=n;
+  updateChangePinDots();
+  if(changePinBuf.length===4)setTimeout(processChangePinStep,150);
+}
+
+function changePinDel(){
+  changePinBuf=changePinBuf.slice(0,-1);
+  updateChangePinDots();
+}
+
+function updateChangePinDots(){
+  let prefix='cpd'; // Step 1: current PIN
+  if(changePinStep===2)prefix='npd'; // Step 2: new PIN
+  if(changePinStep===3)prefix='cpf'; // Step 3: confirm PIN
+  for(let i=0;i<4;i++){
+    const d=document.getElementById(`${prefix}${i}`);
+    if(d)d.className='pin-dot'+(i<changePinBuf.length?' filled':'');
+  }
+}
+
+async function processChangePinStep(){
+  if(changePinStep===1){
+    // Verify current PIN
+    const ok=await verifyPinSupabase(changePinUser.id,changePinBuf);
+    if(!ok){
+      const e=document.getElementById('change-pin-err');
+      e.textContent='❌ Falscher PIN';
+      changePinBuf='';
+      updateChangePinDots();
+      setTimeout(()=>{e.textContent='';},1500);
+      return;
+    }
+    // Correct! Move to step 2
+    changePinOld=changePinBuf;
+    changePinBuf='';
+    changePinStep=2;
+    document.getElementById('change-pin-step').textContent='Schritt 2/3: Neuen PIN eingeben';
+    document.getElementById('change-pin-step1').style.display='none';
+    document.getElementById('change-pin-step2').style.display='block';
+    updateChangePinDots();
+  }
+  else if(changePinStep===2){
+    // Save new PIN
+    changePinNew=changePinBuf;
+    changePinBuf='';
+    changePinStep=3;
+    document.getElementById('change-pin-step').textContent='Schritt 3/3: Neuen PIN bestätigen';
+    document.getElementById('change-pin-step2').style.display='none';
+    document.getElementById('change-pin-step3').style.display='block';
+    updateChangePinDots();
+  }
+  else if(changePinStep===3){
+    // Confirm new PIN
+    if(changePinBuf!==changePinNew){
+      const e=document.getElementById('confirm-pin-err');
+      e.textContent='❌ PINs stimmen nicht überein';
+      changePinBuf='';
+      updateChangePinDots();
+      setTimeout(()=>{e.textContent='';},1500);
+      return;
+    }
+    // Save to Supabase
+    try{
+      const params=new URLSearchParams({id:`eq.${changePinUser.id}`});
+      const r=await fetch(`${SUPA_URL}/rest/v1/users?${params}`,{
+        method:'PATCH',
+        headers:SUPA_HDR,
+        body:JSON.stringify({pin:changePinNew}),
+        signal:AbortSignal.timeout(5000)
+      });
+      if(!r.ok)throw new Error('Update failed');
+      
+      // Update local user object
+      if(changePinUser)changePinUser.pin=changePinNew;
+      const localUser=users.find(u=>u.id==changePinUser.id);
+      if(localUser)localUser.pin=changePinNew;
+      
+      alert('✅ PIN erfolgreich geändert!');
+      closeChangePinModal();
+    }catch(e){
+      console.error('PIN update failed:',e);
+      alert('❌ Fehler beim Speichern. Bitte nochmal versuchen.');
+      closeChangePinModal();
+    }
+  }
+}
+
+
 // startSession is in Supabase section above
 function _UNUSED_startSession(u){
   activeSession={id:Date.now(),userId:u.id,stationId:cs,startedAt:Date.now(),kwh:0,chf:0,tariff:ST[cs-1].tariff};
@@ -2222,22 +2403,67 @@ async function admUserSave(){
   if(!name||pin.length!==4){alert('Name und 4-stellige PIN erforderlich!');return;}
   if(!sts.length){alert('Mindestens eine Station wählen!');return;}
 
-  if(editUserObj){
-    const idx=users.findIndex(u=>u.id===editUserObj.id);
-    if(idx>=0)users[idx]={...users[idx],name,emoji,pin,role,stations:sts,color:editUserColor};
-  }else{
-    const newId=Math.max(...users.map(u=>u.id),0)+1;
-    users.push({id:newId,name,emoji,pin,role,stations:sts,color:editUserColor,plate:'—'});
+  // ✅ FIX: Supabase UPDATE/INSERT
+  try{
+    if(editUserObj){
+      // UPDATE existing user in Supabase
+      const params=new URLSearchParams({id:`eq.${editUserObj.id}`});
+      const r=await fetch(`${SUPA_URL}/rest/v1/users?${params}`,{
+        method:'PATCH',
+        headers:SUPA_HDR,
+        body:JSON.stringify({name,emoji,pin,role}),
+        signal:AbortSignal.timeout(5000)
+      });
+      if(!r.ok)throw new Error('Supabase update failed');
+      
+      // Update local
+      const idx=users.findIndex(u=>u.id===editUserObj.id);
+      if(idx>=0)users[idx]={...users[idx],name,emoji,pin,role,stations:sts,color:editUserColor};
+    }else{
+      // INSERT new user in Supabase
+      const newUser={name,emoji,pin,role};
+      const r=await fetch(`${SUPA_URL}/rest/v1/users`,{
+        method:'POST',
+        headers:SUPA_HDR,
+        body:JSON.stringify(newUser),
+        signal:AbortSignal.timeout(5000)
+      });
+      if(!r.ok)throw new Error('Supabase insert failed');
+      const inserted=await r.json();
+      const newId=inserted[0]?.id || Math.max(...users.map(u=>u.id),0)+1;
+      
+      // Add to local
+      users.push({id:newId,name,emoji,pin,role,stations:sts,color:editUserColor,plate:'—'});
+    }
+    save();closeUserEdit();renderAdmUsers();renderUsers();
+    alert('✓ Benutzer gespeichert (lokal + Supabase).');
+  }catch(e){
+    console.error('Admin user save failed:',e);
+    alert('❌ Fehler beim Speichern in Supabase. Bitte nochmal versuchen.');
   }
-  save();closeUserEdit();renderAdmUsers();renderUsers();
-  alert('✓ Benutzer gespeichert.');
 }
 
 async function admUserDelete(){
   if(!editUserObj||!confirm(`Benutzer "${editUserObj.name}" wirklich löschen?\nAlle Sessions bleiben erhalten, werden aber als "Unbekannt" angezeigt.`))return;
-  users=users.filter(u=>u.id!==editUserObj.id);
-  save();closeUserEdit();renderAdmUsers();renderUsers();
-  alert('✓ Benutzer gelöscht.');
+  
+  // ✅ FIX: Supabase DELETE
+  try{
+    const params=new URLSearchParams({id:`eq.${editUserObj.id}`});
+    const r=await fetch(`${SUPA_URL}/rest/v1/users?${params}`,{
+      method:'DELETE',
+      headers:SUPA_HDR,
+      signal:AbortSignal.timeout(5000)
+    });
+    if(!r.ok)throw new Error('Supabase delete failed');
+    
+    // Remove from local
+    users=users.filter(u=>u.id!==editUserObj.id);
+    save();closeUserEdit();renderAdmUsers();renderUsers();
+    alert('✓ Benutzer gelöscht (lokal + Supabase).');
+  }catch(e){
+    console.error('Admin user delete failed:',e);
+    alert('❌ Fehler beim Löschen aus Supabase. Bitte nochmal versuchen.');
+  }
 }
 
 // ── Design / Theme ─────────────────────────────────────────────
