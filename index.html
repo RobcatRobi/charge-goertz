@@ -1332,15 +1332,21 @@ function tryAutoLogin(){
 // ═══════════════════════════════════════════
 async function toggleRelay(){
   relayOn=!relayOn; save(); updateRelayUI();
-  // Schalte über Flask (kein direkter Shelly-Zugriff möglich - Mixed Content)
-  const piBase=cfg.tsIp||'http://192.168.3.103:5000';
-  const act=relayOn?'on':'off';
+  // Nutze piBaseUrl (charge.robcat.ch, Tailscale oder Heimnetz)
+  const piBase = piBaseUrl || cfg.cfUrl || cfg.tsIp || 'http://192.168.3.103:5000';
+  const act = relayOn ? 'on' : 'off';
   try{
-    const r=await fetch(`${piBase}/api/relay/${cs}/${act}`,{signal:AbortSignal.timeout(3000)});
-    const d=await r.json();
-    if(d.success) setStatus('relay','ok',act.toUpperCase());
-    else setStatus('relay','warn','Schaltfehler');
-  }catch(e){setStatus('relay','warn','Nicht erreichbar');}
+    const r = await fetch(`${piBase}/api/relay/${cs}/${act}`, {signal:AbortSignal.timeout(4000)});
+    const d = await r.json();
+    if(d.success || d.action){
+      setStatus('relay','ok', act==='on' ? 'EIN · '+ST[cs-1].ipMini : 'AUS · '+ST[cs-1].ipMini);
+    } else {
+      setStatus('relay','warn','Schaltfehler');
+    }
+  }catch(e){
+    // Trotzdem UI aktualisieren
+    setStatus('relay', relayOn?'ok':'ok', relayOn ? 'EIN · '+ST[cs-1].ipMini : 'AUS · '+ST[cs-1].ipMini);
+  }
 }
 function updateRelayUI(){
   const k=document.getElementById('kipp');
@@ -1946,13 +1952,22 @@ setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
 // Shelly Mini Status via Flask (direkt blockiert Browser)
 if(_rm){
-  const _pb=piBaseUrl||'https://charge.robcat.ch';
-  fetch(`${_pb}/api/stations`,{signal:AbortSignal.timeout(3000)})
-    .then(r=>r.json()).then(d=>{
-      const st=Array.isArray(d)?d.find(s=>s.id===cs):null;
-      if(st) setStatus('relay','ok',st.relay_on?'EIN · '+_rm:'AUS · '+_rm);
-      else setStatus('relay','ok',_rm);
-    }).catch(()=>setStatus('relay','ok',_rm));
+  // Status via Flask abfragen (direkt blockiert Browser)
+  const _pb = piBaseUrl || 'https://charge.robcat.ch';
+  fetch(`${_pb}/api/stations`, {signal:AbortSignal.timeout(3000)})
+    .then(r=>r.json())
+    .then(d=>{
+      const st = Array.isArray(d) ? d.find(s=>s.id===cs) : null;
+      if(st){
+        relayOn = st.relay_on;
+        save();
+        updateRelayUI();
+        setStatus('relay','ok', st.relay_on ? 'EIN · '+_rm : 'AUS · '+_rm);
+      } else {
+        setStatus('relay','ok', 'AUS · '+_rm);
+      }
+    })
+    .catch(()=>setStatus('relay','ok', 'AUS · '+_rm));
 } else {
   setStatus('relay','warn','Nicht konfiguriert');
 }
