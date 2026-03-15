@@ -842,10 +842,10 @@ async function load() {
 
 function applyConfig() {
   if(cfg.ip3em1)  ST[0].ip3em   = cfg.ip3em1;
-  if(cfg.ipMini1 && cfg.ipMini1.length > 0) ST[0].ipMini = cfg.ipMini1;
+  if(cfg.ipMini1) ST[0].ipMini  = cfg.ipMini1;
   if(cfg.tariff1) ST[0].tariff  = parseFloat(cfg.tariff1);
   if(cfg.ip3em2)  ST[1].ip3em   = cfg.ip3em2;
-  if(cfg.ipMini2 && cfg.ipMini2.length > 0) ST[1].ipMini = cfg.ipMini2;
+  if(cfg.ipMini2) ST[1].ipMini  = cfg.ipMini2;
   if(cfg.tariff2) ST[1].tariff  = parseFloat(cfg.tariff2);
 }
 
@@ -987,14 +987,7 @@ async function stopSession() {
   activeSession = null;
   relayOn = false;
 
-  // Relay via Flask ausschalten (funktioniert von überall, nicht nur Heimnetz)
-  try{
-    const _pb = piBaseUrl || 'https://charge.robcat.ch';
-    fetch(`${_pb}/api/relay/${cs}/off`, {signal:AbortSignal.timeout(4000)})
-      .then(r=>r.json())
-      .then(d=>{ relayOn=false; updateRelayUI(); setStatus('relay','ok','AUS'); })
-      .catch(()=>{ relayOn=false; updateRelayUI(); });
-  }catch(e){ relayOn=false; }
+  try{ fetch(`${piBaseUrl}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)}).catch(()=>{}); }catch(e){}
   save();
   renderDashboard();
   updateRelayUI();
@@ -1332,21 +1325,15 @@ function tryAutoLogin(){
 // ═══════════════════════════════════════════
 async function toggleRelay(){
   relayOn=!relayOn; save(); updateRelayUI();
-  // Nutze piBaseUrl (charge.robcat.ch, Tailscale oder Heimnetz)
-  const piBase = piBaseUrl || cfg.cfUrl || cfg.tsIp || 'http://192.168.3.103:5000';
-  const act = relayOn ? 'on' : 'off';
+  // Schalte über Flask (kein direkter Shelly-Zugriff möglich - Mixed Content)
+  const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
+  const act=relayOn?'on':'off';
   try{
-    const r = await fetch(`${piBase}/api/relay/${cs}/${act}`, {signal:AbortSignal.timeout(4000)});
-    const d = await r.json();
-    if(d.success || d.action){
-      setStatus('relay','ok', act==='on' ? 'EIN · '+ST[cs-1].ipMini : 'AUS · '+ST[cs-1].ipMini);
-    } else {
-      setStatus('relay','warn','Schaltfehler');
-    }
-  }catch(e){
-    // Trotzdem UI aktualisieren
-    setStatus('relay', relayOn?'ok':'ok', relayOn ? 'EIN · '+ST[cs-1].ipMini : 'AUS · '+ST[cs-1].ipMini);
-  }
+    const r=await fetch(`${piBase}/api/relay/${cs}/${act}`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    if(d.success) setStatus('relay','ok',act.toUpperCase());
+    else setStatus('relay','warn','Schaltfehler');
+  }catch(e){setStatus('relay','warn','Nicht erreichbar');}
 }
 function updateRelayUI(){
   const k=document.getElementById('kipp');
@@ -1433,8 +1420,7 @@ function showNetBanner(mode){
     h.style.display='block';
     h.innerHTML=mode==='cloud'
       ?'<b>Pi nicht erreichbar</b> — Was tun?<br>'+
-       '① Warte 2 Min (Pi startet evtl. neu)<br>'+
-       '② Heimnetz: <a href="http://192.168.3.103:8080" style="color:#00d4ff">192.168.3.103:8080</a><br>'+
+       '① Im Heimnetz? → App neu laden<br>'+
        '② Cloudflare Tunnel installieren (empfohlen):<br>'+
        '<code style="background:rgba(0,0,0,.3);padding:2px 5px;border-radius:4px;display:block;margin:4px 0;font-size:10px">bash cloudflare_setup.sh</code>'+
        '→ URL wird automatisch erkannt<br>'+
@@ -1464,32 +1450,13 @@ async function pollShelly(){
   if(!piBaseUrl){
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
-    demoGauges();// Sync activeSession über alle Clients
-  if(activeSession && liveKw < 0.2){
-    // Prüfe ob Session noch offen in Supabase
-    fetch(`${piBaseUrl}/api/sessions/active?station=${cs}`,{signal:AbortSignal.timeout(2000)})
-      .then(r=>r.json()).then(d=>{
-        if(!d.active && activeSession){
-          // Session wurde von anderem Client gestoppt
-          sessions.unshift({...activeSession, stoppedAt:Date.now()});
-          activeSession=null; save(); renderDashboard();
-        }
-      }).catch(()=>{});
-  }
-  checkUnknownCharging();return;
+    demoGauges();checkUnknownCharging();return;
   }
   try{
     setStatus('pi','ok','Online');
     const apiR=await fetch(`${piBaseUrl}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
     const d=await apiR.json();
-    if(d.demo){
-      setStatus('shelly','warn','Pi online — Shelly nicht erreichbar');
-      const st=document.getElementById('shelly-status-txt');
-      if(st)st.textContent='Shelly 3EM offline — Sicherungsautomat prüfen?';
-      // Keine Demo-Werte — zeige 0
-      updateGauges(0,230,0);
-      checkUnknownCharging();return;
-    }
+    if(d.demo){setStatus('shelly','err','Nicht erreichbar');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();checkUnknownCharging();return;}
     const isC=d.power_kw>0.5;
     if(isC)setStatus('shelly','ok',d.power_kw.toFixed(2)+' kW');
     else setStatus('shelly','ok',d.power_kw>0.05?'Standby':'Online · 0W');
@@ -1516,15 +1483,13 @@ async function pollShelly(){
     document.getElementById('v-today').textContent=today.toFixed(1)+' kWh';
     document.getElementById('v-month').textContent=month.toFixed(0)+' kWh';
     const tEl=document.getElementById('v-tariff');if(tEl)tEl.textContent=(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff).toFixed(2)+' CHF/kWh';
-    // Relay-Status vom Pi holen (sync über alle Clients)
+    // Relay sync alle 5s
     fetch(`${piBaseUrl}/api/stations`,{signal:AbortSignal.timeout(2000)})
       .then(r=>r.json()).then(d=>{
         const st=Array.isArray(d)?d.find(s=>s.id===cs):null;
-        if(st && typeof st.relay_on !== 'undefined'){
-          const wasOn = relayOn;
-          relayOn = st.relay_on;
-          if(wasOn !== relayOn){ save(); updateRelayUI(); }
-          setStatus('relay','ok', st.relay_on ? 'EIN · '+ST[cs-1].ipMini : 'AUS · '+ST[cs-1].ipMini);
+        if(st&&typeof st.relay_on!=='undefined'){
+          if(relayOn!==st.relay_on){relayOn=st.relay_on;save();updateRelayUI();}
+          setStatus('relay','ok',st.relay_on?'EIN · '+ST[cs-1].ipMini:'AUS · '+ST[cs-1].ipMini);
         }
       }).catch(()=>{});
     renderDashboard();
@@ -1658,14 +1623,9 @@ function pdel(){pinBuf=pinBuf.slice(0,-1);updatePD();}
 function updatePD(){for(let i=0;i<4;i++){const d=document.getElementById(`pd${i}`);if(d)d.className='pin-dot'+(i<pinBuf.length?' filled':'');}}
 async function checkPin(){
   if(!modalUser){badPin('Bitte zuerst Benutzer wählen');return;}
-  const ok = await verifyPinSupabase(modalUser.id, pinBuf);
-  if(ok){
-    // Gerät registrieren für künftigen Auto-Login
-    registerDevice(modalUser.id);
-    startSession(modalUser);closeModal();
-  } else {
-    pinBuf='';updatePD();badPin('❌ Falscher PIN');
-  }
+  const ok=await verifyPinSupabase(modalUser.id,pinBuf);
+  if(ok){registerDevice(modalUser.id);startSession(modalUser);closeModal();}
+  else{pinBuf='';updatePD();badPin('❌ Falscher PIN');}
 }
 function badPin(msg){
   const s=document.getElementById('modal-sub');
@@ -1943,14 +1903,10 @@ if(cfg.tsIp) document.getElementById('ts-ip').value=cfg.tsIp;
 document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kWh';
 
 // Auto-Erkennung: läuft App über Cloudflare?
-// Auto-Erkennung: Cloudflare Tunnel oder fixe URL?
 const _host = window.location.hostname;
-const _isCF = _host.includes('trycloudflare.com') || 
-               _host.includes('cloudflare') ||
-               _host.includes('robcat.ch');
+const _isCF = _host.includes('trycloudflare.com') || _host.includes('robcat.ch');
 
 if(_isCF) {
-  // App läuft über Cloudflare/robcat.ch → direkt diese URL nutzen
   piBaseUrl = window.location.origin;
   netMode = 'cloudflare';
   cfg.cfUrl = window.location.origin;
@@ -1959,42 +1915,13 @@ if(_isCF) {
   localStorage.setItem('cg_cf_url', window.location.origin);
   showNetBanner('cloudflare');
   setStatus('pi','ok','Cloudflare ☁');
-  loadStationsConfig().then(()=>loadUsersFromSupabase()).then(()=>{
-    pollShelly();
-    setTimeout(()=>checkDeviceAutoLogin(), 1500);
-  });
+  loadUsersFromSupabase().then(()=>{pollShelly();setTimeout(()=>checkDeviceAutoLogin(),1500);});
 } else {
-  // Heimnetz / Tailscale → normale Erkennung
-  autoDetectNetwork().then(async ()=>{
-    await loadUsersFromSupabase();
-    pollShelly();
-    setTimeout(()=>checkDeviceAutoLogin(), 1500);
-  });
+  autoDetectNetwork().then(async()=>{await loadUsersFromSupabase();pollShelly();setTimeout(()=>checkDeviceAutoLogin(),1500);});
 }
 setTimeout(tryAutoLogin,1500);
-// ipMini aus ST (hardcode) oder cfg oder api/stations
-const _rm = ST[cs-1]?.ipMini || cfg.ipMini1 || '';
-// Shelly Mini Status via Flask (direkt blockiert Browser)
-if(_rm){
-  // Status via Flask abfragen (direkt blockiert Browser)
-  const _pb = piBaseUrl || 'https://charge.robcat.ch';
-  fetch(`${_pb}/api/stations`, {signal:AbortSignal.timeout(3000)})
-    .then(r=>r.json())
-    .then(d=>{
-      const st = Array.isArray(d) ? d.find(s=>s.id===cs) : null;
-      if(st){
-        relayOn = st.relay_on;
-        save();
-        updateRelayUI();
-        setStatus('relay','ok', st.relay_on ? 'EIN · '+_rm : 'AUS · '+_rm);
-      } else {
-        setStatus('relay','ok', 'AUS · '+_rm);
-      }
-    })
-    .catch(()=>setStatus('relay','ok', 'AUS · '+_rm));
-} else {
-  setStatus('relay','warn','Nicht konfiguriert');
-}
+const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
+setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert');
 // Relay Status über Flask prüfen (nicht direkt — Mixed Content)
 if(_rm){
   const _pb=cfg.tsIp||'http://192.168.3.103:5000';
@@ -2008,8 +1935,6 @@ if(_rm){
 }
 setInterval(pollShelly,5000);
 setInterval(()=>autoDetectNetwork(),30000);
-// Supabase Realtime starten — synchronisiert alle Clients
-setTimeout(()=>{ if(supaOnline) initRealtimeSync(); }, 3000);
 setTimeout(checkPushHint,3000);
 loadNachtraege();
 setInterval(()=>{if(activeSession)renderDashboard();},5000);
@@ -2035,33 +1960,20 @@ function adminPP(n){
 }
 function adminPDel(){adminBuf=adminBuf.slice(0,-1);for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot'+(i<adminBuf.length?' filled':'');}}
 async function checkAdminPin(){
-  const pin = adminBuf;
+  const pin=adminBuf;
   adminBuf='';
   for(let i=0;i<4;i++){const d=document.getElementById('apd'+i);if(d)d.className='pin-dot';}
-  
-  // Prüfe alle Admins via Supabase (PIN nie lokal gespeichert!)
-  const admins = users.filter(x=>x.role==='admin');
-  let foundUser = null;
-  
-  for(const admin of admins){
-    try{
-      const ok = await verifyPinSupabase(admin.id, pin);
-      if(ok){ foundUser = admin; break; }
-    }catch(e){}
-  }
-  
-  // Fallback: lokale PIN falls Supabase nicht verfügbar
-  if(!foundUser){
-    foundUser = users.find(x=>x.role==='admin' && x.pin===pin);
-  }
-  
-  if(foundUser){
-    adminUser = foundUser;
+  const admins=users.filter(x=>x.role==='admin');
+  let found=null;
+  for(const a of admins){try{if(await verifyPinSupabase(a.id,pin)){found=a;break;}}catch(e){}}
+  if(!found) found=users.find(x=>x.role==='admin'&&x.pin===pin);
+  if(found){
+    adminUser=found;
     document.getElementById('admin-lock').style.display='none';
     document.getElementById('admin-content').style.display='block';
-    document.getElementById('admin-logged-name').textContent = foundUser.emoji+' '+foundUser.name;
+    document.getElementById('admin-logged-name').textContent=found.emoji+' '+found.name;
     refreshAdminContent();
-  } else {
+  }else{
     const e=document.getElementById('admin-pin-err');
     if(e){e.textContent='❌ Falscher PIN';setTimeout(()=>{e.textContent='';},1500);}
   }
@@ -2283,40 +2195,14 @@ async function admUserSave(){
     const newId=Math.max(...users.map(u=>u.id),0)+1;
     users.push({id:newId,name,emoji,pin,role,stations:sts,color:editUserColor,plate:'—'});
   }
-  save();
-  // Auch in Supabase speichern
-  try{
-    const piBase=piBaseUrl||'http://192.168.3.103:5000';
-    if(editUserObj){
-      await fetch(`${piBase}/api/users/${editUserObj.id}`,{method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name,emoji,role,stations:sts,color:editUserColor,plate:'—'}),
-        signal:AbortSignal.timeout(5000)});
-    } else {
-      const r=await fetch(`${piBase}/api/users`,{method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name,emoji,pin,role,stations:sts,color:editUserColor}),
-        signal:AbortSignal.timeout(5000)});
-      const nu=await r.json();
-      if(nu.id){const existing=users.find(u=>u.name===name&&u.emoji===emoji);if(existing)existing.id=nu.id;}
-    }
-    // Neu laden
-    await loadUsersFromSupabase();
-  }catch(e){console.warn('Supabase user save failed:',e);}
-  closeUserEdit();renderAdmUsers();renderUsers();
+  save();closeUserEdit();renderAdmUsers();renderUsers();
   alert('✓ Benutzer gespeichert.');
 }
 
 async function admUserDelete(){
   if(!editUserObj||!confirm(`Benutzer "${editUserObj.name}" wirklich löschen?\nAlle Sessions bleiben erhalten, werden aber als "Unbekannt" angezeigt.`))return;
   users=users.filter(u=>u.id!==editUserObj.id);
-  save();
-  try{
-    const piBase=piBaseUrl||'http://192.168.3.103:5000';
-    await fetch(`${piBase}/api/users/${editUserObj.id}`,{method:'DELETE',signal:AbortSignal.timeout(5000)});
-    await loadUsersFromSupabase();
-  }catch(e){}
-  closeUserEdit();renderAdmUsers();renderUsers();
+  save();closeUserEdit();renderAdmUsers();renderUsers();
   alert('✓ Benutzer gelöscht.');
 }
 
@@ -2417,68 +2303,36 @@ function checkPushHint(){
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
 
 
-// ═══ BENUTZER AUS SUPABASE + DEVICE AUTO-LOGIN ═══
+// ═══ USERS + DEVICE AUTO-LOGIN ═══
 let deviceId = localStorage.getItem('cg_device_id');
-if(!deviceId){
-  deviceId = 'dev_' + Math.random().toString(36).substr(2,9) + '_' + Date.now();
-  localStorage.setItem('cg_device_id', deviceId);
-}
-
-
-// Lade Stations-Config vom Pi (ipMini etc.)
-async function loadStationsConfig(){
-  try{
-    const pb = piBaseUrl || 'https://charge.robcat.ch';
-    const r = await fetch(`${pb}/api/stations`, {signal:AbortSignal.timeout(4000)});
-    const data = await r.json();
-    if(Array.isArray(data)){
-      data.forEach(s=>{
-        const st = ST.find(x=>x.id===s.id);
-        if(st){
-          if(s.ip_3em) st.ip3em = s.ip_3em;
-          if(s.ip_mini) st.ipMini = s.ip_mini;
-          if(s.tariff) st.tariff = s.tariff;
-        }
-      });
-      console.log('✓ Stations geladen:', ST.map(s=>s.name+':'+s.ipMini).join(', '));
-    }
-  }catch(e){ console.warn('Stations load failed:', e.message); }
-}
+if(!deviceId){ deviceId='dev_'+Math.random().toString(36).substr(2,9)+'_'+Date.now(); localStorage.setItem('cg_device_id',deviceId); }
 
 async function loadUsersFromSupabase(){
   try{
-    const piBase = piBaseUrl || 'https://charge.robcat.ch';
-    const r = await fetch(`${piBase}/api/users`, {signal:AbortSignal.timeout(5000)});
-    const supa_users = await r.json();
-    if(supa_users && Array.isArray(supa_users) && supa_users.length > 0){
-      // Filtere Dummy-User (Name1, Name2...) heraus
-      const real = supa_users.filter(u => u.name && !u.name.match(/^Name\d*$/i) && u.name !== '???');
-      if(real.length > 0){
-        users = real.map(u => ({
-          id: u.id, name: u.name, emoji: u.emoji||'👤', pin: '',
-          role: u.role||'user', stations: Array.isArray(u.stations)?u.stations:[1],
-          color: u.color||'#00d4ff', plate: u.plate||'—'
-        }));
-        save();
-        renderUsers();
-        console.log('✓ Benutzer aus Supabase:', users.length, users.map(u=>u.name).join(', '));
+    const pb=piBaseUrl||'https://charge.robcat.ch';
+    const r=await fetch(`${pb}/api/users`,{signal:AbortSignal.timeout(5000)});
+    const su=await r.json();
+    if(su&&Array.isArray(su)&&su.length>0){
+      const real=su.filter(u=>u.name&&!u.name.match(/^Name\d*$/i)&&u.name!=='???');
+      if(real.length>0){
+        users=real.map(u=>({id:u.id,name:u.name,emoji:u.emoji||'👤',pin:'',role:u.role||'user',stations:Array.isArray(u.stations)?u.stations:[1],color:u.color||'#00d4ff',plate:u.plate||'—'}));
+        save(); renderUsers();
+        console.log('✓ Users:',users.length);
       }
     }
-  }catch(e){ console.warn('Users load failed:', e.message); }
+  }catch(e){console.warn('Users failed:',e.message);}
 }
 
 async function checkDeviceAutoLogin(){
   try{
-    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
-    const r = await fetch(`${piBase}/api/device/${deviceId}`, {signal:AbortSignal.timeout(3000)});
-    const d = await r.json();
+    const pb=piBaseUrl||'https://charge.robcat.ch';
+    const r=await fetch(`${pb}/api/device/${deviceId}`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
     if(d.user){
-      const u = users.find(x=>x.id===d.user.id) || d.user;
-      const b = document.getElementById('status-banner');
-      if(b){ b.textContent=`👋 ${u.emoji} ${u.name.split(' ')[0]}`;
-        b.className='sb-online';b.style.maxHeight='30px';b.style.padding='3px 12px';b.style.opacity='1';
-        setTimeout(()=>{b.style.opacity='0';b.style.maxHeight='0';b.style.padding='0';},4000); }
-      localStorage.setItem('cg_last_user', u.id);
+      const u=users.find(x=>x.id===d.user.id)||d.user;
+      const b=document.getElementById('status-banner');
+      if(b){b.textContent=`👋 ${u.emoji} ${u.name.split(' ')[0]}`;b.className='sb-online';b.style.maxHeight='30px';b.style.padding='3px 12px';b.style.opacity='1';setTimeout(()=>{b.style.opacity='0';b.style.maxHeight='0';b.style.padding='0';},4000);}
+      localStorage.setItem('cg_last_user',u.id);
       return u;
     }
   }catch(e){}
@@ -2487,181 +2341,20 @@ async function checkDeviceAutoLogin(){
 
 async function registerDevice(userId){
   try{
-    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
-    const dn = /iPhone/.test(navigator.userAgent)?'iPhone':/Android/.test(navigator.userAgent)?'Android':/iPad/.test(navigator.userAgent)?'iPad':'Browser';
-    await fetch(`${piBase}/api/device/register`,{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({device_id:deviceId,user_id:userId,device_name:dn}),
-      signal:AbortSignal.timeout(3000)});
+    const pb=piBaseUrl||'https://charge.robcat.ch';
+    const dn=/iPhone/.test(navigator.userAgent)?'iPhone':/Android/.test(navigator.userAgent)?'Android':/iPad/.test(navigator.userAgent)?'iPad':'Browser';
+    await fetch(`${pb}/api/device/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:deviceId,user_id:userId,device_name:dn}),signal:AbortSignal.timeout(3000)});
   }catch(e){}
 }
 
-async function verifyPinSupabase(userId, pin){
+async function verifyPinSupabase(userId,pin){
   try{
-    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
-    const r = await fetch(`${piBase}/api/users/verify`,{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({user_id:userId,pin:pin}),signal:AbortSignal.timeout(3000)});
+    const pb=piBaseUrl||'https://charge.robcat.ch';
+    const r=await fetch(`${pb}/api/users/verify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,pin:pin}),signal:AbortSignal.timeout(3000)});
     return (await r.json()).ok;
-  }catch(e){
-    const u=users.find(x=>x.id===userId);return u&&u.pin===pin;
-  }
+  }catch(e){const u=users.find(x=>x.id===userId);return u&&u.pin===pin;}
 }
-
-// ═══ SUPABASE REALTIME — Alle Clients sofort synchronisiert ═══
-let _realtimeWs = null;
-
-function initRealtimeSync(){
-  // Supabase Realtime via WebSocket
-  const wsUrl = `wss://vloululxbazfcvlhmtzr.supabase.co/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
-  
-  try{
-    _realtimeWs = new WebSocket(wsUrl);
-    
-    _realtimeWs.onopen = () => {
-      console.log('✓ Supabase Realtime verbunden');
-      // Sessions Tabelle abonnieren
-      _realtimeWs.send(JSON.stringify({
-        topic: 'realtime:public:sessions',
-        event: 'phx_join',
-        payload: { config: { broadcast: { self: false }, presence: { key: '' }, postgres_changes: [
-          { event: '*', schema: 'public', table: 'sessions' },
-          { event: '*', schema: 'public', table: 'energy_log' }
-        ]}},
-        ref: '1'
-      }));
-      // cg_users abonnieren
-      _realtimeWs.send(JSON.stringify({
-        topic: 'realtime:public:cg_users',
-        event: 'phx_join',
-        payload: { config: { broadcast: { self: false }, postgres_changes: [
-          { event: '*', schema: 'public', table: 'cg_users' }
-        ]}},
-        ref: '2'
-      }));
-    };
-    
-    _realtimeWs.onmessage = (msg) => {
-      try{
-        const data = JSON.parse(msg.data);
-        if(data.event === 'postgres_changes' || 
-           (data.payload && data.payload.data && data.payload.data.type)){
-          const change = data.payload?.data;
-          if(!change) return;
-          
-          console.log('🔄 Realtime Update:', change.table, change.type);
-          
-          if(change.table === 'sessions'){
-            // Session geändert → neu laden
-            onSessionChange(change);
-          }
-          if(change.table === 'cg_users'){
-            // Benutzer geändert → neu laden
-            loadUsersFromSupabase();
-          }
-          if(change.table === 'energy_log'){
-            // Energie-Update → Zähler aktualisieren
-            onEnergyChange(change);
-          }
-        }
-      }catch(e){}
-    };
-    
-    _realtimeWs.onclose = () => {
-      console.warn('Realtime getrennt — reconnect in 5s');
-      setTimeout(initRealtimeSync, 5000);
-    };
-    
-    _realtimeWs.onerror = (e) => {
-      console.warn('Realtime Fehler:', e);
-    };
-    
-  }catch(e){
-    console.warn('Realtime nicht verfügbar:', e.message);
-  }
-}
-
-async function onSessionChange(change){
-  const rec = change.record || change.new_record;
-  if(!rec) return;
-  
-  if(change.type === 'INSERT'){
-    // Neue Session → aktueller Benutzer lädt
-    const u = users.find(x => x.id === rec.user_id);
-    if(u && rec.station_id === cs){
-      if(!activeSession || activeSession.id !== rec.id){
-        // Anderer Client hat Session gestartet
-        activeSession = {
-          id: rec.id,
-          userId: rec.user_id,
-          stationId: rec.station_id,
-          startedAt: new Date(rec.started_at).getTime(),
-          kwh: rec.kwh || 0,
-          chf: rec.chf || 0,
-          tariff: ST[cs-1].tariff
-        };
-        save();
-        renderDashboard();
-        console.log('🔄 Session von', u.name, 'übernommen');
-      }
-    }
-  }
-  
-  if(change.type === 'UPDATE'){
-    if(rec.stopped_at && activeSession && activeSession.id === rec.id){
-      // Session wurde von anderem Client gestoppt
-      activeSession.kwh = rec.kwh || activeSession.kwh;
-      activeSession.chf = rec.chf || activeSession.chf;
-      sessions.unshift({...activeSession, stoppedAt: new Date(rec.stopped_at).getTime()});
-      activeSession = null;
-      relayOn = false;
-      save();
-      updateRelayUI();
-      renderDashboard();
-      renderSessions();
-      setStatus('relay','ok','AUS · '+ST[cs-1].ipMini);
-      console.log('🔄 Session gestoppt (anderer Client)');
-    }
-  }
-  
-  // Sessions neu laden
-  await loadSessionsFromSupabase();
-}
-
-async function onEnergyChange(change){
-  // Zähler-Reset von anderem Client
-  if(change.record?.note?.includes('RESET')){
-    liveTotalKwh = 0;
-    const el = document.getElementById('shelly-total-kwh');
-    if(el) el.textContent = '0.00 kWh';
-    console.log('🔄 Shelly Reset von anderem Client erkannt');
-  }
-}
-
-async function loadSessionsFromSupabase(){
-  try{
-    const r = await fetch(`${SUPA_URL}/rest/v1/sessions?select=*&station_id=eq.${cs}&order=started_at.desc&limit=50`,
-      {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
-    const data = await r.json();
-    if(Array.isArray(data) && data.length > 0){
-      sessions = data.map(s => ({
-        id: s.id,
-        userId: s.user_id,
-        stationId: s.station_id,
-        startedAt: new Date(s.started_at).getTime(),
-        stoppedAt: s.stopped_at ? new Date(s.stopped_at).getTime() : null,
-        kwh: s.kwh || 0,
-        chf: s.chf || 0,
-        note: s.note || ''
-      }));
-      save();
-      renderSessions();
-      renderBilling();
-      renderBilanz();
-    }
-  }catch(e){}
-}
-></script>
+</script>
 <!-- NACHTRAG MODAL -->
 <div id="nachtrag-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto">
