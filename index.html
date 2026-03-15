@@ -1353,7 +1353,7 @@ async function autoDetectNetwork(){
   showNetBanner('detecting');
 
   // 0. Gespeicherte Cloudflare URL versuchen (schnellste wenn bekannt)
-  const cfUrl = cfg.cfUrl || localStorage.getItem('cg_cf_url');
+  const cfUrl = cfg.cfUrl || localStorage.getItem('cg_cf_url') || 'https://charge.robcat.ch';
   if(cfUrl){
     try{
       const r=await fetch(`${cfUrl}/api/status`,{signal:AbortSignal.timeout(3000)});
@@ -1421,7 +1421,8 @@ function showNetBanner(mode){
     h.style.display='block';
     h.innerHTML=mode==='cloud'
       ?'<b>Pi nicht erreichbar</b> — Was tun?<br>'+
-       '① Im Heimnetz? → App neu laden<br>'+
+       '① Warte 2 Min (Pi startet evtl. neu)<br>'+
+       '② Heimnetz: <a href="http://192.168.3.103:8080" style="color:#00d4ff">192.168.3.103:8080</a><br>'+
        '② Cloudflare Tunnel installieren (empfohlen):<br>'+
        '<code style="background:rgba(0,0,0,.3);padding:2px 5px;border-radius:4px;display:block;margin:4px 0;font-size:10px">bash cloudflare_setup.sh</code>'+
        '→ URL wird automatisch erkannt<br>'+
@@ -1900,22 +1901,33 @@ if(cfg.tsIp) document.getElementById('ts-ip').value=cfg.tsIp;
 document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kWh';
 
 // Auto-Erkennung: läuft App über Cloudflare?
-if(window.location.hostname.includes('trycloudflare.com') || 
-   window.location.hostname.includes('cloudflare')) {
+// Auto-Erkennung: Cloudflare Tunnel oder fixe URL?
+const _host = window.location.hostname;
+const _isCF = _host.includes('trycloudflare.com') || 
+               _host.includes('cloudflare') ||
+               _host.includes('robcat.ch');
+
+if(_isCF) {
+  // App läuft über Cloudflare/robcat.ch → direkt diese URL nutzen
   piBaseUrl = window.location.origin;
   netMode = 'cloudflare';
   cfg.cfUrl = window.location.origin;
+  cfg.tsIp = 'http://100.103.254.108:5000';
   localStorage.setItem('cg_cfg', JSON.stringify(cfg));
   localStorage.setItem('cg_cf_url', window.location.origin);
   showNetBanner('cloudflare');
   setStatus('pi','ok','Cloudflare ☁');
-  pollShelly();
+  loadUsersFromSupabase().then(()=>{
+    pollShelly();
+    setTimeout(()=>checkDeviceAutoLogin(), 1500);
+  });
 } else {
+  // Heimnetz / Tailscale → normale Erkennung
   autoDetectNetwork().then(async ()=>{
-  await loadUsersFromSupabase();
-  pollShelly();
-  setTimeout(()=>checkDeviceAutoLogin(), 2000);
-});
+    await loadUsersFromSupabase();
+    pollShelly();
+    setTimeout(()=>checkDeviceAutoLogin(), 1500);
+  });
 }
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
