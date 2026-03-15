@@ -1957,18 +1957,36 @@ function adminPP(n){
   if(adminBuf.length===4)setTimeout(checkAdminPin,150);
 }
 function adminPDel(){adminBuf=adminBuf.slice(0,-1);for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot'+(i<adminBuf.length?' filled':'');}}
-function checkAdminPin(){
-  const u=users.find(x=>x.role==='admin'&&x.pin===adminBuf);
-  adminBuf='';for(let i=0;i<4;i++){const d=document.getElementById(`apd${i}`);if(d)d.className='pin-dot';}
-  if(u){
-    adminUser=u;
+async function checkAdminPin(){
+  const pin = adminBuf;
+  adminBuf='';
+  for(let i=0;i<4;i++){const d=document.getElementById('apd'+i);if(d)d.className='pin-dot';}
+  
+  // Prüfe alle Admins via Supabase (PIN nie lokal gespeichert!)
+  const admins = users.filter(x=>x.role==='admin');
+  let foundUser = null;
+  
+  for(const admin of admins){
+    try{
+      const ok = await verifyPinSupabase(admin.id, pin);
+      if(ok){ foundUser = admin; break; }
+    }catch(e){}
+  }
+  
+  // Fallback: lokale PIN falls Supabase nicht verfügbar
+  if(!foundUser){
+    foundUser = users.find(x=>x.role==='admin' && x.pin===pin);
+  }
+  
+  if(foundUser){
+    adminUser = foundUser;
     document.getElementById('admin-lock').style.display='none';
     document.getElementById('admin-content').style.display='block';
-    document.getElementById('admin-logged-name').textContent=u.emoji+' '+u.name;
+    document.getElementById('admin-logged-name').textContent = foundUser.emoji+' '+foundUser.name;
     refreshAdminContent();
-  }else{
+  } else {
     const e=document.getElementById('admin-pin-err');
-    e.textContent='❌ Falscher PIN';setTimeout(()=>{e.textContent='';},1500);
+    if(e){e.textContent='❌ Falscher PIN';setTimeout(()=>{e.textContent='';},1500);}
   }
 }
 function adminLogout(){
