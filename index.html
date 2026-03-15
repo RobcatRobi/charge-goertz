@@ -266,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV Laden · Neerach &amp; Brail</span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v14</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -1472,7 +1472,16 @@ async function pollShelly(){
     updatePhasesUI();logToSupabase();renderBilanz();
     const cd=document.getElementById('conn-dot');if(cd)cd.style.background='var(--accent)';
     const banner=document.getElementById('status-banner');
-    if(banner){banner.textContent=`⚡ LIVE — ${d.power_kw.toFixed(2)}kW / ${d.voltage_v.toFixed(0)}V / ${d.current_a.toFixed(1)}A`;banner.className='sb-online';banner.style.maxHeight='30px';banner.style.padding='3px 12px';banner.style.opacity='1';}
+    if(banner){
+      if(d.power_kw > 0.5){
+        // Aktives Laden — zeige Werte
+        banner.textContent=`⚡ ${d.power_kw.toFixed(2)}kW · ${d.voltage_v.toFixed(0)}V · ${d.current_a.toFixed(1)}A`;
+        banner.className='sb-online';banner.style.maxHeight='30px';banner.style.padding='3px 12px';banner.style.opacity='1';
+      } else {
+        // Standby — Banner verstecken
+        banner.style.opacity='0';banner.style.maxHeight='0';banner.style.padding='0';
+      }
+    }
     if(activeSession&&activeSession.stationId===cs&&d.power_w>50){
       const elH=(Date.now()-activeSession.startedAt)/3600000;
       activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
@@ -2281,7 +2290,7 @@ async function getSupaTotalKwh(){
 async function checkUnknownCharging(){
   if(!activeSession&&liveKw>0.3){
     const b=document.getElementById("status-banner");
-    if(b){b.textContent="⚠ UNBEKANNTES LADEN — "+liveKw.toFixed(2)+"kW!";b.className="sb-warning";b.style.maxHeight="30px";b.style.padding="3px 12px";b.style.opacity="1";}
+    if(b){b.textContent="⚠ UNBEKANNT "+liveKw.toFixed(2)+"kW";b.className="sb-warning";b.style.maxHeight="30px";b.style.padding="3px 12px";b.style.opacity="1";}
   }
 }
 async function requestPush(){
