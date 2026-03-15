@@ -987,8 +987,14 @@ async function stopSession() {
   activeSession = null;
   relayOn = false;
 
-  const ip = ST[cs-1].ipMini;
-  if(ip) fetch(`http://${ip}/relay/0?turn=off`, {signal:AbortSignal.timeout(3000)}).catch(()=>{});
+  // Relay via Flask ausschalten (funktioniert von überall, nicht nur Heimnetz)
+  try{
+    const _pb = piBaseUrl || 'https://charge.robcat.ch';
+    fetch(`${_pb}/api/relay/${cs}/off`, {signal:AbortSignal.timeout(4000)})
+      .then(r=>r.json())
+      .then(d=>{ relayOn=false; updateRelayUI(); setStatus('relay','ok','AUS'); })
+      .catch(()=>{ relayOn=false; updateRelayUI(); });
+  }catch(e){ relayOn=false; }
   save();
   renderDashboard();
   updateRelayUI();
@@ -1458,7 +1464,14 @@ async function pollShelly(){
     setStatus('pi','ok','Online');
     const apiR=await fetch(`${piBaseUrl}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
     const d=await apiR.json();
-    if(d.demo){setStatus('shelly','err','Nicht erreichbar');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();checkUnknownCharging();return;}
+    if(d.demo){
+      setStatus('shelly','warn','Pi online — Shelly nicht erreichbar');
+      const st=document.getElementById('shelly-status-txt');
+      if(st)st.textContent='Shelly 3EM offline — Sicherungsautomat prüfen?';
+      // Keine Demo-Werte — zeige 0
+      updateGauges(0,230,0);
+      checkUnknownCharging();return;
+    }
     const isC=d.power_kw>0.5;
     if(isC)setStatus('shelly','ok',d.power_kw.toFixed(2)+' kW');
     else setStatus('shelly','ok',d.power_kw>0.05?'Standby':'Online · 0W');
@@ -1931,7 +1944,18 @@ if(_isCF) {
 }
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
-setStatus('relay',_rm?'ok':'warn',_rm?_rm:'Nicht konfiguriert');
+// Shelly Mini Status via Flask (direkt blockiert Browser)
+if(_rm){
+  const _pb=piBaseUrl||'https://charge.robcat.ch';
+  fetch(`${_pb}/api/stations`,{signal:AbortSignal.timeout(3000)})
+    .then(r=>r.json()).then(d=>{
+      const st=Array.isArray(d)?d.find(s=>s.id===cs):null;
+      if(st) setStatus('relay','ok',st.relay_on?'EIN · '+_rm:'AUS · '+_rm);
+      else setStatus('relay','ok',_rm);
+    }).catch(()=>setStatus('relay','ok',_rm));
+} else {
+  setStatus('relay','warn','Nicht konfiguriert');
+}
 // Relay Status über Flask prüfen (nicht direkt — Mixed Content)
 if(_rm){
   const _pb=cfg.tsIp||'http://192.168.3.103:5000';
@@ -2361,18 +2385,22 @@ if(!deviceId){
 
 async function loadUsersFromSupabase(){
   try{
-    const piBase = piBaseUrl || 'http://192.168.3.103:5000';
+    const piBase = piBaseUrl || 'https://charge.robcat.ch';
     const r = await fetch(`${piBase}/api/users`, {signal:AbortSignal.timeout(5000)});
     const supa_users = await r.json();
-    if(supa_users && supa_users.length > 0){
-      users = supa_users.map(u => ({
-        id: u.id, name: u.name, emoji: u.emoji||'👤', pin: '',
-        role: u.role||'user', stations: Array.isArray(u.stations)?u.stations:[1],
-        color: u.color||'#00d4ff', plate: u.plate||'—'
-      }));
-      save();
-      renderUsers();
-      console.log('✓ Benutzer aus Supabase:', users.length);
+    if(supa_users && Array.isArray(supa_users) && supa_users.length > 0){
+      // Filtere Dummy-User (Name1, Name2...) heraus
+      const real = supa_users.filter(u => u.name && !u.name.match(/^Name\d*$/i) && u.name !== '???');
+      if(real.length > 0){
+        users = real.map(u => ({
+          id: u.id, name: u.name, emoji: u.emoji||'👤', pin: '',
+          role: u.role||'user', stations: Array.isArray(u.stations)?u.stations:[1],
+          color: u.color||'#00d4ff', plate: u.plate||'—'
+        }));
+        save();
+        renderUsers();
+        console.log('✓ Benutzer aus Supabase:', users.length, users.map(u=>u.name).join(', '));
+      }
     }
   }catch(e){ console.warn('Users load failed:', e.message); }
 }
