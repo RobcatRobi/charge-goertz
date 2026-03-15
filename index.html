@@ -842,10 +842,10 @@ async function load() {
 
 function applyConfig() {
   if(cfg.ip3em1)  ST[0].ip3em   = cfg.ip3em1;
-  if(cfg.ipMini1) ST[0].ipMini  = cfg.ipMini1;
+  if(cfg.ipMini1 && cfg.ipMini1.length > 0) ST[0].ipMini = cfg.ipMini1;
   if(cfg.tariff1) ST[0].tariff  = parseFloat(cfg.tariff1);
   if(cfg.ip3em2)  ST[1].ip3em   = cfg.ip3em2;
-  if(cfg.ipMini2) ST[1].ipMini  = cfg.ipMini2;
+  if(cfg.ipMini2 && cfg.ipMini2.length > 0) ST[1].ipMini = cfg.ipMini2;
   if(cfg.tariff2) ST[1].tariff  = parseFloat(cfg.tariff2);
 }
 
@@ -1936,7 +1936,7 @@ if(_isCF) {
   localStorage.setItem('cg_cf_url', window.location.origin);
   showNetBanner('cloudflare');
   setStatus('pi','ok','Cloudflare ☁');
-  loadUsersFromSupabase().then(()=>{
+  loadStationsConfig().then(()=>loadUsersFromSupabase()).then(()=>{
     pollShelly();
     setTimeout(()=>checkDeviceAutoLogin(), 1500);
   });
@@ -1949,7 +1949,8 @@ if(_isCF) {
   });
 }
 setTimeout(tryAutoLogin,1500);
-const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
+// ipMini aus ST (hardcode) oder cfg oder api/stations
+const _rm = ST[cs-1]?.ipMini || cfg.ipMini1 || '';
 // Shelly Mini Status via Flask (direkt blockiert Browser)
 if(_rm){
   // Status via Flask abfragen (direkt blockiert Browser)
@@ -2396,6 +2397,27 @@ let deviceId = localStorage.getItem('cg_device_id');
 if(!deviceId){
   deviceId = 'dev_' + Math.random().toString(36).substr(2,9) + '_' + Date.now();
   localStorage.setItem('cg_device_id', deviceId);
+}
+
+
+// Lade Stations-Config vom Pi (ipMini etc.)
+async function loadStationsConfig(){
+  try{
+    const pb = piBaseUrl || 'https://charge.robcat.ch';
+    const r = await fetch(`${pb}/api/stations`, {signal:AbortSignal.timeout(4000)});
+    const data = await r.json();
+    if(Array.isArray(data)){
+      data.forEach(s=>{
+        const st = ST.find(x=>x.id===s.id);
+        if(st){
+          if(s.ip_3em) st.ip3em = s.ip_3em;
+          if(s.ip_mini) st.ipMini = s.ip_mini;
+          if(s.tariff) st.tariff = s.tariff;
+        }
+      });
+      console.log('✓ Stations geladen:', ST.map(s=>s.name+':'+s.ipMini).join(', '));
+    }
+  }catch(e){ console.warn('Stations load failed:', e.message); }
 }
 
 async function loadUsersFromSupabase(){
