@@ -546,6 +546,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </button>
     </div>
 
+    <!-- ✅ FIX 9: Unbekannte/Gap Sessions -->
+    <div class="card" id="gap-sessions-card" style="display:none">
+      <div class="card-title">⚠️ UNBEKANNTE LADEVORGÄNGE</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Energie während Pi offline geladen — bitte zuordnen</div>
+      <div id="gap-sess-list"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">&#9999; SESSIONS EDITIEREN</div>
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Tippe auf Session zum Bearbeiten</div>
@@ -2178,7 +2185,12 @@ if(_isCF) {
   setStatus('pi','ok','Cloudflare ☁');
   loadUsersFromSupabase().then(()=>{pollShelly();setTimeout(()=>checkDeviceAutoLogin(),1500);});
 } else {
-  autoDetectNetwork().then(async()=>{await loadUsersFromSupabase();pollShelly();setTimeout(()=>checkDeviceAutoLogin(),1500);});
+  autoDetectNetwork().then(async()=>{
+    await loadUsersFromSupabase();
+    await checkShellyReconnect(); // ✅ FIX 8: Gap-Detection beim Pi-Neustart
+    pollShelly();
+    setTimeout(()=>checkDeviceAutoLogin(),1500);
+  });
 }
 setTimeout(tryAutoLogin,1500);
 const _rm=ST[cs-1]?ST[cs-1].ipMini:'';
@@ -2281,6 +2293,7 @@ function setAdminStation(sid){
 
 function refreshAdminContent(){
   updateAdminCounters();
+  renderGapSessions(); // ✅ FIX 9: Unbekannte Sessions anzeigen
   renderAdmSessions();
   renderAdmUsers();
   updateAdminCfg();
@@ -2351,6 +2364,55 @@ async function admResetSessions(){
 }
 
 // ── Sessions Liste (editierbar) ────────────────────────────────
+async function renderGapSessions() {
+  const card = document.getElementById('gap-sessions-card');
+  const el = document.getElementById('gap-sess-list');
+  if(!el || !card) return;
+  
+  // Hole Gap-Sessions aus Supabase
+  try {
+    const gapSess = await sbGet('sessions', 
+      `station_id=eq.${adminStation}&gap_detected=eq.true&order=started_at.desc`);
+    
+    if(!gapSess || gapSess.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+    
+    card.style.display = 'block';
+    el.innerHTML = gapSess.map(s => {
+      const u = users.find(x => x.id === s.user_id);
+      const d = new Date(s.started_at);
+      const nm = u ? (u.emoji + ' ' + u.name) : '❓ Unbekannt';
+      const dateStr = d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'});
+      const timeStr = d.toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
+      
+      return `<div style="background:rgba(255,160,0,.08);border:1px solid #ffa000;border-radius:10px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+          <div>
+            <div style="font-size:13px;font-weight:700">${nm}</div>
+            <div style="font-size:10px;color:var(--text-dim)">📅 ${dateStr} ${timeStr}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#ffa000">${s.kwh.toFixed(2)} kWh</div>
+            <div style="font-size:10px;color:var(--text-dim)">${s.chf?.toFixed(2)} CHF</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">
+          ⚠️ ${s.notes || 'Offline-Gap erkannt'}
+        </div>
+        <button onclick="openSessEdit(${JSON.stringify(s).replace(/"/g,'&quot;')})" 
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer">
+          ✏️ Zuordnen / Bearbeiten
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('Gap sessions render error:', e);
+    card.style.display = 'none';
+  }
+}
+
 function renderAdmSessions(){
   const el=document.getElementById('adm-sess-list');if(!el)return;
   const ss=sessions.filter(s=>s.stationId===adminStation).slice(0,50);
@@ -2632,6 +2694,108 @@ function checkPushHint(){
   if(h&&!localStorage.getItem("cg_push")&&"Notification" in window&&Notification.permission==="default")h.style.display="block";
 }
 if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
+
+// ═══════════════════════════════════════════════════════════════
+// FIX 8: SHELLY RECONNECT & GAP DETECTION
+// ═══════════════════════════════════════════════════════════════
+async function checkShellyReconnect() {
+  if(!supaOnline || !piBaseUrl) return; // Kann nur prüfen wenn beide online
+  
+  try {
+    // 1. Hole aktuellen Shelly-Stand
+    const apiR = await fetch(`${piBaseUrl}/api/energy/${cs}`, {signal: AbortSignal.timeout(5000)});
+    const d = await apiR.json();
+    if(d.demo || !d.total_kwh) return; // Shelly nicht erreichbar
+    
+    const currentShellyKwh = d.total_kwh;
+    
+    // 2. Hole letzten bekannten Stand aus Supabase
+    const stationData = await sbGet('stations', `id=eq.${cs}`);
+    if(!stationData || !stationData[0]) {
+      // Station existiert noch nicht → initialisieren
+      await sbPost('stations', {
+        id: cs,
+        name: ST[cs-1].loc,
+        location: ST[cs-1].loc,
+        last_known_shelly_kwh: currentShellyKwh,
+        status: 'online'
+      });
+      return;
+    }
+    
+    const station = stationData[0];
+    const lastKnownKwh = station.last_known_shelly_kwh || 0;
+    const gapKwh = parseFloat((currentShellyKwh - lastKnownKwh).toFixed(3));
+    
+    console.log(`[Reconnect] Station ${cs}: Last=${lastKnownKwh} kWh, Current=${currentShellyKwh} kWh, Gap=${gapKwh} kWh`);
+    
+    // 3. Gap erkannt?
+    if(gapKwh > 0.5) {
+      // Prüfe ob eine Session aktiv war
+      const activeSess = await sbGet('sessions', 
+        `station_id=eq.${cs}&stopped_at=is.null&order=started_at.desc&limit=1`);
+      
+      if(activeSess && activeSess[0]) {
+        // Session war aktiv → kWh dazurechnen
+        const sessId = activeSess[0].id;
+        const oldKwh = activeSess[0].kwh || 0;
+        const newKwh = parseFloat((oldKwh + gapKwh).toFixed(3));
+        
+        await sbPatch('sessions', `id=eq.${sessId}`, {
+          kwh: newKwh,
+          offline_gap_kwh: gapKwh,
+          gap_detected: true,
+          notes: `Enthält ${gapKwh} kWh während Pi offline`
+        });
+        
+        console.log(`[Gap] Session #${sessId}: ${oldKwh} → ${newKwh} kWh (+${gapKwh} offline)`);
+      } else {
+        // Keine Session → Unbekanntes Laden!
+        const lastSync = new Date(station.last_sync_timestamp).getTime();
+        const now = Date.now();
+        
+        await sbPost('sessions', {
+          station_id: cs,
+          user_id: null, // Unbekannt
+          started_at: lastSync,
+          stopped_at: now,
+          kwh: gapKwh,
+          chf: parseFloat((gapKwh * ST[cs-1].tariff).toFixed(2)),
+          gap_detected: true,
+          offline_gap_kwh: gapKwh,
+          notes: 'Unbekanntes Laden während Pi offline'
+        });
+        
+        console.log(`[Gap] Unbekannte Session erstellt: ${gapKwh} kWh`);
+      }
+    }
+    
+    // 4. Neuen Stand speichern
+    await sbPatch('stations', `id=eq.${cs}`, {
+      last_known_shelly_kwh: currentShellyKwh,
+      last_sync_timestamp: new Date().toISOString(),
+      status: 'online'
+    });
+    
+  } catch(e) {
+    console.error('[Reconnect] Error:', e);
+  }
+}
+
+// Periodisch Shelly-Stand updaten (alle 60s)
+setInterval(async () => {
+  if(!supaOnline || !piBaseUrl) return;
+  try {
+    const apiR = await fetch(`${piBaseUrl}/api/energy/${cs}`, {signal: AbortSignal.timeout(3000)});
+    const d = await apiR.json();
+    if(d.demo || !d.total_kwh) return;
+    
+    await sbPatch('stations', `id=eq.${cs}`, {
+      last_known_shelly_kwh: d.total_kwh,
+      last_sync_timestamp: new Date().toISOString()
+    });
+  } catch(e) {}
+}, 60000);
 
 
 // ═══ USERS + DEVICE AUTO-LOGIN ═══
