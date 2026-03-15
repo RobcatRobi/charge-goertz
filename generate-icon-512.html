@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Generate Icon 512x512</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;800&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:20px;background:#111">
+<h2 style="color:#fff;font-family:sans-serif">ChargeGörtz Icon 512x512</h2>
+<p style="color:#aaa;font-family:sans-serif">Rechtsklick → "Bild speichern als..." → icon-512.png</p>
+<canvas id="canvas" width="512" height="512" style="border:2px solid #00d4ff"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const size = 512;
+
+// Background with rounded corners
+ctx.fillStyle = '#060a0f';
+roundRect(ctx, 0, 0, size, size, 80);
+ctx.fill();
+
+// Blitz
+ctx.fillStyle = '#00d4ff';
+ctx.beginPath();
+ctx.moveTo(size/2, size*0.2);
+ctx.lineTo(size/2 - 50, size*0.45);
+ctx.lineTo(size/2 + 15, size*0.45);
+ctx.lineTo(size/2, size*0.65);
+ctx.lineTo(size/2 + 50, size*0.45);
+ctx.lineTo(size/2 - 15, size*0.45);
+ctx.closePath();
+ctx.fill();
+
+// Glow effect
+ctx.shadowColor = '#00d4ff';
+ctx.shadowBlur = 20;
+ctx.fill();
+ctx.shadowBlur = 0;
+
+// Text "Charge"
+ctx.font = "bold 72px 'Oxanium', sans-serif";
+ctx.fillStyle = '#00d4ff';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.letterSpacing = '3px';
+ctx.fillText('Charge', size/2, size*0.75);
+
+// Text "Görtz"
+ctx.font = "300 72px 'Oxanium', sans-serif";
+ctx.fillStyle = '#5a7a9a';
+ctx.fillText('Görtz', size/2, size*0.87);
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+// Auto-download
+setTimeout(() => {
+  const link = document.createElement('a');
+  link.download = 'icon-512.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}, 1000);
+</script>
+</body>
+</html>
