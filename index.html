@@ -789,7 +789,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v17 — QUICK WINS: Auto-Hide Banner, Auto-Relay, PIN in Admin
+// CHARGE GÖRTZ v17 — Offline-Fix, Auto-Relay, Nachtrag-Bug, localStorage
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1216,7 +1216,21 @@ async function saveNachtrag() {
   const userId = parseInt(document.getElementById('nachtrag-user').value);
   const date = document.getElementById('nachtrag-date').value;
   const note = document.getElementById('nachtrag-note').value;
-  if(!kwh || kwh <= 0 || !userId) { alert('Bitte kWh und Benutzer eingeben!'); return; }
+  
+  // ✅ FIX 6: Bessere Validierung
+  if(!kwh || kwh <= 0) { 
+    alert('❌ Bitte kWh-Wert eingeben (größer als 0)!'); 
+    return; 
+  }
+  if(!userId || userId === 0) { 
+    alert('❌ Bitte Benutzer auswählen!'); 
+    return; 
+  }
+  if(!date) { 
+    alert('❌ Bitte Datum auswählen!'); 
+    return; 
+  }
+  
   const u = users.find(x => x.id === userId);
   const car = u ? (u.name.includes('Robert') ? CARS[0] : CARS[1]) : null;
   const entry = {
@@ -1228,12 +1242,21 @@ async function saveNachtrag() {
     note: note || (car ? car.name : 'Manueller Nachtrag'),
     created_at: Date.now()
   };
-  const saved = await sbPost('nachtraege', entry);
-  if(saved) {
-    nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
-    renderNachtragHist();
-    renderBilanz();
-    alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
+  
+  try {
+    const saved = await sbPost('nachtraege', entry);
+    if(saved) {
+      nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
+      renderNachtragHist();
+      renderBilanz();
+      closeNachtrag(); // ✅ Modal schließen
+      alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
+    } else {
+      alert('❌ Fehler beim Speichern. Bitte nochmal versuchen.');
+    }
+  } catch(e) {
+    console.error('Nachtrag save error:', e);
+    alert('❌ Fehler: ' + e.message);
   }
 }
 
@@ -1517,13 +1540,13 @@ async function pollShelly(){
   if(!piBaseUrl){
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
-    demoGauges();checkUnknownCharging();return;
+    offlineMode();checkUnknownCharging();return;
   }
   try{
     setStatus('pi','ok','Online');
     const apiR=await fetch(`${piBaseUrl}/api/energy/${cs}`,{signal:AbortSignal.timeout(5000)});
     const d=await apiR.json();
-    if(d.demo){setStatus('shelly','err','Nicht erreichbar');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';demoGauges();checkUnknownCharging();return;}
+    if(d.demo){setStatus('shelly','err','Nicht erreichbar');const st=document.getElementById('shelly-status-txt');if(st)st.textContent='Offline — Sicherungsautomat prüfen';offlineMode();checkUnknownCharging();return;}
     const isC=d.power_kw>0.5;
     if(isC)setStatus('shelly','ok',d.power_kw.toFixed(2)+' kW');
     else setStatus('shelly','ok',d.power_kw>0.05?'Standby':'Online · 0W');
@@ -1536,6 +1559,14 @@ async function pollShelly(){
       if(_off>0&&liveTotalKwh>=_off)liveTotalKwh=parseFloat((liveTotalKwh-_off).toFixed(3));
     }
     updateGauges(d.power_kw,d.voltage_v,d.current_a);
+    
+    // ✅ FIX 5: Letzte Werte in localStorage speichern für Offline-Mode
+    localStorage.setItem('last_power_kw', d.power_kw);
+    localStorage.setItem('last_voltage', d.voltage_v);
+    localStorage.setItem('last_current', d.current_a);
+    localStorage.setItem('last_energy_timestamp', Date.now());
+    if(liveTotalKwh > 0) localStorage.setItem('last_shelly_kwh', liveTotalKwh);
+    
     updatePhasesUI();logToSupabase();renderBilanz();
     const cd=document.getElementById('conn-dot');if(cd)cd.style.background='var(--accent)';
     const banner=document.getElementById('status-banner');
@@ -1579,7 +1610,7 @@ async function pollShelly(){
     if(netMode==='local'||netMode==='tailscale'){netMode='detecting';setTimeout(()=>autoDetectNetwork(),1000);}
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
-    demoGauges();
+    offlineMode();
   }
   checkUnknownCharging();
 }
@@ -1622,17 +1653,40 @@ function updatePhasesUI() {
   }
 }
 
-function demoGauges(){
-  // Simulation Banner anzeigen wenn Pi offline
+function offlineMode(){
+  // ⚠️ OFFLINE-MODE: Keine Fake-Simulation, nur letzte bekannte Werte
   const lb=document.getElementById('live-badge');
-  if(lb){lb.textContent='⚠ SIMULATION';lb.style.cssText='font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,160,0,.15);color:#ffa000;border:1px solid #ffa000';}
-  // Shelly-Status-Text
+  if(lb){
+    lb.textContent='⚠️ OFFLINE';
+    lb.style.cssText='font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,68,68,.15);color:#ff4444;border:1px solid #ff4444';
+  }
+  
+  // Offline-Banner
   const stxt=document.getElementById('shelly-status-txt');
-  if(stxt&&statusState.pi==='err')stxt.textContent='Pi offline — Simulation aktiv';
-  const t=Date.now()/1000;
-  const pw=activeSession&&activeSession.stationId===cs?7.2+Math.sin(t*.3)*.8:.1+Math.random()*.05;
-  const vt=229+Math.sin(t*.7)*2;
-  updateGauges(pw,vt,pw*1000/(vt*1.732));
+  if(stxt&&statusState.pi==='err'){
+    stxt.textContent='Pi offline — Shelly zählt weiter';
+  }
+  
+  // Letzte bekannte Werte aus localStorage laden
+  const lastPower = parseFloat(localStorage.getItem('last_power_kw')||0);
+  const lastVoltage = parseFloat(localStorage.getItem('last_voltage')||0);
+  const lastCurrent = parseFloat(localStorage.getItem('last_current')||0);
+  const lastTimestamp = localStorage.getItem('last_energy_timestamp');
+  
+  if(lastTimestamp){
+    const minutes = Math.floor((Date.now() - parseInt(lastTimestamp))/60000);
+    if(stxt) stxt.textContent = `Offline — Letzte Werte vor ${minutes} Min`;
+  }
+  
+  // Zeige letzte Werte oder "—" wenn keine verfügbar
+  if(lastPower > 0){
+    updateGauges(lastPower, lastVoltage, lastCurrent);
+  } else {
+    // Keine Daten verfügbar
+    document.getElementById('v-power').textContent='—';
+    document.getElementById('v-volt').textContent='—';
+    document.getElementById('v-amp').textContent='—';
+  }
 }
 
 // ═══════════════════════════════════════════
