@@ -2,71 +2,289 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ChargeGörtz EV — Start</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#060a0f">
+<title>ChargeGörtz EV — Installation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  * { margin:0;padding:0;box-sizing:border-box; }
-  body { background:#060a0f;color:#dce8f5;font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px; }
-  .logo { font-size:48px;margin-bottom:8px; }
-  h1 { font-size:28px;font-weight:800;margin-bottom:4px; }
-  h1 span { color:#00d4ff; }
-  .sub { font-size:14px;color:#6b8aaa;margin-bottom:32px; }
-  .card { background:#0d1520;border:1px solid #1e2f48;border-radius:16px;padding:20px;width:100%;max-width:360px;margin-bottom:16px; }
-  .card-title { font-size:11px;font-weight:700;color:#6b8aaa;letter-spacing:.08em;margin-bottom:12px; }
-  .btn { display:block;width:100%;background:#00d4ff;color:#000;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;margin-bottom:8px; }
-  .btn.secondary { background:#1e2f48;color:#dce8f5; }
-  .url-box { background:#060a0f;border:1px solid #1e2f48;border-radius:8px;padding:10px;font-size:11px;color:#00d4ff;word-break:break-all;margin-bottom:12px;font-family:monospace; }
-  .step { display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:13px; }
-  .step-num { background:#00d4ff;color:#000;border-radius:50%;width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px; }
-  #qr { display:flex;justify-content:center;margin-bottom:12px; }
+:root {
+  --bg:#060a0f; --surface:#0d1520; --surface2:#121c2e;
+  --border:#1e2f48; --text:#dce8f5; --text-dim:#5a7a9a;
+  --accent:#00d4ff; --green:#00e87a;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.container{
+  max-width:480px;
+  width:100%;
+  text-align:center;
+}
+.logo{
+  font-family:'Oxanium',sans-serif;
+  font-weight:800;
+  font-size:32px;
+  letter-spacing:.05em;
+  color:var(--accent);
+  margin-bottom:8px;
+}
+.logo span{
+  color:var(--text-dim);
+  font-weight:300;
+}
+.subtitle{
+  font-size:14px;
+  color:var(--text-dim);
+  margin-bottom:40px;
+}
+.qr-box{
+  background:white;
+  padding:20px;
+  border-radius:var(--radius);
+  display:inline-block;
+  margin-bottom:30px;
+  box-shadow:0 8px 32px rgba(0,212,255,0.15);
+}
+#qrcode{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.btn-primary{
+  display:inline-block;
+  padding:16px 40px;
+  background:var(--accent);
+  color:#000;
+  font-family:'Oxanium',sans-serif;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:.06em;
+  border-radius:50px;
+  text-decoration:none;
+  margin-bottom:40px;
+  transition:all 0.2s;
+  border:none;
+  cursor:pointer;
+}
+.btn-primary:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px rgba(0,212,255,0.4);
+}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  margin-bottom:20px;
+  text-align:left;
+}
+.card-title{
+  font-family:'Oxanium',sans-serif;
+  font-size:18px;
+  font-weight:700;
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.steps{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.step{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+.step-num{
+  background:var(--accent);
+  color:#000;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:14px;
+  flex-shrink:0;
+}
+.step-text{
+  flex:1;
+  font-size:14px;
+  line-height:1.6;
+  padding-top:4px;
+}
+.platform-info{
+  background:var(--surface2);
+  padding:12px 16px;
+  border-radius:10px;
+  font-size:13px;
+  color:var(--text-dim);
+  margin-top:20px;
+}
+.platform-icon{
+  font-size:24px;
+  margin-right:8px;
+}
 </style>
 </head>
 <body>
-<div class="logo">⚡</div>
-<h1>Charge<span>Görtz</span></h1>
-<p class="sub">EV Laden · Neerach &amp; Brail</p>
 
-<div class="card">
-  <div class="card-title">📱 APP STARTEN</div>
-  <div id="qr"></div>
-  <div class="url-box" id="app-url">Wird geladen...</div>
-  <a id="open-btn" class="btn" href="#">⚡ App öffnen</a>
+<div class="container">
+  <div class="logo">⚡ Charge<span>Görtz</span></div>
+  <div class="subtitle">EV Charging · Neerach & Brail</div>
+  
+  <!-- QR Code -->
+  <div class="qr-box">
+    <div id="qrcode"></div>
+  </div>
+  
+  <!-- Open App Button -->
+  <a href="https://charge.robcat.ch" class="btn-primary">📱 App öffnen</a>
+  
+  <!-- Installation Instructions -->
+  <div class="card">
+    <div class="card-title">📲 Installation auf Homescreen</div>
+    <div id="ios-steps" style="display:none">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Öffne <strong>https://charge.robcat.ch</strong> in Safari</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Tippe auf das <strong>Teilen-Symbol</strong> (□↑) unten in der Mitte</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Scrolle runter und wähle <strong>"Zum Home-Bildschirm"</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Tippe <strong>"Hinzufügen"</strong> — fertig! 🎉</div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="android-steps" style="display:none">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Öffne <strong>https://charge.robcat.ch</strong> in Chrome</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Tippe auf das <strong>Menü</strong> (⋮) oben rechts</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Wähle <strong>"Zum Startbildschirm hinzufügen"</strong> oder <strong>"App installieren"</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Bestätige mit <strong>"Hinzufügen"</strong> — fertig! 🎉</div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="desktop-steps" style="display:none">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Öffne <strong>https://charge.robcat.ch</strong> am Handy</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Scanne den QR-Code oben oder gib die URL direkt ein</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Folge den Anweisungen für iOS oder Android</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="platform-info">
+      <span class="platform-icon" id="platform-icon">📱</span>
+      <strong>Dein System:</strong> <span id="platform-name">Wird erkannt...</span>
+    </div>
+  </div>
+  
+  <!-- Info Card -->
+  <div class="card">
+    <div class="card-title">ℹ️ Info</div>
+    <div style="font-size:14px;line-height:1.7;color:var(--text-dim)">
+      ChargeGörtz ist eine Progressive Web App (PWA). Sie funktioniert wie eine native App, läuft aber im Browser — keine Installation aus dem App Store nötig.
+      <br><br>
+      <strong style="color:var(--green)">✓</strong> Offline-fähig<br>
+      <strong style="color:var(--green)">✓</strong> Automatische Updates<br>
+      <strong style="color:var(--green)">✓</strong> Push-Benachrichtigungen<br>
+      <strong style="color:var(--green)">✓</strong> Kein App Store Download
+    </div>
+  </div>
+  
+  <div style="margin-top:30px;font-size:12px;color:var(--text-dim)">
+    ChargeGörtz v16 · © 2024-2026 · Neerach & Brail
+  </div>
 </div>
 
-<div class="card">
-  <div class="card-title">📲 ALS APP SPEICHERN (kein Download!)</div>
-  <div class="step"><div class="step-num">1</div><div>App-Link oben öffnen</div></div>
-  <div class="step"><div class="step-num">2</div><div><b>iPhone:</b> Teilen ↑ → "Zum Home-Bildschirm"</div></div>
-  <div class="step"><div class="step-num">2</div><div><b>Android:</b> Menü ⋮ → "App installieren"</div></div>
-  <div class="step"><div class="step-num">3</div><div>ChargeGörtz EV erscheint als App-Icon!</div></div>
-</div>
+<!-- QR Code Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
-// URLs in Priorität
-const URLS = [
-  'https://elder-camel-humans-medications.trycloudflare.com',
-  'http://100.103.254.108:8080',
-  'http://192.168.3.103:8080',
-];
+// Generate QR Code
+const qr = new QRCode(document.getElementById('qrcode'), {
+  text: 'https://charge.robcat.ch',
+  width: 200,
+  height: 200,
+  colorDark: '#060a0f',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.H
+});
 
-async function findBestUrl() {
-  for (const url of URLS) {
-    try {
-      const r = await fetch(url + '/api/status', {signal: AbortSignal.timeout(2000)});
-      const d = await r.json();
-      if (d.status === 'ok') return url;
-    } catch(e) {}
+// Detect Platform
+function detectPlatform() {
+  const ua = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+  const isMobile = isIOS || isAndroid;
+  
+  const iosSteps = document.getElementById('ios-steps');
+  const androidSteps = document.getElementById('android-steps');
+  const desktopSteps = document.getElementById('desktop-steps');
+  const platformIcon = document.getElementById('platform-icon');
+  const platformName = document.getElementById('platform-name');
+  
+  if (isIOS) {
+    iosSteps.style.display = 'block';
+    platformIcon.textContent = '🍎';
+    platformName.textContent = 'iOS (iPhone/iPad)';
+  } else if (isAndroid) {
+    androidSteps.style.display = 'block';
+    platformIcon.textContent = '🤖';
+    platformName.textContent = 'Android';
+  } else {
+    desktopSteps.style.display = 'block';
+    platformIcon.textContent = '💻';
+    platformName.textContent = 'Desktop (bitte QR-Code scannen)';
   }
-  return URLS[0]; // Fallback
 }
 
-findBestUrl().then(url => {
-  document.getElementById('app-url').textContent = url;
-  document.getElementById('open-btn').href = url;
-  // QR Code
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url) + '&bgcolor=0d1520&color=00d4ff&margin=10';
-  document.getElementById('qr').innerHTML = `<img src="${qrUrl}" style="border-radius:8px" width="160" height="160">`;
-});
+detectPlatform();
 </script>
+
 </body>
 </html>
