@@ -734,7 +734,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v9 — SUPABASE CLOUD EDITION
+// CHARGE GÖRTZ v15 — ADMIN PIN FIX + DB CLEANUP
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1972,10 +1972,35 @@ async function checkAdminPin(){
   const pin=adminBuf;
   adminBuf='';
   for(let i=0;i<4;i++){const d=document.getElementById('apd'+i);if(d)d.className='pin-dot';}
-  const admins=users.filter(x=>x.role==='admin');
+  
+  // ✅ FIX: Hole Admin-User direkt aus Supabase statt hardcoded array
   let found=null;
-  for(const a of admins){try{if(await verifyPinSupabase(a.id,pin)){found=a;break;}}catch(e){}}
-  if(!found) found=users.find(x=>x.role==='admin'&&x.pin===pin);
+  try{
+    // Supabase Query: Alle User mit role='admin' UND matching PIN
+    const params=new URLSearchParams({select:'*',role:'eq.admin',pin:`eq.${pin}`});
+    const r=await fetch(`${SUPA_URL}/rest/v1/users?${params}`,{headers:SUPA_HDR,signal:AbortSignal.timeout(5000)});
+    const admins=await r.json();
+    if(admins && admins.length>0){
+      const dbUser=admins[0]; // Erster Match
+      // Map Supabase User zu lokalem Format
+      found={
+        id:dbUser.id,
+        name:dbUser.name,
+        emoji:dbUser.emoji||'👤',
+        pin:dbUser.pin,
+        role:'admin',
+        plate:dbUser.plate||'',
+        stations:[1,2], // Admins haben Zugriff auf beide Stationen
+        color:'#00d4ff'
+      };
+    }
+  }catch(e){
+    console.error('Supabase Admin-PIN Check failed:',e);
+    // Fallback: Lokale hardcodierte Admins (nur für Notfall)
+    const admins=users.filter(x=>x.role==='admin');
+    found=admins.find(x=>x.pin===pin);
+  }
+  
   if(found){
     adminUser=found;
     document.getElementById('admin-lock').style.display='none';
