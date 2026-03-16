@@ -796,7 +796,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v17.1 — BUG FIXES: Nachtrag innerHTML + Auto-Stop Detection
+// CHARGE GÖRTZ v17.2 — BUG FIXES: Nachtrag + Auto-Stop + Reset + Gap-Sessions
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -2375,13 +2375,16 @@ async function admResetShelly(){
     console.error('Supabase log error:', e);
   }
   
-  // Anzeige zurücksetzen
-  liveTotalKwh = 0;
-  const el = document.getElementById('shelly-total-kwh');
-  if(el) el.textContent = '0.00 kWh';
-  updateAdminCounters();
+  // ✅ FIX: NICHT liveTotalKwh auf 0 setzen!
+  // Das wird automatisch beim nächsten pollShelly() korrekt berechnet
+  // Warte kurz und update dann die Anzeige
+  setTimeout(() => {
+    updateAdminCounters();
+    const el = document.getElementById('shelly-total-kwh');
+    if(el && liveTotalKwh < 1) el.textContent = '0.00 kWh';
+  }, 500);
   
-  alert(`✓ Nullpunkt gesetzt!\nAnzeige startet bei 0.00 kWh.\nShelly zählt intern ab ${curKwh.toFixed(2)} kWh weiter.`);
+  alert(`✓ Nullpunkt gesetzt!\nAnzeige wird beim nächsten Update auf 0.00 kWh gesetzt.\nShelly zählt intern ab ${curKwh.toFixed(2)} kWh weiter.`);
 }
 
 // ── Sessions löschen ──────────────────────────────────────────
@@ -2424,6 +2427,18 @@ async function renderGapSessions() {
       const dateStr = d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'});
       const timeStr = d.toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
       
+      // ✅ FIX: Konvertiere Supabase-Format zu App-Format
+      const appFormat = {
+        id: s.id,
+        userId: s.user_id,
+        stationId: s.station_id,
+        startedAt: new Date(s.started_at).getTime(),
+        stoppedAt: s.stopped_at ? new Date(s.stopped_at).getTime() : null,
+        kwh: s.kwh || 0,
+        chf: s.chf || 0,
+        tariff: s.tariff || 0.25
+      };
+      
       return `<div style="background:rgba(255,160,0,.08);border:1px solid #ffa000;border-radius:10px;padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
           <div>
@@ -2438,7 +2453,7 @@ async function renderGapSessions() {
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">
           ⚠️ ${s.notes || 'Offline-Gap erkannt'}
         </div>
-        <button onclick="openSessEdit(${JSON.stringify(s).replace(/"/g,'&quot;')})" 
+        <button onclick='openSessEdit(${JSON.stringify(appFormat)})' 
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer">
           ✏️ Zuordnen / Bearbeiten
         </button>
@@ -2704,7 +2719,13 @@ let connectMode="pi";
 async function getSupaTotalKwh(){
   try{
     const r=await sbGet("energy_log",`select=total_kwh&station_id=eq.${cs}&order=ts.desc&limit=1`);
-    if(r&&r.length)return r[0].total_kwh||0;
+    if(r&&r.length){
+      let kwh = r[0].total_kwh||0;
+      // ✅ FIX: Offset auch bei Supabase-Daten anwenden
+      const _off=parseFloat(cfg['shellyOffset_'+cs]||0);
+      if(_off>0&&kwh>=_off) kwh=parseFloat((kwh-_off).toFixed(3));
+      return kwh;
+    }
   }catch(e){}
   return 0;
 }
