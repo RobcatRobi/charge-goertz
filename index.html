@@ -796,7 +796,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v17 — Offline-Fix, Auto-Relay, Nachtrag-Bug, localStorage
+// CHARGE GÖRTZ v17.1 — BUG FIXES: Nachtrag innerHTML + Auto-Stop Detection
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1269,6 +1269,8 @@ async function saveNachtrag() {
 
 function renderNachtragHist() {
   const el = document.getElementById('nachtrag-hist-list');
+  if(!el) return; // ✅ BUG FIX: Element existiert nicht
+  
   const list = nachtraege.filter(n => n.station_id === cs).slice(0, 5);
   el.innerHTML = list.length === 0
     ? '<div style="color:var(--text-dim);font-size:11px">Noch keine Nachträge</div>'
@@ -1596,6 +1598,44 @@ async function pollShelly(){
       const elH=(Date.now()-activeSession.startedAt)/3600000;
       activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
       activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
+    }
+    
+    // ✅ BUG FIX 2: Auto-Stop wenn Leistung = 0 (Auto voll geladen)
+    if(activeSession && activeSession.stationId === cs && d.power_kw < 0.1) {
+      // Prüfe ob schon länger 0 kW (mindestens 60 Sekunden)
+      if(!window.autoStopTimer) {
+        window.autoStopTimer = Date.now();
+      } else if(Date.now() - window.autoStopTimer > 60000) {
+        // 60 Sek bei 0kW → Auto voll → Session beenden
+        console.log('[Auto-Stop] Leistung 0kW für 60s → Session wird beendet');
+        await stopSession();
+        
+        // Push-Benachrichtigung senden
+        if('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+          const u = users.find(x => x.id === activeSession.userId);
+          const userName = u ? u.name : 'Unbekannt';
+          const dur = Math.round((Date.now() - activeSession.startedAt) / 60000);
+          const msg = `✅ Laden beendet!\n${userName} · ${activeSession.kwh.toFixed(2)} kWh · ${activeSession.chf.toFixed(2)} CHF · ${dur} Min`;
+          
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification('⚡ ChargeGörtz', {
+              body: msg,
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              vibrate: [200, 100, 200],
+              tag: 'charge-complete'
+            });
+          } catch(e) {
+            console.error('[Push] Error:', e);
+          }
+        }
+        
+        window.autoStopTimer = null;
+      }
+    } else {
+      // Leistung > 0 → Timer zurücksetzen
+      window.autoStopTimer = null;
     }
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString();}).reduce((a,s)=>a+s.kwh,0);
     const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+s.kwh,0);
