@@ -1285,17 +1285,6 @@ function renderNachtragHist() {
 }
 
 
-async function resetShelly() {
-  if(!confirm('Shelly Zähler wirklich zurücksetzen? Letzter Stand wird in Supabase gespeichert.')) return;
-  const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
-  try {
-    const r = await fetch(`${piBase}/api/shelly/reset/${cs}`, {method:'POST', signal:AbortSignal.timeout(5000)});
-    const d = await r.json();
-    if(d.ok) alert('✓ Shelly Zähler zurückgesetzt!');
-    else alert('Fehler: ' + (d.error||'unbekannt'));
-  } catch(e) { alert('Reset fehlgeschlagen: ' + e.message); }
-}
-
 // ═══════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════
@@ -2352,13 +2341,19 @@ function updateAdminCounters(){
 
 // ── Shelly Reset ───────────────────────────────────────────────
 async function admResetShelly(){
+  // Prüfe ob Shelly-Daten verfügbar
+  if(!liveTotalKwh || liveTotalKwh === 0) {
+    alert('❌ Fehler: Kein Shelly-Zählerstand verfügbar.\n\nBitte warten bis Shelly-Daten geladen sind.\nAktueller Stand: ' + (liveTotalKwh || 0).toFixed(2) + ' kWh');
+    return;
+  }
+  
   // Erkläre was passiert
   const curKwh = liveTotalKwh;
   if(!confirm(
     `Shelly Gesamtzähler für ${ST[adminStation-1].loc} zurücksetzen?\n\n` +
     `Aktueller Stand: ${curKwh.toFixed(2)} kWh\n` +
     `Nach Reset: Anzeige startet bei 0.00 kWh\n\n` +
-    `⚠ Hinweis: Da gerade geladen wird, zählt der Shelly intern weiter.\n` +
+    `⚠ Hinweis: Shelly zählt intern weiter.\n` +
     `Wir setzen einen Nullpunkt — die Anzeige beginnt bei 0.`
   )) return;
   
@@ -2376,7 +2371,9 @@ async function admResetShelly(){
       total_kwh: curKwh,
       note: 'RESET (Nullpunkt gesetzt)'
     });
-  } catch(e) {}
+  } catch(e) {
+    console.error('Supabase log error:', e);
+  }
   
   // Anzeige zurücksetzen
   liveTotalKwh = 0;
