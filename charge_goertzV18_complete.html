@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>ChargeGörtz v18</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #000;
+  --accent: #00d4ff;
+  --green: #00e676;
+  --red: #ff4444;
+  --text: #fff;
+  --text-dim: #999;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* WELCOME SCREEN */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+.logo-big {
+  font-size: 80px;
+  margin-bottom: 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.app-title {
+  font-size: 48px;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 8px;
+  letter-spacing: -2px;
+}
+
+.app-subtitle {
+  font-size: 16px;
+  color: var(--text-dim);
+  margin-bottom: 60px;
+}
+
+.station-choice {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 16px;
+}
+
+.station-btn {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 32px 24px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.station-btn:active {
+  transform: scale(0.98);
+}
+
+.station-btn.selected {
+  border-color: var(--accent);
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 30px rgba(0,212,255,0.3);
+}
+
+.station-name {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.station-loc {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.auto-detect-box {
+  background: rgba(0,230,118,0.1);
+  border: 2px dashed var(--green);
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 24px;
+  text-align: center;
+}
+
+.auto-status {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+/* HOME SCREEN */
+.home {
+  padding: 20px;
+  text-align: center;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.station-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px;
+}
+
+/* CHARGING CARD */
+.charge-card {
+  background: linear-gradient(135deg, rgba(0,212,255,0.1) 0%, rgba(0,0,0,0.5) 100%);
+  border: 2px solid rgba(0,212,255,0.3);
+  border-radius: 32px;
+  padding: 48px 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(0,212,255,0.2);
+}
+
+.user-emoji {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.user-name-big {
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 48px;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+}
+
+.kwh-big {
+  font-size: 96px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 16px;
+  font-family: monospace;
+}
+
+.kwh-label {
+  font-size: 24px;
+  color: var(--text-dim);
+  margin-bottom: 48px;
+}
+
+.meta-info {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  margin-bottom: 48px;
+  font-size: 20px;
+}
+
+.meta-val {
+  font-weight: 700;
+}
+
+.btn-abort {
+  width: 100%;
+  max-width: 300px;
+  padding: 24px;
+  background: var(--red);
+  border: none;
+  border-radius: 20px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255,68,68,0.4);
+}
+
+.btn-abort:active {
+  transform: scale(0.98);
+}
+
+/* START CARD */
+.start-card {
+  margin-bottom: 32px;
+}
+
+.start-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: var(--text-dim);
+}
+
+.qr-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  background: var(--accent);
+  border: none;
+  border-radius: 20px;
+  font-size: 28px;
+  font-weight: 900;
+  color: #000;
+  cursor: pointer;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0,212,255,0.4);
+}
+
+.qr-btn:active {
+  transform: scale(0.98);
+}
+
+.auto-box {
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed var(--text-dim);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 32px;
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+.divider {
+  margin: 32px 0;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.manual-btn {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* DETAILS SCREEN */
+.details {
+  padding: 20px;
+}
+
+.back-btn {
+  font-size: 32px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+
+.detail-section {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 14px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--text-dim);
+}
+
+.detail-value {
+  font-weight: 700;
+  font-family: monospace;
+}
+
+/* ADMIN SCREEN */
+.admin {
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+.admin-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.admin-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.stat-box {
+  background: rgba(0,212,255,0.1);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--accent);
+  font-family: monospace;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.admin-btn {
+  width: 100%;
+  padding: 16px;
+  background: rgba(255,68,68,0.1);
+  border: 2px solid var(--red);
+  border-radius: 12px;
+  color: var(--red);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.nav-item {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 28px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-item.active {
+  color: var(--accent);
+}
+
+.nav-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- WELCOME SCREEN -->
+<div class="screen active" id="welcome-screen">
+  <div class="welcome">
+    <div class="logo-big">⚡</div>
+    <h1 class="app-title">ChargeGörtz</h1>
+    <p class="app-subtitle">EV Charging · v18</p>
+    
+    <div class="station-choice">
+      <button class="station-btn" onclick="selectStation(1)">
+        <div class="station-name">⚡ Neerach</div>
+        <div class="station-loc">Görtz Home</div>
+      </button>
+      
+      <button class="station-btn" onclick="selectStation(2)">
+        <div class="station-name">🏔️ Brail</div>
+        <div class="station-loc">Ferienhaus</div>
+      </button>
+    </div>
+    
+    <div class="auto-detect-box" id="auto-box">
+      <div class="auto-status" id="auto-status">🔍 Automatische Erkennung...</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="home-screen">
+  <div class="home">
+    <div class="header">
+      <div class="station-label" id="current-station">NEERACH</div>
+      <button class="menu-btn" onclick="showScreen('admin-screen')">⚙️</button>
+    </div>
+    
+    <!-- ACTIVE CHARGING -->
+    <div class="charge-card hidden" id="active-card">
+      <div class="user-emoji" id="user-emoji">⚡</div>
+      <div class="user-name-big" id="user-name-big">ROBERT GÖRTZ</div>
+      
+      <div class="kwh-big" id="kwh-big">18.4</div>
+      <div class="kwh-label">kWh geladen</div>
+      
+      <div class="meta-info">
+        <div><span class="meta-val" id="power-live">7.2</span> kW</div>
+        <div><span class="meta-val" id="time-live">42</span> Min</div>
+      </div>
+      
+      <button class="btn-abort" onclick="stopCharging()">❌ ABBRUCH</button>
+    </div>
+    
+    <!-- START NEW -->
+    <div class="start-card" id="start-card">
+      <div class="start-title">Laden starten</div>
+      
+      <button class="qr-btn" onclick="scanQR()">
+        📱 QR-Code scannen
+      </button>
+      
+      <div class="auto-box" id="gps-box">
+        🔍 Prüfe Standort...
+      </div>
+      
+      <div class="divider">ODER</div>
+      
+      <button class="manual-btn" onclick="manualStart()">
+        Manuell auswählen
+      </button>
+    </div>
+  </div>
+  
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showScreen('home-screen')">
+      <span>⚡</span>
+      <span class="nav-label">Live</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('details-screen')">
+      <span>📊</span>
+      <span class="nav-label">Details</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('admin-screen')">
+      <span>⚙️</span>
+      <span class="nav-label">Admin</span>
+    </button>
+  </nav>
+</div>
+
+<!-- DETAILS SCREEN -->
+<div class="screen" id="details-screen">
+  <div class="details">
+    <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+    
+    <div class="detail-section">
+      <div class="section-title">⚡ LIVE DATEN</div>
+      <div class="detail-row">
+        <span class="detail-label">Leistung</span>
+        <span class="detail-value" id="d-power">7.2 kW</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Spannung</span>
+        <span class="detail-value" id="d-voltage">231 V</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Strom</span>
+        <span class="detail-value" id="d-current">31.2 A</span>
+      </div>
+    </div>
+    
+    <div class="detail-section">
+      <div class="section-title">🔋 BATTERIE</div>
+      <div class="detail-row">
+        <span class="detail-label">Start</span>
+        <span class="detail-value">47%</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Aktuell</span>
+        <span class="detail-value" id="d-battery">68%</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Geladen</span>
+        <span class="detail-value" id="d-charged">+21%</span>
+      </div>
+    </div>
+    
+    <div class="detail-section">
+      <div class="section-title">💰 KOSTEN</div>
+      <div class="detail-row">
+        <span class="detail-label">Energie</span>
+        <span class="detail-value" id="d-kwh">18.4 kWh</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Tarif</span>
+        <span class="detail-value">0.25 CHF/kWh</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Total</span>
+        <span class="detail-value" id="d-chf">4.60 CHF</span>
+      </div>
+    </div>
+  </div>
+  
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="showScreen('home-screen')">
+      <span>⚡</span>
+      <span class="nav-label">Live</span>
+    </button>
+    <button class="nav-item active">
+      <span>📊</span>
+      <span class="nav-label">Details</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('admin-screen')">
+      <span>⚙️</span>
+      <span class="nav-label">Admin</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div class="screen" id="admin-screen">
+  <div class="admin">
+    <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+    
+    <div class="admin-card">
+      <div class="admin-title">📊 STATISTIKEN</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-value" id="a-shelly">47.2</div>
+          <div class="stat-label">Shelly Total kWh</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="a-sessions">0.0</div>
+          <div class="stat-label">Sessions kWh</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="admin-card">
+      <div class="admin-title">⚙️ AKTIONEN</div>
+      <button class="admin-btn" onclick="resetShelly()">
+        ⚠️ Shelly Hardware-Reset
+      </button>
+      <button class="admin-btn" onclick="window.location.href='charge_goertzV17.html'">
+        🔙 Zurück zu v17
+      </button>
+    </div>
+  </div>
+  
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="showScreen('home-screen')">
+      <span>⚡</span>
+      <span class="nav-label">Live</span>
+    </button>
+    <button class="nav-item" onclick="showScreen('details-screen')">
+      <span>📊</span>
+      <span class="nav-label">Details</span>
+    </button>
+    <button class="nav-item active">
+      <span>⚙️</span>
+      <span class="nav-label">Admin</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CHARGE GÖRTZ v18 - COMPLETE
+// ═══════════════════════════════════════════════════════════════
+
+let currentStation = 1;
+let activeSession = null;
+let isCharging = false;
+
+// INIT
+window.addEventListener('DOMContentLoaded', () => {
+  checkAutoDetect();
+});
+
+// AUTO-DETECT STATION
+async function checkAutoDetect() {
+  const box = document.getElementById('auto-box');
+  const status = document.getElementById('auto-status');
+  
+  try {
+    status.textContent = '📍 Prüfe GPS...';
+    const pos = await getGPS();
+    
+    // Neerach: 47.5166, 8.5142
+    const dist = getDistance(pos.lat, pos.lon, 47.5166, 8.5142);
+    
+    if(dist < 50) {
+      status.textContent = '✅ An Neerach erkannt!';
+      box.style.borderColor = '#00e676';
+      box.style.background = 'rgba(0,230,118,0.1)';
+      setTimeout(() => selectStation(1), 2000);
+    } else {
+      status.textContent = '❌ Bitte Station wählen';
+      box.style.borderColor = '#ff4444';
+    }
+  } catch(e) {
+    status.textContent = '⚠️ GPS nicht verfügbar';
+  }
+}
+
+function getGPS() {
+  return new Promise((resolve, reject) => {
+    if(!navigator.geolocation) reject(new Error('No GPS'));
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude}),
+      err => reject(err)
+    );
+  });
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+// SELECT STATION
+function selectStation(id) {
+  currentStation = id;
+  const name = id === 1 ? 'NEERACH' : 'BRAIL';
+  document.getElementById('current-station').textContent = name;
+  
+  // Highlight selected
+  document.querySelectorAll('.station-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === id-1);
+  });
+  
+  setTimeout(() => showScreen('home-screen'), 1000);
+}
+
+// SCREEN NAVIGATION
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+// QR SCAN
+async function scanQR() {
+  alert('QR-Scanner wird geöffnet...\n\nFeature kommt in Phase 2!');
+  // TODO: HTML5 QR Scanner
+}
+
+// MANUAL START
+function manualStart() {
+  const user = prompt('Wer lädt?\n1 = Robert\n2 = Cintia\n3 = Carolina\n4 = Sabrina');
+  if(user && user >= 1 && user <= 4) {
+    const names = ['ROBERT GÖRTZ', 'CINTIA GÖRTZ', 'CAROLINA', 'SABRINA'];
+    const emojis = ['⚡', '🌿', '🌸', '⭐'];
+    startCharging(user, names[user-1], emojis[user-1]);
+  }
+}
+
+// START CHARGING
+function startCharging(userId, name, emoji) {
+  isCharging = true;
+  activeSession = {
+    userId,
+    name,
+    emoji,
+    startedAt: Date.now(),
+    kwh: 0,
+    chf: 0
+  };
+  
+  document.getElementById('user-emoji').textContent = emoji;
+  document.getElementById('user-name-big').textContent = name;
+  
+  document.getElementById('start-card').classList.add('hidden');
+  document.getElementById('active-card').classList.remove('hidden');
+  
+  updateLive();
+  setInterval(updateLive, 2000);
+}
+
+// STOP CHARGING
+function stopCharging() {
+  if(!confirm('Laden wirklich beenden?')) return;
+  
+  isCharging = false;
+  alert(`✅ Beendet!\n${activeSession.kwh.toFixed(1)} kWh geladen\n${activeSession.chf.toFixed(2)} CHF`);
+  
+  document.getElementById('active-card').classList.add('hidden');
+  document.getElementById('start-card').classList.remove('hidden');
+  
+  activeSession = null;
+}
+
+// UPDATE LIVE DATA
+function updateLive() {
+  if(!isCharging) return;
+  
+  const power = 7.2; // TODO: From Shelly
+  const elapsed = (Date.now() - activeSession.startedAt) / 60000;
+  const kwh = (power * elapsed / 60).toFixed(1);
+  const chf = (kwh * 0.25).toFixed(2);
+  
+  document.getElementById('kwh-big').textContent = kwh;
+  document.getElementById('power-live').textContent = power.toFixed(1);
+  document.getElementById('time-live').textContent = Math.floor(elapsed);
+  
+  // Details
+  document.getElementById('d-power').textContent = power.toFixed(1) + ' kW';
+  document.getElementById('d-kwh').textContent = kwh + ' kWh';
+  document.getElementById('d-chf').textContent = chf + ' CHF';
+  
+  activeSession.kwh = parseFloat(kwh);
+  activeSession.chf = parseFloat(chf);
+}
+
+// ADMIN
+function resetShelly() {
+  if(!confirm('⚠️ HARDWARE-RESET?\n\nShelly wird auf 0 kWh zurückgesetzt!')) return;
+  alert('Feature kommt in Phase 2!');
+}
+</script>
+
+</body>
+</html>
