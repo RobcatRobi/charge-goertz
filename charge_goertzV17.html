@@ -539,7 +539,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         </div>
       </div>
       <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
-        ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
+        &#128260; Shelly Zähler nullen
       </button>
       <button onclick="admResetSessions()" style="width:100%;background:rgba(255,160,0,.1);border:1px solid #ffa000;color:#ffa000;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">
         &#128465; Alle Sessions löschen
@@ -796,7 +796,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v17.3 — HARDWARE-RESET: Shelly 3EM werkseitig auf 0 kWh
+// CHARGE GÖRTZ v17 — Offline-Fix, Auto-Relay, Nachtrag-Bug, localStorage
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -1269,8 +1269,6 @@ async function saveNachtrag() {
 
 function renderNachtragHist() {
   const el = document.getElementById('nachtrag-hist-list');
-  if(!el) return; // ✅ BUG FIX: Element existiert nicht
-  
   const list = nachtraege.filter(n => n.station_id === cs).slice(0, 5);
   el.innerHTML = list.length === 0
     ? '<div style="color:var(--text-dim);font-size:11px">Noch keine Nachträge</div>'
@@ -1284,6 +1282,17 @@ function renderNachtragHist() {
       }).join('');
 }
 
+
+async function resetShelly() {
+  if(!confirm('Shelly Zähler wirklich zurücksetzen? Letzter Stand wird in Supabase gespeichert.')) return;
+  const piBase = cfg.tsIp || 'http://192.168.3.103:5000';
+  try {
+    const r = await fetch(`${piBase}/api/shelly/reset/${cs}`, {method:'POST', signal:AbortSignal.timeout(5000)});
+    const d = await r.json();
+    if(d.ok) alert('✓ Shelly Zähler zurückgesetzt!');
+    else alert('Fehler: ' + (d.error||'unbekannt'));
+  } catch(e) { alert('Reset fehlgeschlagen: ' + e.message); }
+}
 
 // ═══════════════════════════════════════════
 // NAV
@@ -1587,44 +1596,6 @@ async function pollShelly(){
       const elH=(Date.now()-activeSession.startedAt)/3600000;
       activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
       activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
-    }
-    
-    // ✅ BUG FIX 2: Auto-Stop wenn Leistung = 0 (Auto voll geladen)
-    if(activeSession && activeSession.stationId === cs && d.power_kw < 0.1) {
-      // Prüfe ob schon länger 0 kW (mindestens 60 Sekunden)
-      if(!window.autoStopTimer) {
-        window.autoStopTimer = Date.now();
-      } else if(Date.now() - window.autoStopTimer > 60000) {
-        // 60 Sek bei 0kW → Auto voll → Session beenden
-        console.log('[Auto-Stop] Leistung 0kW für 60s → Session wird beendet');
-        await stopSession();
-        
-        // Push-Benachrichtigung senden
-        if('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
-          const u = users.find(x => x.id === activeSession.userId);
-          const userName = u ? u.name : 'Unbekannt';
-          const dur = Math.round((Date.now() - activeSession.startedAt) / 60000);
-          const msg = `✅ Laden beendet!\n${userName} · ${activeSession.kwh.toFixed(2)} kWh · ${activeSession.chf.toFixed(2)} CHF · ${dur} Min`;
-          
-          try {
-            const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification('⚡ ChargeGörtz', {
-              body: msg,
-              icon: '/icon-192.png',
-              badge: '/icon-192.png',
-              vibrate: [200, 100, 200],
-              tag: 'charge-complete'
-            });
-          } catch(e) {
-            console.error('[Push] Error:', e);
-          }
-        }
-        
-        window.autoStopTimer = null;
-      }
-    } else {
-      // Leistung > 0 → Timer zurücksetzen
-      window.autoStopTimer = null;
     }
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString();}).reduce((a,s)=>a+s.kwh,0);
     const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+s.kwh,0);
@@ -2341,105 +2312,39 @@ function updateAdminCounters(){
 
 // ── Shelly Reset ───────────────────────────────────────────────
 async function admResetShelly(){
-  // Prüfe ob Shelly-Daten verfügbar
-  if(!liveTotalKwh || liveTotalKwh === 0) {
-    alert('❌ Fehler: Kein Shelly-Zählerstand verfügbar.\n\nBitte warten bis Shelly-Daten geladen sind.\nAktueller Stand: ' + (liveTotalKwh || 0).toFixed(2) + ' kWh');
-    return;
-  }
-  
+  // Erkläre was passiert
   const curKwh = liveTotalKwh;
-  const shellyIP = ST[adminStation-1].ip3em;
-  
-  // ⚠️ DOPPELTE SICHERHEITSABFRAGE
   if(!confirm(
-    `⚠️⚠️⚠️ ACHTUNG - HARDWARE-RESET ⚠️⚠️⚠️\n\n` +
-    `Shelly 3EM wird WERKSEITIG auf 0.00 kWh zurückgesetzt!\n\n` +
-    `Station: ${ST[adminStation-1].loc}\n` +
+    `Shelly Gesamtzähler für ${ST[adminStation-1].loc} zurücksetzen?\n\n` +
     `Aktueller Stand: ${curKwh.toFixed(2)} kWh\n` +
-    `Shelly IP: ${shellyIP}\n\n` +
-    `⚠️ DIES IST EIN ECHTER HARDWARE-RESET!\n` +
-    `⚠️ Der Zählerstand geht PERMANENT verloren!\n\n` +
-    `Wirklich fortfahren?`
+    `Nach Reset: Anzeige startet bei 0.00 kWh\n\n` +
+    `⚠ Hinweis: Da gerade geladen wird, zählt der Shelly intern weiter.\n` +
+    `Wir setzen einen Nullpunkt — die Anzeige beginnt bei 0.`
   )) return;
   
-  // Zweite Sicherheitsabfrage
-  if(!confirm(
-    `LETZTE WARNUNG!\n\n` +
-    `Du bist dabei den Shelly 3EM Hardware-Zähler\n` +
-    `von ${curKwh.toFixed(2)} kWh auf 0.00 kWh zu setzen.\n\n` +
-    `Dies kann NICHT rückgängig gemacht werden!\n\n` +
-    `WIRKLICH FORTFAHREN?`
-  )) return;
+  // Offset in cfg speichern (Nullpunkt)
+  const key = 'shellyOffset_' + adminStation;
+  cfg[key] = curKwh;
+  localStorage.setItem('cg_cfg', JSON.stringify(cfg));
   
+  // Auch in Supabase loggen
   try {
-    // Log in Supabase BEVOR Reset
     await sbPost('energy_log', {
       station_id: adminStation,
       ts: Date.now(),
       power_w: 0,
       total_kwh: curKwh,
-      note: `HARDWARE-RESET VOR: ${curKwh.toFixed(2)} kWh`
+      note: 'RESET (Nullpunkt gesetzt)'
     });
-    
-    // Shelly 3EM Hardware-Reset via HTTP API
-    // Endpoint: /rpc/EM.ResetCounters
-    const resetUrl = `http://${shellyIP}/rpc/EM.ResetCounters?id=0&type=["active"]`;
-    
-    const response = await fetch(resetUrl, {
-      method: 'POST',
-      signal: AbortSignal.timeout(10000)
-    });
-    
-    if(!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    console.log('[Shelly Reset] Response:', result);
-    
-    // Lösche Offset (nicht mehr nötig)
-    const key = 'shellyOffset_' + adminStation;
-    delete cfg[key];
-    localStorage.setItem('cg_cfg', JSON.stringify(cfg));
-    
-    // Log NACH Reset
-    await sbPost('energy_log', {
-      station_id: adminStation,
-      ts: Date.now(),
-      power_w: 0,
-      total_kwh: 0,
-      note: `HARDWARE-RESET NACH: 0.00 kWh (war: ${curKwh.toFixed(2)} kWh)`
-    });
-    
-    // Warte 2 Sekunden, dann aktualisiere Anzeige
-    setTimeout(() => {
-      liveTotalKwh = 0;
-      const el = document.getElementById('shelly-total-kwh');
-      if(el) el.textContent = '0.00 kWh';
-      updateAdminCounters();
-      pollShelly(); // Neue Daten holen
-    }, 2000);
-    
-    alert(
-      `✅ HARDWARE-RESET ERFOLGREICH!\n\n` +
-      `Shelly 3EM wurde auf 0.00 kWh zurückgesetzt.\n` +
-      `Vorheriger Stand: ${curKwh.toFixed(2)} kWh\n\n` +
-      `Die Anzeige wird in 2 Sekunden aktualisiert.`
-    );
-    
-  } catch(e) {
-    console.error('[Shelly Reset] Error:', e);
-    alert(
-      `❌ RESET FEHLGESCHLAGEN!\n\n` +
-      `Fehler: ${e.message}\n\n` +
-      `Mögliche Ursachen:\n` +
-      `- Shelly nicht erreichbar (${shellyIP})\n` +
-      `- Netzwerk-Problem\n` +
-      `- Shelly-Firmware zu alt\n\n` +
-      `Bitte manuell über Shelly Web-Interface zurücksetzen:\n` +
-      `http://${shellyIP}`
-    );
-  }
+  } catch(e) {}
+  
+  // Anzeige zurücksetzen
+  liveTotalKwh = 0;
+  const el = document.getElementById('shelly-total-kwh');
+  if(el) el.textContent = '0.00 kWh';
+  updateAdminCounters();
+  
+  alert(`✓ Nullpunkt gesetzt!\nAnzeige startet bei 0.00 kWh.\nShelly zählt intern ab ${curKwh.toFixed(2)} kWh weiter.`);
 }
 
 // ── Sessions löschen ──────────────────────────────────────────
@@ -2482,18 +2387,6 @@ async function renderGapSessions() {
       const dateStr = d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'});
       const timeStr = d.toLocaleTimeString('de-CH', {hour:'2-digit', minute:'2-digit'});
       
-      // ✅ FIX: Konvertiere Supabase-Format zu App-Format
-      const appFormat = {
-        id: s.id,
-        userId: s.user_id,
-        stationId: s.station_id,
-        startedAt: new Date(s.started_at).getTime(),
-        stoppedAt: s.stopped_at ? new Date(s.stopped_at).getTime() : null,
-        kwh: s.kwh || 0,
-        chf: s.chf || 0,
-        tariff: s.tariff || 0.25
-      };
-      
       return `<div style="background:rgba(255,160,0,.08);border:1px solid #ffa000;border-radius:10px;padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
           <div>
@@ -2508,7 +2401,7 @@ async function renderGapSessions() {
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">
           ⚠️ ${s.notes || 'Offline-Gap erkannt'}
         </div>
-        <button onclick='openSessEdit(${JSON.stringify(appFormat)})' 
+        <button onclick="openSessEdit(${JSON.stringify(s).replace(/"/g,'&quot;')})" 
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer">
           ✏️ Zuordnen / Bearbeiten
         </button>
@@ -2774,13 +2667,7 @@ let connectMode="pi";
 async function getSupaTotalKwh(){
   try{
     const r=await sbGet("energy_log",`select=total_kwh&station_id=eq.${cs}&order=ts.desc&limit=1`);
-    if(r&&r.length){
-      let kwh = r[0].total_kwh||0;
-      // ✅ FIX: Offset auch bei Supabase-Daten anwenden
-      const _off=parseFloat(cfg['shellyOffset_'+cs]||0);
-      if(_off>0&&kwh>=_off) kwh=parseFloat((kwh-_off).toFixed(3));
-      return kwh;
-    }
+    if(r&&r.length)return r[0].total_kwh||0;
   }catch(e){}
   return 0;
 }
