@@ -539,7 +539,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         </div>
       </div>
       <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
-        &#128260; Shelly Zähler nullen
+        ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
       </button>
       <button onclick="admResetSessions()" style="width:100%;background:rgba(255,160,0,.1);border:1px solid #ffa000;color:#ffa000;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">
         &#128465; Alle Sessions löschen
@@ -796,7 +796,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// CHARGE GÖRTZ v17.2 — BUG FIXES: Nachtrag + Auto-Stop + Reset + Gap-Sessions
+// CHARGE GÖRTZ v17.3 — HARDWARE-RESET: Shelly 3EM werkseitig auf 0 kWh
 // Supabase URL: https://vloululxbazfcvlhmtzr.supabase.co
 // ═══════════════════════════════════════════════════════════════
 
@@ -2347,44 +2347,99 @@ async function admResetShelly(){
     return;
   }
   
-  // Erkläre was passiert
   const curKwh = liveTotalKwh;
+  const shellyIP = ST[adminStation-1].ip3em;
+  
+  // ⚠️ DOPPELTE SICHERHEITSABFRAGE
   if(!confirm(
-    `Shelly Gesamtzähler für ${ST[adminStation-1].loc} zurücksetzen?\n\n` +
+    `⚠️⚠️⚠️ ACHTUNG - HARDWARE-RESET ⚠️⚠️⚠️\n\n` +
+    `Shelly 3EM wird WERKSEITIG auf 0.00 kWh zurückgesetzt!\n\n` +
+    `Station: ${ST[adminStation-1].loc}\n` +
     `Aktueller Stand: ${curKwh.toFixed(2)} kWh\n` +
-    `Nach Reset: Anzeige startet bei 0.00 kWh\n\n` +
-    `⚠ Hinweis: Shelly zählt intern weiter.\n` +
-    `Wir setzen einen Nullpunkt — die Anzeige beginnt bei 0.`
+    `Shelly IP: ${shellyIP}\n\n` +
+    `⚠️ DIES IST EIN ECHTER HARDWARE-RESET!\n` +
+    `⚠️ Der Zählerstand geht PERMANENT verloren!\n\n` +
+    `Wirklich fortfahren?`
   )) return;
   
-  // Offset in cfg speichern (Nullpunkt)
-  const key = 'shellyOffset_' + adminStation;
-  cfg[key] = curKwh;
-  localStorage.setItem('cg_cfg', JSON.stringify(cfg));
+  // Zweite Sicherheitsabfrage
+  if(!confirm(
+    `LETZTE WARNUNG!\n\n` +
+    `Du bist dabei den Shelly 3EM Hardware-Zähler\n` +
+    `von ${curKwh.toFixed(2)} kWh auf 0.00 kWh zu setzen.\n\n` +
+    `Dies kann NICHT rückgängig gemacht werden!\n\n` +
+    `WIRKLICH FORTFAHREN?`
+  )) return;
   
-  // Auch in Supabase loggen
   try {
+    // Log in Supabase BEVOR Reset
     await sbPost('energy_log', {
       station_id: adminStation,
       ts: Date.now(),
       power_w: 0,
       total_kwh: curKwh,
-      note: 'RESET (Nullpunkt gesetzt)'
+      note: `HARDWARE-RESET VOR: ${curKwh.toFixed(2)} kWh`
     });
+    
+    // Shelly 3EM Hardware-Reset via HTTP API
+    // Endpoint: /rpc/EM.ResetCounters
+    const resetUrl = `http://${shellyIP}/rpc/EM.ResetCounters?id=0&type=["active"]`;
+    
+    const response = await fetch(resetUrl, {
+      method: 'POST',
+      signal: AbortSignal.timeout(10000)
+    });
+    
+    if(!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    console.log('[Shelly Reset] Response:', result);
+    
+    // Lösche Offset (nicht mehr nötig)
+    const key = 'shellyOffset_' + adminStation;
+    delete cfg[key];
+    localStorage.setItem('cg_cfg', JSON.stringify(cfg));
+    
+    // Log NACH Reset
+    await sbPost('energy_log', {
+      station_id: adminStation,
+      ts: Date.now(),
+      power_w: 0,
+      total_kwh: 0,
+      note: `HARDWARE-RESET NACH: 0.00 kWh (war: ${curKwh.toFixed(2)} kWh)`
+    });
+    
+    // Warte 2 Sekunden, dann aktualisiere Anzeige
+    setTimeout(() => {
+      liveTotalKwh = 0;
+      const el = document.getElementById('shelly-total-kwh');
+      if(el) el.textContent = '0.00 kWh';
+      updateAdminCounters();
+      pollShelly(); // Neue Daten holen
+    }, 2000);
+    
+    alert(
+      `✅ HARDWARE-RESET ERFOLGREICH!\n\n` +
+      `Shelly 3EM wurde auf 0.00 kWh zurückgesetzt.\n` +
+      `Vorheriger Stand: ${curKwh.toFixed(2)} kWh\n\n` +
+      `Die Anzeige wird in 2 Sekunden aktualisiert.`
+    );
+    
   } catch(e) {
-    console.error('Supabase log error:', e);
+    console.error('[Shelly Reset] Error:', e);
+    alert(
+      `❌ RESET FEHLGESCHLAGEN!\n\n` +
+      `Fehler: ${e.message}\n\n` +
+      `Mögliche Ursachen:\n` +
+      `- Shelly nicht erreichbar (${shellyIP})\n` +
+      `- Netzwerk-Problem\n` +
+      `- Shelly-Firmware zu alt\n\n` +
+      `Bitte manuell über Shelly Web-Interface zurücksetzen:\n` +
+      `http://${shellyIP}`
+    );
   }
-  
-  // ✅ FIX: NICHT liveTotalKwh auf 0 setzen!
-  // Das wird automatisch beim nächsten pollShelly() korrekt berechnet
-  // Warte kurz und update dann die Anzeige
-  setTimeout(() => {
-    updateAdminCounters();
-    const el = document.getElementById('shelly-total-kwh');
-    if(el && liveTotalKwh < 1) el.textContent = '0.00 kWh';
-  }, 500);
-  
-  alert(`✓ Nullpunkt gesetzt!\nAnzeige wird beim nächsten Update auf 0.00 kWh gesetzt.\nShelly zählt intern ab ${curKwh.toFixed(2)} kWh weiter.`);
 }
 
 // ── Sessions löschen ──────────────────────────────────────────
