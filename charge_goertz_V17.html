@@ -1594,29 +1594,50 @@ async function pollShelly(){
       // Prüfe ob schon länger 0 kW (mindestens 60 Sekunden)
       if(!window.autoStopTimer) {
         window.autoStopTimer = Date.now();
+        console.log('[Auto-Stop] Timer gestartet - 0kW erkannt');
       } else if(Date.now() - window.autoStopTimer > 60000) {
         // 60 Sek bei 0kW → Auto voll → Session beenden
-        console.log('[Auto-Stop] Leistung 0kW für 60s → Session wird beendet');
+        console.log('[Auto-Stop] ⚡ TRIGGER! Leistung 0kW für 60s → Session wird beendet');
+        
+        const u = users.find(x => x.id === activeSession.userId);
+        const userName = u ? u.name : 'Unbekannt';
+        const stationName = cs === 1 ? 'Neerach' : 'Brail';
+        
+        // Session beenden
         await stopSession();
         
-        // Push-Benachrichtigung senden
-        if('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
-          const u = users.find(x => x.id === activeSession.userId);
-          const userName = u ? u.name : 'Unbekannt';
-          const dur = Math.round((Date.now() - activeSession.startedAt) / 60000);
-          const msg = `✅ Laden beendet!\n${userName} · ${activeSession.kwh.toFixed(2)} kWh · ${activeSession.chf.toFixed(2)} CHF · ${dur} Min`;
-          
+        // ⚡ BROADCAST PUSH an ALLE: "Ladestation ist wieder frei"
+        const broadcastMsg = `🔓 Ladestation ${stationName} ist wieder frei!\n\n${userName} hat geladen: ${activeSession.kwh.toFixed(1)} kWh`;
+        
+        if('serviceWorker' in navigator && 'Notification' in window) {
           try {
             const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification('⚡ ChargeGörtz', {
-              body: msg,
+            
+            // Notification 1: An ladenden User (Details)
+            if(Notification.permission === 'granted') {
+              const dur = Math.round((Date.now() - activeSession.startedAt) / 60000);
+              await reg.showNotification('⚡ Laden beendet', {
+                body: `${activeSession.kwh.toFixed(1)} kWh · ${activeSession.chf.toFixed(2)} CHF · ${dur} Min`,
+                icon: '/icon-192.png',
+                badge: '/icon-192.png',
+                vibrate: [200, 100, 200],
+                tag: 'charge-complete'
+              });
+            }
+            
+            // Notification 2: BROADCAST an ALLE (Station frei)
+            await reg.showNotification('🔓 Station frei!', {
+              body: broadcastMsg,
               icon: '/icon-192.png',
               badge: '/icon-192.png',
-              vibrate: [200, 100, 200],
-              tag: 'charge-complete'
+              vibrate: [100, 50, 100],
+              tag: 'station-free-' + cs,
+              requireInteraction: false
             });
+            
+            console.log('[Auto-Stop] ✅ Broadcast gesendet:', broadcastMsg);
           } catch(e) {
-            console.error('[Push] Error:', e);
+            console.error('[Auto-Stop] Push Error:', e);
           }
         }
         
@@ -1624,6 +1645,9 @@ async function pollShelly(){
       }
     } else {
       // Leistung > 0 → Timer zurücksetzen
+      if(window.autoStopTimer) {
+        console.log('[Auto-Stop] Timer reset - Leistung wieder da');
+      }
       window.autoStopTimer = null;
     }
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString();}).reduce((a,s)=>a+s.kwh,0);
