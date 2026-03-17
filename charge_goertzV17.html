@@ -2410,20 +2410,23 @@ async function admResetShelly(){
   // ⚠️ DOPPELTE SICHERHEITSABFRAGE
   if(!confirm(
     `⚠️⚠️⚠️ ACHTUNG - HARDWARE-RESET ⚠️⚠️⚠️\n\n` +
-    `Shelly 3EM wird WERKSEITIG auf 0.00 kWh zurückgesetzt!\n\n` +
+    `Shelly 3EM wird WERKSEITIG auf 0.00 kWh zurückgesetzt!\n` +
+    `ALLE SESSIONS WERDEN GELÖSCHT!\n\n` +
     `Station: ${ST[adminStation-1].loc}\n` +
     `Aktueller Stand: ${curKwh.toFixed(2)} kWh\n` +
+    `Sessions: ${sessions.filter(s=>s.stationId===adminStation).length} Einträge\n` +
     `Shelly IP: ${shellyIP}\n\n` +
     `⚠️ DIES IST EIN ECHTER HARDWARE-RESET!\n` +
-    `⚠️ Der Zählerstand geht PERMANENT verloren!\n\n` +
+    `⚠️ Der Zählerstand UND alle Sessions gehen PERMANENT verloren!\n\n` +
     `Wirklich fortfahren?`
   )) return;
   
   // Zweite Sicherheitsabfrage
   if(!confirm(
     `LETZTE WARNUNG!\n\n` +
-    `Du bist dabei den Shelly 3EM Hardware-Zähler\n` +
-    `von ${curKwh.toFixed(2)} kWh auf 0.00 kWh zu setzen.\n\n` +
+    `Du bist dabei:\n` +
+    `1. Shelly 3EM von ${curKwh.toFixed(2)} kWh auf 0.00 kWh zu setzen\n` +
+    `2. ALLE ${sessions.filter(s=>s.stationId===adminStation).length} Sessions zu LÖSCHEN\n\n` +
     `Dies kann NICHT rückgängig gemacht werden!\n\n` +
     `WIRKLICH FORTFAHREN?`
   )) return;
@@ -2459,13 +2462,39 @@ async function admResetShelly(){
     delete cfg[key];
     localStorage.setItem('cg_cfg', JSON.stringify(cfg));
     
+    // ✅ NEUE FUNKTION: ALLE SESSIONS LÖSCHEN (lokal + Supabase)
+    console.log('[Hardware-Reset] Lösche alle Sessions für Station', adminStation);
+    const sessionCount = sessions.filter(s=>s.stationId===adminStation).length;
+    
+    // 1. Sessions aus Supabase löschen
+    try {
+      const params = new URLSearchParams({station_id: `eq.${adminStation}`});
+      const delRes = await fetch(`${SUPA_URL}/rest/v1/sessions?${params}`, {
+        method: 'DELETE',
+        headers: SUPA_HDR,
+        signal: AbortSignal.timeout(10000)
+      });
+      if(!delRes.ok) {
+        console.error('[Hardware-Reset] Supabase session deletion failed:', delRes.status);
+      } else {
+        console.log(`[Hardware-Reset] ✅ ${sessionCount} Sessions aus Supabase gelöscht`);
+      }
+    } catch(e) {
+      console.error('[Hardware-Reset] Supabase delete error:', e);
+    }
+    
+    // 2. Sessions aus lokalem Array löschen
+    sessions = sessions.filter(s => s.stationId !== adminStation);
+    save(); // localStorage speichern
+    console.log(`[Hardware-Reset] ✅ Sessions lokal gelöscht`);
+    
     // Log NACH Reset
     await sbPost('energy_log', {
       station_id: adminStation,
       ts: Date.now(),
       power_w: 0,
       total_kwh: 0,
-      note: `HARDWARE-RESET NACH: 0.00 kWh (war: ${curKwh.toFixed(2)} kWh)`
+      note: `HARDWARE-RESET NACH: 0.00 kWh (war: ${curKwh.toFixed(2)} kWh) + ${sessionCount} Sessions gelöscht`
     });
     
     // Warte 2 Sekunden, dann aktualisiere Anzeige
@@ -2473,14 +2502,16 @@ async function admResetShelly(){
       liveTotalKwh = 0;
       const el = document.getElementById('shelly-total-kwh');
       if(el) el.textContent = '0.00 kWh';
+      renderAdmSessions(); // Sessions-Liste neu rendern
       updateAdminCounters();
       pollShelly(); // Neue Daten holen
     }, 2000);
     
     alert(
       `✅ HARDWARE-RESET ERFOLGREICH!\n\n` +
-      `Shelly 3EM wurde auf 0.00 kWh zurückgesetzt.\n` +
-      `Vorheriger Stand: ${curKwh.toFixed(2)} kWh\n\n` +
+      `Shelly 3EM: 0.00 kWh (war: ${curKwh.toFixed(2)} kWh)\n` +
+      `Sessions: ${sessionCount} Einträge gelöscht\n\n` +
+      `ALLES AUF NULL!\n\n` +
       `Die Anzeige wird in 2 Sekunden aktualisiert.`
     );
     
