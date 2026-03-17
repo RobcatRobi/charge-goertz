@@ -538,6 +538,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           <div id="adm-sess-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">—</div>
         </div>
       </div>
+      <div id="adm-warn" style="display:none;background:rgba(255,68,68,0.1);border:1px solid #ff4444;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.4"></div>
       <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
         ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
       </button>
@@ -1589,67 +1590,8 @@ async function pollShelly(){
       activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
     }
     
-    // ✅ BUG FIX 2: Auto-Stop wenn Leistung = 0 (Auto voll geladen)
-    if(activeSession && activeSession.stationId === cs && d.power_kw < 0.1) {
-      // Prüfe ob schon länger 0 kW (mindestens 60 Sekunden)
-      if(!window.autoStopTimer) {
-        window.autoStopTimer = Date.now();
-        console.log('[Auto-Stop] Timer gestartet - 0kW erkannt');
-      } else if(Date.now() - window.autoStopTimer > 60000) {
-        // 60 Sek bei 0kW → Auto voll → Session beenden
-        console.log('[Auto-Stop] ⚡ TRIGGER! Leistung 0kW für 60s → Session wird beendet');
-        
-        const u = users.find(x => x.id === activeSession.userId);
-        const userName = u ? u.name : 'Unbekannt';
-        const stationName = cs === 1 ? 'Neerach' : 'Brail';
-        
-        // Session beenden
-        await stopSession();
-        
-        // ⚡ BROADCAST PUSH an ALLE: "Ladestation ist wieder frei"
-        const broadcastMsg = `🔓 Ladestation ${stationName} ist wieder frei!\n\n${userName} hat geladen: ${activeSession.kwh.toFixed(1)} kWh`;
-        
-        if('serviceWorker' in navigator && 'Notification' in window) {
-          try {
-            const reg = await navigator.serviceWorker.ready;
-            
-            // Notification 1: An ladenden User (Details)
-            if(Notification.permission === 'granted') {
-              const dur = Math.round((Date.now() - activeSession.startedAt) / 60000);
-              await reg.showNotification('⚡ Laden beendet', {
-                body: `${activeSession.kwh.toFixed(1)} kWh · ${activeSession.chf.toFixed(2)} CHF · ${dur} Min`,
-                icon: '/icon-192.png',
-                badge: '/icon-192.png',
-                vibrate: [200, 100, 200],
-                tag: 'charge-complete'
-              });
-            }
-            
-            // Notification 2: BROADCAST an ALLE (Station frei)
-            await reg.showNotification('🔓 Station frei!', {
-              body: broadcastMsg,
-              icon: '/icon-192.png',
-              badge: '/icon-192.png',
-              vibrate: [100, 50, 100],
-              tag: 'station-free-' + cs,
-              requireInteraction: false
-            });
-            
-            console.log('[Auto-Stop] ✅ Broadcast gesendet:', broadcastMsg);
-          } catch(e) {
-            console.error('[Auto-Stop] Push Error:', e);
-          }
-        }
-        
-        window.autoStopTimer = null;
-      }
-    } else {
-      // Leistung > 0 → Timer zurücksetzen
-      if(window.autoStopTimer) {
-        console.log('[Auto-Stop] Timer reset - Leistung wieder da');
-      }
-      window.autoStopTimer = null;
-    }
+    // (Auto-Stop wurde verschoben zu eigenem setInterval - läuft jetzt immer!)
+    
     const today=sessions.filter(s=>{const dt=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dt.toDateString()===now.toDateString();}).reduce((a,s)=>a+s.kwh,0);
     const month=sessions.filter(s=>{const dd=new Date(s.startedAt);const now=new Date();return s.stationId===cs&&dd.getMonth()===now.getMonth()&&dd.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+s.kwh,0);
     document.getElementById('v-today').textContent=today.toFixed(1)+' kWh';
@@ -2260,6 +2202,69 @@ if(_rm){
     .catch(()=>{});
 }
 setInterval(pollShelly,5000);
+
+// ✅ FIX 2: Auto-Stop läuft IMMER - auch wenn Pi offline!
+setInterval(async ()=>{
+  if(!activeSession) {
+    window.autoStopTimer = null;
+    return;
+  }
+  
+  // Prüfe Leistung (aus letztem pollShelly oder aus offlineMode)
+  const lastPower = parseFloat(localStorage.getItem('last_power_kw') || '0');
+  
+  console.log(`[Auto-Stop Check] Session aktiv, Power: ${lastPower} kW, Timer: ${window.autoStopTimer?'läuft':'null'}`);
+  
+  if(lastPower < 0.1) {
+    if(!window.autoStopTimer) {
+      window.autoStopTimer = Date.now();
+      console.log('[Auto-Stop] ⏱️ Timer gestartet - 0kW erkannt');
+    } else {
+      const elapsed = Date.now() - window.autoStopTimer;
+      console.log(`[Auto-Stop] Warte... ${Math.round(elapsed/1000)}s / 60s`);
+      
+      if(elapsed > 60000) {
+        // 60 Sek bei 0kW → TRIGGER!
+        console.log('[Auto-Stop] ⚡⚡⚡ TRIGGER! 60s bei 0kW → Session beenden!');
+        
+        const u = users.find(x => x.id === activeSession.userId);
+        const userName = u ? u.name : 'Unbekannt';
+        const stationName = cs === 1 ? 'Neerach' : 'Brail';
+        const sessionKwh = activeSession.kwh || 0;
+        
+        // Session beenden
+        await stopSession();
+        
+        // Push an ALLE
+        const broadcastMsg = `🔓 Ladestation ${stationName} ist wieder frei!\n\n${userName} hat geladen: ${sessionKwh.toFixed(1)} kWh`;
+        
+        if('serviceWorker' in navigator && 'Notification' in window) {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            await reg.showNotification('🔓 Station frei!', {
+              body: broadcastMsg,
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              vibrate: [200, 100, 200, 100, 200],
+              tag: 'station-free-' + cs,
+              requireInteraction: true
+            });
+            console.log('[Auto-Stop] ✅ Broadcast Push gesendet!');
+          } catch(e) {
+            console.error('[Auto-Stop] Push Error:', e);
+          }
+        }
+        
+        window.autoStopTimer = null;
+      }
+    }
+  } else {
+    if(window.autoStopTimer) {
+      console.log('[Auto-Stop] ❌ Timer reset - Leistung wieder da (' + lastPower + ' kW)');
+    }
+    window.autoStopTimer = null;
+  }
+}, 5000); // Alle 5 Sekunden prüfen (parallel zu pollShelly)
 setInterval(()=>autoDetectNetwork(),30000);
 setTimeout(checkPushHint,3000);
 loadNachtraege();
@@ -2358,9 +2363,37 @@ function updateAdminCounters(){
   const totKwh=allSess.reduce((a,s)=>a+s.kwh,0);
   const sEl=document.getElementById('adm-shelly-kwh');
   const ssEl=document.getElementById('adm-sess-kwh');
-  if(adminStation===1&&liveTotalKwh>0){if(sEl)sEl.textContent=liveTotalKwh.toFixed(2)+' kWh';}
+  
+  // ✅ FIX: Shelly ist oberste Priorität - Sessions dürfen NIE größer sein!
+  if(adminStation===1&&liveTotalKwh>0){
+    if(sEl)sEl.textContent=liveTotalKwh.toFixed(2)+' kWh';
+    
+    // KRITISCH: Sessions > Shelly = Fehler im System!
+    if(totKwh > liveTotalKwh) {
+      console.error(`[FEHLER] Sessions (${totKwh.toFixed(2)} kWh) > Shelly (${liveTotalKwh.toFixed(2)} kWh)! Das darf nicht sein!`);
+      if(ssEl) {
+        ssEl.textContent = totKwh.toFixed(2) + ' kWh ⚠️ FEHLER';
+        ssEl.style.color = '#ff4444';
+      }
+      // Zeige Differenz
+      const diff = totKwh - liveTotalKwh;
+      const warnEl = document.getElementById('adm-warn');
+      if(warnEl) {
+        warnEl.textContent = `⚠️ WARNUNG: Sessions ${diff.toFixed(2)} kWh größer als Shelly! Unbekannter User am Werk oder Offset-Problem!`;
+        warnEl.style.display = 'block';
+        warnEl.style.color = '#ff4444';
+      }
+    } else {
+      if(ssEl) {
+        ssEl.textContent = totKwh.toFixed(2) + ' kWh';
+        ssEl.style.color = '';
+      }
+      const warnEl = document.getElementById('adm-warn');
+      if(warnEl) warnEl.style.display = 'none';
+    }
+  }
   else{if(sEl)sEl.textContent='(kein Shelly)';}
-  if(ssEl)ssEl.textContent=totKwh.toFixed(2)+' kWh';
+  if(!sEl && ssEl) ssEl.textContent=totKwh.toFixed(2)+' kWh';
 }
 
 // ── Shelly Reset ───────────────────────────────────────────────
