@@ -1932,8 +1932,9 @@ function renderSessions(){
   else if(fv!=='all')ss=ss.filter(s=>s.userId===parseInt(fv));
 
   const totSessKwh=sessions.filter(s=>s.stationId===cs).reduce((a,s)=>a+s.kwh,0);
+  const totNachtragKwh=nachtraege.filter(n=>n.station_id===cs).reduce((a,n)=>a+(n.kwh||0),0);
   const shellyKwh=liveTotalKwh||0;
-  const unkKwh=Math.max(0,shellyKwh-totSessKwh);
+  const unkKwh=Math.max(0,shellyKwh-totSessKwh-totNachtragKwh); // ✅ SHELLY = Sessions + Nachträge!
   const bb=document.getElementById('bilanz-banner');
   
   // ✅ VEREINFACHT: Nur EINE Box für alle Differenzen
@@ -1941,7 +1942,18 @@ function renderSessions(){
     if(bb){
       bb.style.display='block';
       document.getElementById('bilanz-text').textContent=
-        `Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Differenz: ${unkKwh.toFixed(1)} kWh`;
+        `Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Nachträge: ${totNachtragKwh.toFixed(1)} kWh | Differenz: ${unkKwh.toFixed(1)} kWh`;
+    }
+  }else if(shellyKwh>0&&unkKwh<-0.1){
+    // ❌ FEHLER: Sessions+Nachträge GRÖSSER als Shelly = UNMÖGLICH!
+    if(bb){
+      bb.style.display='block';
+      bb.style.borderColor='#ff4444';
+      bb.style.background='rgba(255,68,68,.12)';
+      document.getElementById('bilanz-text').innerHTML=
+        `<span style="color:#ff4444;font-weight:700">❌ FEHLER!</span><br>` +
+        `Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Nachträge: ${totNachtragKwh.toFixed(1)} kWh<br>` +
+        `<span style="color:#ff4444">Sessions+Nachträge GRÖSSER als Shelly! Daten sind inkonsistent!</span>`;
     }
   }else{
     if(bb)bb.style.display='none';
