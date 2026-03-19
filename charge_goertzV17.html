@@ -1206,6 +1206,9 @@ function openNachtrag(){
   const dateEl=document.getElementById('nachtrag-date');
   if(dateEl)dateEl.value=new Date().toISOString().split('T')[0];
   
+  // ✅ Nachtrag Historie anzeigen
+  renderNachtragHist();
+  
   ov.style.display='flex';
 }
 
@@ -1251,8 +1254,8 @@ async function saveNachtrag() {
       nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
       renderNachtragHist();
       renderBilanz();
-      closeNachtrag(); // ✅ Modal schließen
-      alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
+      alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`); // ✅ Alert ZUERST
+      closeNachtrag(); // ✅ DANN Modal schließen
     } else {
       alert('❌ Fehler beim Speichern. Bitte nochmal versuchen.');
     }
@@ -3089,6 +3092,9 @@ async function verifyPinSupabase(userId,pin){
     <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em">BEMERKUNG</div>
     <input type="text" id="nachtrag-note" placeholder="z.B. Laden ohne Login, Brail manuell"
       style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:16px;box-sizing:border-box">
+    
+    <!-- ✅ NACHTRAG HISTORIE -->
+    <div id="nachtrag-hist-list" style="margin-bottom:16px"></div>
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button onclick="saveNachtrag()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer">💾 Speichern</button>
