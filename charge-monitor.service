@@ -1,0 +1,21 @@
+[Unit]
+Description=ChargeGörtz Background Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/charge-goertz
+Environment="SUPABASE_URL=https://vloululxbazfcvlhmtzr.supabase.co"
+Environment="SUPABASE_KEY=YOUR_SUPABASE_KEY_HERE"
+ExecStart=/usr/bin/python3 /opt/charge-goertz/charge_monitor.py
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=append:/var/log/charge-monitor.log
+StandardError=append:/var/log/charge-monitor.log
+
+[Install]
+WantedBy=multi-user.target
