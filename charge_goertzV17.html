@@ -1254,6 +1254,7 @@ async function saveNachtrag() {
       nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
       renderNachtragHist();
       renderBilanz();
+      renderSessions(); // ✅ CRITICAL: Update Sessions display to recalculate Differenz!
       alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`); // ✅ Alert ZUERST
       closeNachtrag(); // ✅ DANN Modal schließen
     } else {
