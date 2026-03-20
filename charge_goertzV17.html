@@ -716,6 +716,16 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="modal-title">Ladevorgang starten</div>
     <div class="modal-sub" id="modal-sub">Benutzer wählen → PIN eingeben</div>
     <div class="modal-users" id="modal-users"></div>
+    
+    <!-- ✅ v17.5: Zählerstand-Eingabe für BRAIL (ohne Shelly) -->
+    <div id="manual-meter-field" style="display:none;margin:12px 0">
+      <label style="display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px">
+        📊 Aktueller Zählerstand (kWh):
+      </label>
+      <input type="number" id="manual-start-kwh" step="0.1" placeholder="z.B. 1234.5" 
+        style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:14px;font-family:'Space Mono',monospace">
+    </div>
+    
     <div class="pin-display">
       <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
       <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
@@ -1008,54 +1018,146 @@ function genDemo() {
 // ═══════════════════════════════════════════════════════════════
 async function startSession(u) {
   const now = Date.now();
+  
+  // ✅ v17.5: BRAIL Hand-Modus mit Zählerstand
+  let manualStartKwh = null;
+  let unbekanntSession = null;
+  
+  if(cs === 2) { // BRAIL
+    const input = document.getElementById('manual-start-kwh');
+    manualStartKwh = input ? parseFloat(input.value) : null;
+    
+    if(!manualStartKwh || manualStartKwh <= 0) {
+      alert('❌ Bitte Zählerstand eingeben!');
+      return;
+    }
+    
+    // Differenz zu letztem Stand prüfen
+    const lastReading = ST[1].lastMeterReading || 0; // Station 2 ist index 1
+    const diff = manualStartKwh - lastReading;
+    
+    if(diff > 0.5) {
+      const ok = confirm(`⚠️ ${diff.toFixed(1)} kWh unbeaufsichtigt geladen!
+
+Soll ich diese Energie als "UNBEKANNT" speichern?`);
+      if(ok) {
+        // Erstelle Unbekannt-Session
+        unbekanntSession = {
+          user_id: 0, // 0 = Unbekannt
+          station_id: cs,
+          started_at: new Date(now - 3600000).toISOString(), // 1h früher
+          stopped_at: new Date(now).toISOString(),
+          kwh: diff,
+          chf: parseFloat((diff * ST[cs-1].tariff).toFixed(2)),
+          tariff: ST[cs-1].tariff,
+          is_manual: true,
+          note: 'Unbeaufsichtigt geladen'
+        };
+        await sbPost('sessions', unbekanntSession);
+      }
+    }
+  }
+  
   const sessData = {
-    user_id: u.id, station_id: cs, started_at: now,
-    tariff: ST[cs-1].tariff, kwh: 0, chf: 0
+    user_id: u.id, 
+    station_id: cs, 
+    started_at: now,
+    tariff: ST[cs-1].tariff, 
+    kwh: 0, 
+    chf: 0,
+    is_manual: (cs === 2),
+    manual_start_kwh: manualStartKwh
   };
 
-  let sessId = Date.now(); // fallback ID
+  let sessId = Date.now();
   if(supaOnline) {
     const res = await sbPost('sessions', sessData);
     if(res && res[0]) sessId = res[0].id;
   }
 
-  activeSession = {id:sessId, userId:u.id, stationId:cs, startedAt:now, kwh:0, chf:0, tariff:ST[cs-1].tariff};
+  activeSession = {
+    id:sessId, 
+    userId:u.id, 
+    stationId:cs, 
+    startedAt:now, 
+    kwh:0, 
+    chf:0, 
+    tariff:ST[cs-1].tariff,
+    isManual: (cs === 2),
+    manualStartKwh: manualStartKwh
+  };
   relayOn = true;
   save();
   renderDashboard();
   updateRelayUI();
 
-  // Auto-Freigabe: Relay einschalten
-  const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
-  try{
-    const r=await fetch(`${piBase}/api/relay/${cs}/on`,{signal:AbortSignal.timeout(3000)});
-    const d=await r.json();
-    if(d.success) setStatus('relay','ok','EIN');
-  }catch(e){console.error('Relay ON failed:',e);}
+  // Relay nur für NEERACH
+  if(cs === 1) {
+    const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
+    try{
+      const r=await fetch(`${piBase}/api/relay/${cs}/on`,{signal:AbortSignal.timeout(3000)});
+      const d=await r.json();
+      if(d.success) setStatus('relay','ok','EIN');
+    }catch(e){console.error('Relay ON failed:',e);}
+  }
 }
 
 async function stopSession() {
   if(!activeSession) return;
-  const el = (Date.now()-activeSession.startedAt)/3600000;
-  const kwh = parseFloat((7.4*el).toFixed(3));
+  
+  let kwh = 0;
+  let manualStopKwh = null;
+  
+  // ✅ v17.5: BRAIL Hand-Modus - Zählerstand Ende
+  if(activeSession.isManual && cs === 2) {
+    const input = prompt('📊 Zählerstand Ende (kWh):', '');
+    if(!input) {
+      alert('❌ Abgebrochen!');
+      return;
+    }
+    manualStopKwh = parseFloat(input);
+    if(!manualStopKwh || manualStopKwh <= activeSession.manualStartKwh) {
+      alert('❌ Ungültiger Zählerstand!');
+      return;
+    }
+    kwh = parseFloat((manualStopKwh - activeSession.manualStartKwh).toFixed(3));
+    
+    // Update last_meter_reading in stations
+    await sbPatch('stations', `id=eq.${cs}`, {last_meter_reading: manualStopKwh});
+    ST[cs-1].lastMeterReading = manualStopKwh;
+  } else {
+    // Auto: Shelly
+    const el = (Date.now()-activeSession.startedAt)/3600000;
+    kwh = parseFloat((7.4*el).toFixed(3));
+  }
+  
   const chf = parseFloat((kwh*activeSession.tariff).toFixed(2));
 
   if(supaOnline) {
-    await sbPatch('sessions', `id=eq.${activeSession.id}`,
-      {stopped_at: Date.now(), kwh, chf});
+    const updateData = {
+      stopped_at: Date.now(), 
+      kwh, 
+      chf
+    };
+    if(manualStopKwh) {
+      updateData.manual_stop_kwh = manualStopKwh;
+    }
+    await sbPatch('sessions', `id=eq.${activeSession.id}`, updateData);
   }
 
   sessions.unshift({...activeSession, stoppedAt:Date.now(), kwh, chf});
   activeSession = null;
   relayOn = false;
 
-  // Auto-Freigabe: Relay ausschalten
-  const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
-  try{
-    const r=await fetch(`${piBase}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)});
-    const d=await r.json();
-    if(d.success) setStatus('relay','ok','AUS');
-  }catch(e){console.error('Relay OFF failed:',e);}
+  // Relay nur für NEERACH
+  if(cs === 1) {
+    const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
+    try{
+      const r=await fetch(`${piBase}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)});
+      const d=await r.json();
+      if(d.success) setStatus('relay','ok','AUS');
+    }catch(e){console.error('Relay OFF failed:',e);}
+  }
   
   save();
   renderDashboard();
@@ -1147,8 +1249,8 @@ async function logToSupabase() {
 let nachtraege = [];
 
 async function loadNachtraege() {
-  const rows = await sbGet('nachtraege', `select=*&station_id=eq.${cs}&order=ts.desc`);
-  if(rows) nachtraege = rows;
+  // ✅ v17.5: DEPRECATED - Nachträge sind jetzt in sessions mit is_manual=true
+  nachtraege = [];
 }
 
 function calcBilanz() {
@@ -1220,9 +1322,9 @@ async function saveNachtrag() {
   const kwh = parseFloat(document.getElementById('nachtrag-kwh').value);
   const userId = parseInt(document.getElementById('nachtrag-user').value);
   const date = document.getElementById('nachtrag-date').value;
-  const note = document.getElementById('nachtrag-note').value;
+  const noteText = document.getElementById('nachtrag-note').value;
   
-  // ✅ FIX 6: Bessere Validierung
+  // ✅ Validierung
   if(!kwh || kwh <= 0) { 
     alert('❌ Bitte kWh-Wert eingeben (größer als 0)!'); 
     return; 
@@ -1237,27 +1339,31 @@ async function saveNachtrag() {
   }
   
   const u = users.find(x => x.id === userId);
-  const car = u ? (u.name.includes('Robert') ? CARS[0] : CARS[1]) : null;
-  const entry = {
+  const tariff = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
+  
+  // ✅ v17.5: Speichern als MANUELLE SESSION (nicht nachtraege!)
+  const startDate = new Date(date + 'T00:00:00');
+  const session = {
     station_id: cs,
     user_id: userId,
-    ts: new Date(date).getTime(),
-    kwh,
-    chf: parseFloat((kwh * (cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff)).toFixed(2)),
-    note: note || (car ? car.name : 'Manueller Nachtrag'),
-    created_at: Date.now()
+    started_at: startDate.toISOString(),
+    stopped_at: null, // NULL = manueller Eintrag!
+    kwh: kwh,
+    chf: parseFloat((kwh * tariff).toFixed(2)),
+    tariff: tariff,
+    is_manual: true, // ✅ NEUES FELD!
+    note: noteText || 'Hand-Nachtrag'
   };
   
   try {
-    const saved = await sbPost('nachtraege', entry);
-    if(saved && saved.length > 0) { // ✅ FIX: Check if array has data!
-      nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
-      await loadNachtraege(); // ✅ CRITICAL: Reload from Supabase to get fresh data!
-      renderNachtragHist();
+    const saved = await sbPost('sessions', session);
+    if(saved && saved.length > 0) {
+      sessions.unshift(Array.isArray(saved) ? saved[0] : saved);
+      await loadData(); // Reload all data
       renderBilanz();
-      renderSessions(); // ✅ Update Sessions display to recalculate Differenz!
-      alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`); // ✅ Alert ZUERST
-      closeNachtrag(); // ✅ DANN Modal schließen
+      renderSessions();
+      alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
+      closeNachtrag();
     } else {
       alert('❌ Fehler beim Speichern. Bitte nochmal versuchen.');
     }
@@ -1269,16 +1375,17 @@ async function saveNachtrag() {
 
 function renderNachtragHist() {
   const el = document.getElementById('nachtrag-hist-list');
-  if(!el) return; // ✅ BUG FIX: Element existiert nicht
+  if(!el) return;
   
-  const list = nachtraege.filter(n => n.station_id === cs).slice(0, 5);
-  el.innerHTML = list.length === 0
+  // ✅ v17.5: Zeige manuelle Sessions statt nachtraege
+  const manualSessions = sessions.filter(s => s.stationId === cs && s.is_manual).slice(0, 5);
+  el.innerHTML = manualSessions.length === 0
     ? '<div style="color:var(--text-dim);font-size:11px">Noch keine Nachträge</div>'
-    : list.map(n => {
-        const u = users.find(x => x.id === n.user_id);
-        const dt = new Date(n.ts).toLocaleDateString('de-CH');
+    : manualSessions.map(s => {
+        const u = users.find(x => x.id === s.userId);
+        const dt = new Date(s.startedAt).toLocaleDateString('de-CH');
         return `<div class="nachtrag-item">
-          <span>${u?.emoji||'⚡'} ${u?.name||'?'} — ${n.kwh.toFixed(1)} kWh / ${n.chf?.toFixed(2)} CHF</span>
+          <span>${u?.emoji||'⚡'} ${u?.name||'?'} — ${s.kwh.toFixed(1)} kWh / ${s.chf?.toFixed(2)} CHF</span>
           <span style="color:var(--text-dim)">${dt}</span>
         </div>`;
       }).join('');
@@ -1746,6 +1853,15 @@ function openStartSession(){
   const su=document.getElementById('modal-users');
   const us=users.filter(u=>u.stations.includes(cs));
   su.innerHTML=us.map(u=>`<button class="mu-btn" id="mu${u.id}" onclick="selMU(${u.id})">${u.emoji} ${u.name}</button>`).join('');
+  
+  // ✅ v17.5: Zeige Zählerstand-Feld für BRAIL (cs === 2, kein Shelly)
+  const meterField = document.getElementById('manual-meter-field');
+  if(meterField) {
+    meterField.style.display = (cs === 2) ? 'block' : 'none';
+    if(cs === 2) {
+      document.getElementById('manual-start-kwh').value = '';
+    }
+  }
 }
 function selMU(id){
   modalUser=users.find(u=>u.id===id);
@@ -1956,7 +2072,17 @@ function renderSessions(){
       if(!u){
         html+=`<div class="sess-row-unknown"><div style="font-size:19px">❓</div><div style="flex:1"><div class="sess-name">Unbekannt<span class="badge-unknown">KEIN LOGIN</span></div><div class="sess-date">${t} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:#ff4444">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div><button onclick="openNachtrag()" style="font-size:9px;background:#ff4444;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;margin-top:2px">Zuordnen</button></div></div>`;
       }else{
-        html+=`<div class="sess-row"><div style="font-size:19px">${u.emoji}</div><div style="flex:1"><div class="sess-name">${u.name}</div><div class="sess-date">${t} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:${u.color||'var(--accent)'}">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div></div></div>`;
+        // ✅ v17.5: Icon für Auto 🤖 vs. Manuell ✋
+        const icon = s.is_manual ? '✋' : '🤖';
+        const typeLabel = s.is_manual ? 'Hand' : 'Auto';
+        let timeDisplay = t;
+        
+        // ✅ v17.5: Für BRAIL manuelle Sessions: Zählerstand anzeigen
+        if(s.is_manual && s.manual_start_kwh && s.manual_stop_kwh) {
+          timeDisplay = `${s.manual_start_kwh.toFixed(1)} → ${s.manual_stop_kwh.toFixed(1)} kWh`;
+        }
+        
+        html+=`<div class="sess-row"><div style="font-size:19px">${u.emoji}</div><div style="flex:1"><div class="sess-name">${u.name} <span style="font-size:10px;opacity:0.6">${icon} ${typeLabel}</span></div><div class="sess-date">${timeDisplay} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:${u.color||'var(--accent)'}">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div></div></div>`;
       }
     });
   });
@@ -2033,11 +2159,9 @@ function renderBilling(){
   const now=new Date(),tariff=cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff;
   const mk=billingMonth||(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
   const allSess=sessions.filter(s=>s.stationId===cs);
-  const totSessKwh=allSess.reduce((a,s)=>a+s.kwh,0);
+  const totSessKwh=allSess.reduce((a,s)=>a+s.kwh,0); // ✅ v17.5: Enthält jetzt auch manuelle Sessions!
   const shellyKwh=liveTotalKwh||0;
-  // ✅ NACHTRÄGE BERÜCKSICHTIGEN
-  const totNachtragKwh=nachtraege.filter(n=>n.station_id===cs).reduce((a,n)=>a+(n.kwh||0),0);
-  const unkKwh=Math.max(0,shellyKwh-totSessKwh-totNachtragKwh);
+  const unkKwh=Math.max(0,shellyKwh-totSessKwh); // ✅ v17.5: Keine separate nachtraege mehr!
 
   const bsk=document.getElementById('bill-shelly-kwh');
   const bsess=document.getElementById('bill-sess-kwh');
@@ -2052,10 +2176,7 @@ function renderBilling(){
     let ta=0;
     pue.innerHTML=uu.map(u=>{
       const us=allSess.filter(s=>s.userId===u.id);
-      const sessKwh=us.reduce((a,s)=>a+s.kwh,0);
-      // ✅ NACHTRÄGE PRO USER ADDIEREN
-      const userNachtragKwh=nachtraege.filter(n=>n.station_id===cs&&n.user_id===u.id).reduce((a,n)=>a+(n.kwh||0),0);
-      const kwh=sessKwh+userNachtragKwh;
+      const kwh=us.reduce((a,s)=>a+s.kwh,0); // ✅ v17.5: Enthält auto + manuelle Sessions!
       const mins=us.reduce((a,s)=>a+(s.stoppedAt?Math.round((s.stoppedAt-s.startedAt)/60000):0),0);
       ta+=kwh;
       return '<div class="bill-user-row"><div style="font-size:20px">'+u.emoji+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+u.name+'</div><div style="font-size:10px;color:var(--text-dim)">'+us.length+' Sessions · '+mins+' Min</div></div><div style="text-align:right"><div style="font-family:\'Space Mono\',monospace;font-size:15px;font-weight:700;color:'+(u.color||'var(--accent)')+'">'+kwh.toFixed(2)+' kWh</div><div style="font-size:11px;color:var(--text-dim)">'+(kwh*tariff).toFixed(2)+' CHF</div></div></div>';
