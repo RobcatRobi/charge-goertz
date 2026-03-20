@@ -1250,11 +1250,12 @@ async function saveNachtrag() {
   
   try {
     const saved = await sbPost('nachtraege', entry);
-    if(saved) {
+    if(saved && saved.length > 0) { // ✅ FIX: Check if array has data!
       nachtraege.unshift(Array.isArray(saved) ? saved[0] : saved);
+      await loadNachtraege(); // ✅ CRITICAL: Reload from Supabase to get fresh data!
       renderNachtragHist();
       renderBilanz();
-      renderSessions(); // ✅ CRITICAL: Update Sessions display to recalculate Differenz!
+      renderSessions(); // ✅ Update Sessions display to recalculate Differenz!
       alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`); // ✅ Alert ZUERST
       closeNachtrag(); // ✅ DANN Modal schließen
     } else {
