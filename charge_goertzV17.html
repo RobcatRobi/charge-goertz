@@ -348,12 +348,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <div id="tab-sessions" class="tab-content">
   <div class="section-hd">Sessions & History</div>
   <div class="section-sub" id="sess-sub">Alle Ladesessions — Neerach</div>
-  <!-- ✅ VEREINFACHT: Nur EINE Box für Differenz/Unbekannte Energie -->
-  <div id="bilanz-banner" style="display:none;background:rgba(255,160,0,.12);border:1px solid #ffa000;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:12px">
-    <div style="color:#ffa000;font-weight:700;margin-bottom:6px;font-size:13px">⚠ ENERGIEBILANZ DIFFERENZ</div>
-    <div id="bilanz-text" style="color:var(--text-dim);margin-bottom:8px;line-height:1.4"></div>
-    <button onclick="openNachtrag()" style="background:#ffa000;color:#000;border:none;border-radius:8px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer">+ Nachtrag erstellen</button>
-  </div>
+  <!-- ✅ ORANGE BOX KOMPLETT ENTFERNT - NUR UNBEKANNT bleibt -->
   <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
     <select id="sess-filter-user" onchange="renderSessions()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:12px">
       <option value="all">Alle Benutzer</option>
@@ -389,11 +384,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px">SESSIONS TOTAL</div>
         <div id="bill-sess-kwh" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">— kWh</div>
       </div>
-    </div>
-    <div id="bill-diff-row" style="display:none;margin-top:10px;padding:8px;background:rgba(255,160,0,.1);border-radius:8px;text-align:center">
-      <span style="color:#ffa000;font-size:12px;font-weight:700">⚠ Differenz: </span>
-      <span id="bill-diff-val" style="color:#ffa000;font-family:'Space Mono',monospace;font-size:12px"></span>
-      <button onclick="openNachtrag()" style="display:block;width:100%;margin-top:6px;background:#ffa000;color:#000;border:none;border-radius:8px;padding:6px;font-size:11px;font-weight:700;cursor:pointer">+ Nachtrag erstellen</button>
     </div>
   </div>
   <div class="card" style="margin-bottom:12px">
@@ -1937,10 +1927,6 @@ function renderSessions(){
   const totNachtragKwh=nachtraege.filter(n=>n.station_id===cs).reduce((a,n)=>a+(n.kwh||0),0);
   const shellyKwh=liveTotalKwh||0;
   const unkKwh=Math.max(0,shellyKwh-totSessKwh-totNachtragKwh); // ✅ SHELLY = Sessions + Nachträge!
-  const bb=document.getElementById('bilanz-banner');
-  
-  // ❌ ORANGE BOX ENTFERNT - nur UNBEKANNT Box unten bleibt!
-  if(bb)bb.style.display='none';
 
   if(!ss.length){list.innerHTML='<div class="no-data"><div class="big">📋</div>Noch keine Sessions</div>';return;}
   const groups={};
@@ -2041,8 +2027,6 @@ function renderBilling(){
   const bsess=document.getElementById('bill-sess-kwh');
   if(bsk)bsk.textContent=shellyKwh>0?shellyKwh.toFixed(2)+' kWh':'(kein Shelly)';
   if(bsess)bsess.textContent=totSessKwh.toFixed(2)+' kWh';
-  const dr=document.getElementById('bill-diff-row');
-  if(dr){if(shellyKwh>0&&unkKwh>0.5){dr.style.display='block';document.getElementById('bill-diff-val').textContent=unkKwh.toFixed(2)+' kWh nicht zugeordnet';}else dr.style.display='none';}
 
   const uu=users.filter(u=>u.stations.includes(cs));
   const pue=document.getElementById('bill-per-user');
