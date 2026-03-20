@@ -1939,27 +1939,8 @@ function renderSessions(){
   const unkKwh=Math.max(0,shellyKwh-totSessKwh-totNachtragKwh); // ✅ SHELLY = Sessions + Nachträge!
   const bb=document.getElementById('bilanz-banner');
   
-  // ✅ VEREINFACHT: Nur EINE Box für alle Differenzen
-  if(shellyKwh>0&&unkKwh>0.5){
-    if(bb){
-      bb.style.display='block';
-      document.getElementById('bilanz-text').textContent=
-        `Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Nachträge: ${totNachtragKwh.toFixed(1)} kWh | Differenz: ${unkKwh.toFixed(1)} kWh`;
-    }
-  }else if(shellyKwh>0&&unkKwh<-0.1){
-    // ❌ FEHLER: Sessions+Nachträge GRÖSSER als Shelly = UNMÖGLICH!
-    if(bb){
-      bb.style.display='block';
-      bb.style.borderColor='#ff4444';
-      bb.style.background='rgba(255,68,68,.12)';
-      document.getElementById('bilanz-text').innerHTML=
-        `<span style="color:#ff4444;font-weight:700">❌ FEHLER!</span><br>` +
-        `Shelly: ${shellyKwh.toFixed(1)} kWh | Sessions: ${totSessKwh.toFixed(1)} kWh | Nachträge: ${totNachtragKwh.toFixed(1)} kWh<br>` +
-        `<span style="color:#ff4444">Sessions+Nachträge GRÖSSER als Shelly! Daten sind inkonsistent!</span>`;
-    }
-  }else{
-    if(bb)bb.style.display='none';
-  }
+  // ❌ ORANGE BOX ENTFERNT - nur UNBEKANNT Box unten bleibt!
+  if(bb)bb.style.display='none';
 
   if(!ss.length){list.innerHTML='<div class="no-data"><div class="big">📋</div>Noch keine Sessions</div>';return;}
   const groups={};
