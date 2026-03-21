@@ -266,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v18</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17.6</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -290,6 +290,22 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
     <div id="net-mode-banner" style="display:none"></div>
     <div id="net-help-box" style="display:none;padding:10px;background:rgba(255,160,0,.08);border:1px solid #ffa00044;border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:8px"></div>
+
+  <!-- v17.6: Brail Modus-Umschalter — sichtbar nur wenn cs=2 -->
+  <div id="brail-mode-bar" style="display:none;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:10px">BRAIL — STATIONS-MODUS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button id="dash-mode-buchli" onclick="saveBrailMode('buchli')"
+        style="padding:14px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.4">
+        📖 Ladebüchlein<br><span style="font-size:11px;font-weight:400;opacity:.8">Manueller Zähler</span>
+      </button>
+      <button id="dash-mode-shelly" onclick="saveBrailMode('shelly')"
+        style="padding:14px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.4">
+        ⚡ Shelly<br><span style="font-size:11px;font-weight:400;opacity:.8">Nach HW-Installation</span>
+      </button>
+    </div>
+  </div>
+
   <div class="card" id="shelly-live-card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
@@ -335,42 +351,68 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="kipp" id="kipp" onclick="toggleRelay()"><div class="kipp-track"></div><div class="kipp-thumb"></div></div>
   </div>
   <!-- ✅ v18: Brail Büchlein Card (hidden for Neerach/Shelly mode) -->
+  <!-- ═══ BRAIL LADEBÜCHLEIN ═══ -->
   <div id="brail-buchli-card" style="display:none;margin-bottom:10px">
-    <!-- Büchlein Header -->
-    <div style="background:linear-gradient(135deg,#2d1a05 0%,#4a2e0a 50%,#2d1a05 100%);border:2px solid #c4a460;border-radius:14px;padding:0;overflow:hidden;margin-bottom:10px">
-      <!-- Buchrücken + Titel -->
+
+    <!-- Büchlein Cover — Buchoptik -->
+    <div style="background:#1e1200;border:3px solid #c4a460;border-radius:16px;overflow:hidden;margin-bottom:14px">
+      <!-- Goldstreifen oben -->
+      <div style="height:8px;background:linear-gradient(90deg,#8b5e1a,#f0d080,#c4a460,#f0d080,#8b5e1a)"></div>
       <div style="display:flex;align-items:stretch">
-        <div style="width:18px;background:linear-gradient(180deg,#8b5e1a,#c4a460,#8b5e1a);flex-shrink:0"></div>
-        <div style="flex:1;padding:14px 14px 10px 14px">
-          <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#f5e6c0;text-align:center;letter-spacing:.06em;text-shadow:0 1px 3px rgba(0,0,0,.5)">📖 Charge Brail</div>
-          <div style="font-family:Georgia,serif;font-size:10px;color:#c4a460;text-align:center;letter-spacing:.12em;margin-top:2px">DAS LADEBÜCHLEIN</div>
-          <!-- Liniertes Feld aktueller Zähler -->
-          <div style="margin-top:10px;background:rgba(245,230,192,.07);border:1px solid #c4a46055;border-radius:8px;padding:8px 12px">
-            <div style="font-size:9px;color:#c4a460;letter-spacing:.1em;margin-bottom:4px">LETZTER ZÄHLERSTAND</div>
-            <div id="buchli-last-meter" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:#f5e6c0">— kWh</div>
+        <!-- Buchrücken links -->
+        <div style="width:20px;background:linear-gradient(180deg,#6b4010,#c4a460,#8b5e1a,#c4a460,#6b4010);flex-shrink:0"></div>
+        <div style="flex:1;padding:18px 20px 20px 16px">
+          <!-- Titel -->
+          <div style="text-align:center;margin-bottom:18px">
+            <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#f5e6c0;letter-spacing:.04em">📖 Charge Brail</div>
+            <div style="font-family:Georgia,serif;font-size:13px;color:#c4a460;letter-spacing:.16em;margin-top:6px">DAS LADEBÜCHLEIN</div>
+            <div style="height:2px;background:linear-gradient(90deg,transparent,#c4a460,transparent);margin:10px 0 0 0"></div>
           </div>
-          <!-- Stats Zeile -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-            <div style="background:rgba(245,230,192,.06);border:1px solid #c4a46044;border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:9px;color:#c4a460;margin-bottom:3px">HEUTE</div>
-              <div id="buchli-today" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#f5e6c0">0.0 kWh</div>
+          <!-- Zählerstand gross -->
+          <div style="background:rgba(196,164,96,.12);border:1px solid #c4a46066;border-radius:12px;padding:16px 18px;margin-bottom:14px;text-align:center">
+            <div style="font-size:12px;color:#c4a460;letter-spacing:.12em;margin-bottom:8px">LETZTER ZÄHLERSTAND</div>
+            <div id="buchli-last-meter" style="font-family:'Space Mono',monospace;font-size:38px;font-weight:700;color:#f5e6c0;line-height:1">— kWh</div>
+          </div>
+          <!-- Stats Heute / Monat -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+            <div style="background:rgba(196,164,96,.08);border:1px solid #c4a46044;border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:12px;color:#c4a460;margin-bottom:6px">HEUTE</div>
+              <div id="buchli-today" style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;color:#f5e6c0">0.0 kWh</div>
             </div>
-            <div style="background:rgba(245,230,192,.06);border:1px solid #c4a46044;border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:9px;color:#c4a460;margin-bottom:3px">MONAT</div>
-              <div id="buchli-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#f5e6c0">0 kWh</div>
+            <div style="background:rgba(196,164,96,.08);border:1px solid #c4a46044;border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:12px;color:#c4a460;margin-bottom:6px">MONAT</div>
+              <div id="buchli-month" style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;color:#f5e6c0">0 kWh</div>
             </div>
           </div>
         </div>
       </div>
+      <!-- Goldstreifen unten -->
+      <div style="height:8px;background:linear-gradient(90deg,#8b5e1a,#f0d080,#c4a460,#f0d080,#8b5e1a)"></div>
     </div>
-    <!-- Letzte Einträge als Büchlein-Zeilen -->
-    <div id="buchli-recent" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px">
-      <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">LETZTE EINTRÄGE</div>
-      <div id="buchli-entries" style="font-size:12px;color:var(--text-dim)">Lade...</div>
+
+    <!-- Einträge als Büchlein-Seite -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">
+      <div style="padding:12px 16px;background:var(--surface2);border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">ALLE EINTRÄGE</div>
+        <div style="display:flex;gap:16px">
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text-dim)">TOTAL kWh</div>
+            <div id="buchli-total-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#ff7c2a">— kWh</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text-dim)">TOTAL CHF</div>
+            <div id="buchli-total-chf" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--text)">—</div>
+          </div>
+        </div>
+      </div>
+      <div id="buchli-entries">
+        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">Lade...</div>
+      </div>
     </div>
   </div>
+
   <div id="start-wrap">
-    <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">✍ Ladevorgang eintragen</button>
+    <button class="btn-p" style="width:100%;padding:18px;font-size:17px;font-weight:700;border-radius:var(--radius)" onclick="openStartSession()">✍ Ladevorgang eintragen</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -469,34 +511,43 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
   <div class="card">
     <div class="card-title">🌿 BRAIL — Brail Home</div>
-    <!-- v18: Modus-Schalter -->
-    <div style="margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">STATIONS-MODUS</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+
+    <!-- MODUS-SCHALTER -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:10px">STATIONS-MODUS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <button id="btn-mode-buchli" onclick="saveBrailMode('buchli')"
-          style="padding:10px 8px;border-radius:8px;border:2px solid #ff7c2a;background:#ff7c2a22;color:#ff7c2a;font-size:12px;font-weight:700;cursor:pointer">
-          📖 Ladebüchlein<br><span style="font-size:10px;font-weight:400;opacity:.8">Manueller Zähler</span>
+          style="padding:16px 8px;border-radius:10px;border:2px solid #ff7c2a;background:#ff7c2a22;color:#ff7c2a;font-size:15px;font-weight:700;cursor:pointer;line-height:1.5">
+          📖 Ladebüchlein<br><span style="font-size:11px;font-weight:400;opacity:.8">Manueller Zähler</span>
         </button>
         <button id="btn-mode-shelly" onclick="saveBrailMode('shelly')"
-          style="padding:10px 8px;border-radius:8px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer">
-          ⚡ Shelly (HW)<br><span style="font-size:10px;font-weight:400;opacity:.8">Nach Installation</span>
+          style="padding:16px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.5">
+          ⚡ Shelly<br><span style="font-size:11px;font-weight:400;opacity:.8">Nach HW-Installation</span>
         </button>
       </div>
-      <div style="font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.5">Büchlein = aktuell aktiv. Sobald Shelly 3EM installiert → auf Shelly umschalten.</div>
     </div>
-    <div id="brail-shelly-fields">
-      <div class="s-label">Shelly 3EM IP</div>
-      <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
-      <div class="s-label">Shelly 1 Mini Gen3 IP</div>
-      <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
+
+    <!-- ZÄHLERSTAND SETZEN -->
+    <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:8px">INITIALER ZÄHLERSTAND</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Aktuellen Stromzähler-Stand einmalig eingeben:</div>
+      <div style="display:flex;gap:8px">
+        <input id="brail-init-meter" type="number" step="0.1" placeholder="z.B. 12345.0"
+          style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:16px">
+        <button onclick="setBrailInitMeter()" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer">Setzen</button>
+      </div>
     </div>
+
     <div class="s-label">Tarif (CHF/kWh)</div>
     <input class="s-input" id="tariff2" value="0.30">
-    <!-- v18: Admin: Initialer Zählerstand setzen -->
-    <div class="s-label mt8">Initialer Zählerstand (kWh) — einmalig setzen</div>
-    <div style="display:flex;gap:8px">
-      <input class="s-input" id="brail-init-meter" type="number" step="0.1" placeholder="z.B. 12345.0" style="flex:1">
-      <button onclick="setBrailInitMeter()" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Setzen</button>
+
+    <!-- Shelly IPs für spätere Installation -->
+    <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:8px">SHELLY IPs (für spätere Installation)</div>
+      <div class="s-label">Shelly 3EM IP</div>
+      <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
+      <div class="s-label">Shelly 1 Mini IP</div>
+      <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
     </div>
     <button class="btn-p mt8" onclick="saveSettings()">Speichern</button>
   </div>
@@ -1032,7 +1083,6 @@ async function syncFromSupabase() {
       if(st) {
         st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30;
         st.lastMeterReading=parseFloat(s.last_meter_reading||0);
-        // brail_mode: 'buchli' (nur Zähler) oder 'shelly' (mit Shelly HW)
         st.brailMode=s.brail_mode||'buchli';
       }
     });
@@ -1041,6 +1091,12 @@ async function syncFromSupabase() {
   setBanner('online');
   renderDashboard();
   updateRelayUI();
+  // Update BRAIL mode buttons if in settings
+  if(typeof updateBrailModeButtons==='function') updateBrailModeButtons(ST[1].brailMode||'buchli');
+  // If BRAIL is active station, refresh Büchlein
+  if(cs===2 && ST[1].brailMode==='buchli') {
+    switchStation(2);
+  }
 }
 
 function setBanner(mode) {
@@ -1467,51 +1523,104 @@ async function saveNachtrag() {
 // BRAIL BÜCHLEIN STATUS
 // ═══════════════════════════════════════════
 function renderBrailBuchliStatus() {
-  // Update Büchlein card stats
+  const brailSess = sessions.filter(s=>s.stationId===2);
+
+  // Letzter Zählerstand
   const lastEl = document.getElementById('buchli-last-meter');
   if(lastEl) lastEl.textContent = (ST[1].lastMeterReading||0).toFixed(1) + ' kWh';
 
-  const today = sessions.filter(s=>{
-    const d=new Date(s.startedAt); const now=new Date();
-    return s.stationId===2 && d.toDateString()===now.toDateString();
-  }).reduce((a,s)=>a+s.kwh,0);
-  const month = sessions.filter(s=>{
-    const d=new Date(s.startedAt); const now=new Date();
-    return s.stationId===2 && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  }).reduce((a,s)=>a+s.kwh,0);
+  // Heute / Monat
+  const now = new Date();
+  const today = brailSess.filter(s=>{
+    const d=new Date(s.startedAt);
+    return d.toDateString()===now.toDateString();
+  }).reduce((a,s)=>a+(s.kwh||0),0);
+  const month = brailSess.filter(s=>{
+    const d=new Date(s.startedAt);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).reduce((a,s)=>a+(s.kwh||0),0);
 
-  const tEl=document.getElementById('buchli-today'); if(tEl) tEl.textContent=today.toFixed(1)+' kWh';
-  const mEl=document.getElementById('buchli-month'); if(mEl) mEl.textContent=month.toFixed(0)+' kWh';
+  const tEl=document.getElementById('buchli-today');
+  if(tEl) tEl.textContent = today.toFixed(1)+' kWh';
+  const mEl=document.getElementById('buchli-month');
+  if(mEl) mEl.textContent = month.toFixed(0)+' kWh';
 
-  // Last 5 sessions as Büchlein entries
+  // Total
+  const totalKwh = brailSess.reduce((a,s)=>a+(s.kwh||0),0);
+  const totalChf = brailSess.reduce((a,s)=>a+(s.chf||0),0);
+  const tkEl=document.getElementById('buchli-total-kwh');
+  if(tkEl) tkEl.textContent = totalKwh.toFixed(1)+' kWh';
+  const tcEl=document.getElementById('buchli-total-chf');
+  if(tcEl) tcEl.textContent = totalChf.toFixed(2)+' CHF';
+
+  // Büchlein Einträge — alle Sessions, gross und lesbar
   const entriesEl = document.getElementById('buchli-entries');
   if(!entriesEl) return;
-  const brailSess = sessions.filter(s=>s.stationId===2).slice(0,5);
-  if(brailSess.length===0){ entriesEl.innerHTML='<div style="color:var(--text-dim);font-size:11px;text-align:center;padding:8px">Noch keine Einträge</div>'; return; }
+
+  if(brailSess.length===0){
+    entriesEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">Noch keine Einträge</div>';
+    return;
+  }
 
   entriesEl.innerHTML = brailSess.map((s,i) => {
     const u = users.find(x=>x.id===s.userId);
     const dt = new Date(s.startedAt);
     const dateStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    const kwh = (s.kwh||0).toFixed(1);
-    const start = s.manual_start_kwh!=null ? s.manual_start_kwh.toFixed(1) : '—';
-    const stop  = s.manual_stop_kwh!=null  ? s.manual_stop_kwh.toFixed(1)  : '—';
-    const chf = ((s.kwh||0)*(s.tariff||ST[1].tariff)).toFixed(2);
-    const bg = i%2===0 ? 'rgba(196,164,96,.04)' : 'transparent';
-    return `<div style="display:grid;grid-template-columns:60px 1fr 70px 50px;gap:4px;padding:5px 4px;border-bottom:1px solid var(--border);background:${bg};font-size:11px">
-      <div style="color:var(--text-dim);font-family:'Space Mono',monospace">${dateStr}</div>
-      <div style="color:var(--text);font-weight:500">${u?u.emoji+' '+u.name:'?'}</div>
-      <div style="color:var(--accent);font-family:'Space Mono',monospace;text-align:right">${kwh} kWh</div>
-      <div style="color:var(--text-dim);font-family:'Space Mono',monospace;text-align:right">${chf}</div>
+    const timeStr = dt.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+    const kwh = (s.kwh||0).toFixed(2);
+    const chf = (s.chf || (s.kwh||0)*(s.tariff||ST[1].tariff)).toFixed(2);
+    const icon = s.is_manual ? '✋' : '🤖';
+    const name = u ? (u.emoji+' '+u.name) : '❓ Unbek.';
+    const note = s.note && s.note!=='Hand-Nachtrag' ? s.note : '';
+    // Zählerstand Anzeige
+    const meterInfo = (s.manual_start_kwh!=null && s.manual_stop_kwh!=null)
+      ? `<div style="font-size:13px;color:var(--text-dim);margin-top:3px;font-family:'Space Mono',monospace">${s.manual_start_kwh.toFixed(1)} → ${s.manual_stop_kwh.toFixed(1)} kWh</div>`
+      : '';
+    const noteHtml = note ? `<div style="font-size:12px;color:var(--text-dim);margin-top:2px;font-style:italic">${note}</div>` : '';
+    const isActive = !s.stoppedAt;
+    const bg = isActive ? 'rgba(255,124,42,.06)' : (i%2===0 ? 'var(--surface2)' : 'transparent');
+    const borderL = isActive ? '4px solid #ff7c2a' : '4px solid transparent';
+    const activeBadge = isActive ? '<span style="font-size:10px;background:#ff7c2a;color:#000;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:6px">AKTIV</span>' : '';
+    return `<div style="padding:14px 14px 12px 14px;background:${bg};border-bottom:1px solid var(--border);border-left:${borderL}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${name}${activeBadge}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#ff7c2a;line-height:1">${kwh} kWh</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:13px;color:var(--text-dim)">${dateStr} · ${timeStr} ${icon}</div>
+          ${meterInfo}
+          ${noteHtml}
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--text-dim);text-align:right">${chf} CHF</div>
+      </div>
     </div>`;
   }).join('');
 }
 
 function saveBrailMode(mode) {
   ST[1].brailMode = mode;
+  // Button-Highlight sofort
+  updateBrailModeButtons(mode);
   sbPatch('stations','id=eq.2',{brail_mode:mode}).then(()=>{
-    alert(mode==='buchli' ? '✓ Büchlein-Modus aktiviert' : '✓ Shelly-Modus aktiviert — IPs konfigurieren!');
-    switchStation(cs);
+    alert(mode==='buchli' ? '✓ Ladebüchlein aktiv' : '✓ Shelly-Modus — IPs in Einstellungen konfigurieren!');
+    switchStation(2);
+  });
+}
+
+function updateBrailModeButtons(mode) {
+  // Settings-Buttons UND Dashboard-Buttons updaten
+  ['btn-mode-buchli','dash-mode-buchli'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b)return;
+    if(mode==='buchli'){b.style.border='3px solid #ff7c2a';b.style.background='#ff7c2a33';b.style.color='#ff7c2a';}
+    else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';}
+  });
+  ['btn-mode-shelly','dash-mode-shelly'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b)return;
+    if(mode==='shelly'){b.style.border='3px solid #00d4ff';b.style.background='#00d4ff22';b.style.color='#00d4ff';}
+    else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';}
   });
 }
 
@@ -1581,17 +1690,36 @@ function switchStation(id){
   document.getElementById('relay-sub').textContent=`Shelly 1 Mini — ${ST[id-1].ipMini||'IP nicht konfiguriert'}`;
   document.getElementById('gauge-st-name').textContent=ST[id-1].name+' '+ST[id-1].loc;
   document.getElementById('v-tariff').textContent=ST[id-1].tariff.toFixed(2)+' CHF/kWh';
-  // v18: Brail Büchlein-Modus — Shelly-Elemente ausblenden
+  // v17.6: Brail Büchlein/Shelly-Modus UI umschalten
   const isBuchli = (id===2 && ST[1].brailMode==='buchli');
+  const isBrail  = (id===2);
+  // Shelly-Elemente: ausblenden bei Büchlein-Modus
   ['row-shelly','row-relay'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
   ['shelly-live-card','relay-card'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
+  // Status-Karte: nur DB-Zeile zeigen bei Büchlein
   const statusCard = document.getElementById('status-card');
-  if(statusCard) statusCard.style.display = (isBuchli && !supaOnline) ? 'none' : '';
+  if(statusCard) statusCard.style.display = '';
+  // Büchlein-Card
   const buchliCard = document.getElementById('brail-buchli-card');
   if(buchliCard) buchliCard.style.display = isBuchli ? 'block' : 'none';
-  // Update Ladevorgang button text
+  // Modus-Bar im Dashboard: nur bei Brail anzeigen
+  const modeBar = document.getElementById('brail-mode-bar');
+  if(modeBar) modeBar.style.display = isBrail ? 'block' : 'none';
+  // Ladevorgang Button Text
   const startBtn = document.querySelector('#start-wrap .btn-p');
   if(startBtn) startBtn.textContent = isBuchli ? '✍ Ladevorgang eintragen' : '⚡ Ladevorgang starten';
+  // Modus-Buttons markieren (Dashboard + Settings)
+  const mode = ST[id-1] ? (ST[1].brailMode||'buchli') : 'shelly';
+  ['btn-mode-buchli','dash-mode-buchli'].forEach(bid=>{
+    const b=document.getElementById(bid);
+    if(b){ if(isBuchli){b.style.border='3px solid #ff7c2a';b.style.background='#ff7c2a33';b.style.color='#ff7c2a';}
+           else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';} }
+  });
+  ['btn-mode-shelly','dash-mode-shelly'].forEach(bid=>{
+    const b=document.getElementById(bid);
+    if(b){ if(!isBuchli&&isBrail){b.style.border='3px solid #00d4ff';b.style.background='#00d4ff22';b.style.color='#00d4ff';}
+           else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';} }
+  });
   renderDashboard(); updateRelayUI();
   if(isBuchli) renderBrailBuchliStatus();
   else updateGauges(0,230,0);
@@ -2849,16 +2977,25 @@ async function admResetShelly(){
 async function admResetSessions(){
   const cnt=sessions.filter(s=>s.stationId===adminStation).length;
   if(!confirm(`⚠ ALLE ${cnt} Sessions für ${ST[adminStation-1].loc} löschen?\nDieser Vorgang kann nicht rückgängig gemacht werden!`))return;
-  sessions=sessions.filter(s=>s.stationId!==adminStation);
-  save();
+  // Supabase zuerst löschen
   if(supaOnline){
     try{
       await sbDelete('sessions',`station_id=eq.${adminStation}`);
     }catch(e){console.warn('Supabase delete failed',e);}
   }
+  // Dann lokales Array bereinigen
+  sessions = sessions.filter(s=>s.stationId!==adminStation);
+  activeSession = null;
+  localStorage.removeItem('cg_as');
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  // Alle Views aktualisieren
   updateAdminCounters();
   renderAdmSessions();
-  alert('✓ Sessions gelöscht.');
+  renderSessions();
+  renderBilling();
+  renderDashboard();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
+  alert('✓ Sessions gelöscht — alle Ansichten aktualisiert.');
 }
 
 // ── Sessions Liste (editierbar) ────────────────────────────────
@@ -2986,14 +3123,19 @@ async function admSessSave(){
 
 async function admSessDelete(){
   if(!editSessObj||!confirm('Session wirklich löschen?'))return;
-  const idx=sessions.findIndex(s=>s.startedAt===editSessObj.startedAt);
-  if(idx>=0)sessions.splice(idx,1);
-  save();
+  // Supabase zuerst
   if(supaOnline&&editSessObj.id){
     try{await sbDelete('sessions',`id=eq.${editSessObj.id}`);}catch(e){console.warn(e);}
   }
-  closeSessEdit();renderAdmSessions();updateAdminCounters();
-  renderSessions();renderBilling();
+  // Lokales Array
+  const idx=sessions.findIndex(s=>s.id===editSessObj.id||(s.startedAt===editSessObj.startedAt&&s.stationId===editSessObj.stationId));
+  if(idx>=0)sessions.splice(idx,1);
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  closeSessEdit();
+  // Alle Views neu rendern
+  renderAdmSessions(); updateAdminCounters();
+  renderSessions(); renderBilling(); renderDashboard();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
   alert('✓ Session gelöscht.');
 }
 
