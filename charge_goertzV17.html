@@ -271,10 +271,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
     <button class="station-btn" data-station="2" onclick="switchStation(2)">BRAIL</button>
-    <button id="buchli-open-btn" onclick="openBuchliPage()" title="Ladebüchlein"
-      style="display:none;background:#cc2200;color:#fff;border:none;border-radius:20px;
-             padding:5px 12px;font-size:16px;cursor:pointer;margin-left:4px;
-             box-shadow:0 0 8px rgba(204,34,0,.5)">📖</button>
+    <button id="buchli-open-btn" onclick="openBuchliPage()" style="display:none;background:#cc2200;color:#fff;border:none;border-radius:20px;padding:5px 12px;font-size:16px;cursor:pointer;margin-left:4px">&#128218;</button>
   </div>
   <div id="conn-dot"></div>
 </div>
@@ -515,11 +512,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <button class="btn-s" style="width:100%;padding:10px;font-size:13px;margin-bottom:12px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
 
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button id="adm-st1" onclick="setAdminStation(1);document.getElementById('adm-buchli-section').style.display='none';" class="adm-st-btn active">&#127968; Neerach</button>
-      <button id="adm-st2" onclick="setAdminStation(2);document.getElementById('adm-buchli-section').style.display='block';try{blRefreshTable();}catch(e){}" class="adm-st-btn">&#127807; Brail</button>
+      <button id="adm-st1" onclick="setAdminStation(1)" class="adm-st-btn active">&#127968; Neerach</button>
+      <button id="adm-st2" onclick="setAdminStation(2)" class="adm-st-btn">&#127807; Brail</button>
     </div>
-
-    
 
     <div class="card">
       <div class="card-title">&#128260; ZÄHLER ZURÜCKSTELLEN</div>
@@ -609,8 +604,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="card-title">&#9881; EINSTELLUNGEN</div>
       <button onclick="switchTab('settings')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Erweiterte Einstellungen öffnen</button>
     </div>
-
-
 
   </div>
 </div>
@@ -859,7 +852,7 @@ async function sha256(str) {
 // ═══════════════════════════════════════════════════════════════
 const ST = [
   {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25},
-  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25,lastMeterReading:0,brailMode:'buchli'}
+  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25,lastMeterReading:0}
 ];
 const UDFL = [
   {id:1, name:'Robert Görtz', emoji:'⚡',plate:'ZH 100 RG',pin:'2204',role:'admin',stations:[1,2],color:'#00d4ff'},
@@ -1427,8 +1420,7 @@ function switchStation(id){
   cs=id;
   document.querySelectorAll('.station-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector(`[data-station="${id}"]`).classList.add('active');
-  const bb=document.getElementById('buchli-open-btn');
-  if(bb) bb.style.display=(id===2)?'inline-block':'none';
+  const bb=document.getElementById('buchli-open-btn');if(bb)bb.style.display=(id===2)?'inline-block':'none';
   const col=ST[id-1].color;
   document.documentElement.style.setProperty('--accent',col);
   document.documentElement.style.setProperty('--accent-dim',hex2rgba(col,.15));
@@ -2118,110 +2110,48 @@ function printSessions(){
   const list=document.getElementById('sess-list').innerHTML;
   const w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'
-<!-- ════════════════════════════════════════════════════════ -->
-<!-- LADEBÜCHLEIN FULL PAGE                                   -->
-<!-- ════════════════════════════════════════════════════════ -->
-<div id="buchli-page" style="display:none;position:fixed;inset:0;background:var(--bg,#0a0f1a);z-index:1000;overflow-y:auto">
-  <!-- Header mit Bild -->
+<div id="buchli-page" style="display:none;position:fixed;inset:0;background:#060a0f;z-index:1000;overflow-y:auto">
   <div style="position:relative">
-    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCACMAaQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD2WiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKzfEWoS6V4ev7+AAy29u7pkZGQOK8dk8T+I7qJXfU74n+IRysmcj0GOPpWc6ihuaQpuex7pRXgD6xrDKWfVb0EjGxrqTcD6j5qrNqGsOxYapdKeAI2nfn9TzWX1iJr9XkfRFFfPJTxBdo8kUWpsSCcKZMHtxzxWna6f4pMSKun3a4XrISCfxLU3X00QvYeZ7nRXiLaT4j8vfNbPEo+9umAx/49RHp2qNtIubaM9PnuacalSW0H/XyE6cI7zR7dRXih0vUDy+o2K47faXP8hThp14Tj+1rAdv9ZIR/wCg1d63/Pt/18iLUv50e00V4umlXjNn+07bPT5RLx+lPXS75Bg6nCSv+xJyKdq3/PtivR/nR7LRXi72eoKw2X0ZA6cPz+tH2TUc5N+gPXgP/jV+zxH/AD7J56H8/wCB7RRXjQsdQGGOpIfwfg/99U5bK+Lbm1GNf+AOf/ZqXJX/AJPxDno/z/gex0V4+dPu8gHWFx2PlSce3WmnT79QFTV0IzkkRSf/ABVHLX/59sOaj/OexUV4+dOv+W/tdc/9cn/xobT9QwCNXVh0x5Tg/wA6OSv/ACMOaj/OewUV5D9gvFznV0HfmKTj9aQ2d10/thfwik/xo5a//PthzUf50ev0V4+LS+wQNZUD08mT/GkNrf5wNTU46Hy5P/iqOSv/AM+2HNR/nPYaK8f+yX+DnVVwx7I4x+tMNjqIB26svrna/wDjT9nX/kFz0f5z2OivGjZ6mVydVXOOwfj9aUWmptydWQH/AHZOP1o9nX/kDno/znslFePDTtROB/bSDnukp/rT103Ued2uRc9MpKP60uSv/Ix81H+c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"
-         style="width:100%;height:140px;object-fit:cover;display:block;object-position:center 20%">
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCACMAaQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD2WiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKzfEWoS6V4ev7+AAy29u7pkZGQOK8dk8T+I7qJXfU74n+IRysmcj0GOPpWc6ihuaQpuex7pRXgD6xrDKWfVb0EjGxrqTcD6j5qrNqGsOxYapdKeAI2nfn9TzWX1iJr9XkfRFFfPJTxBdo8kUWpsSCcKZMHtxzxWna6f4pMSKun3a4XrISCfxLU3X00QvYeZ7nRXiLaT4j8vfNbPEo+9umAx/49RHp2qNtIubaM9PnuacalSW0H/XyE6cI7zR7dRXih0vUDy+o2K47faXP8hThp14Tj+1rAdv9ZIR/wCg1d63/Pt/18iLUv50e00V4umlXjNn+07bPT5RLx+lPXS75Bg6nCSv+xJyKdq3/PtivR/nR7LRXi72eoKw2X0ZA6cPz+tH2TUc5N+gPXgP/jV+zxH/AD7J56H8/wCB7RRXjQsdQGGOpIfwfg/99U5bK+Lbm1GNf+AOf/ZqXJX/AJPxDno/z/gex0V4+dPu8gHWFx2PlSce3WmnT79QFTV0IzkkRSf/ABVHLX/59sOaj/OexUV4+dOv+W/tdc/9cn/xobT9QwCNXVh0x5Tg/wA6OSv/ACMOaj/OewUV5D9gvFznV0HfmKTj9aQ2d10/thfwik/xo5a//PthzUf50ev0V4+LS+wQNZUD08mT/GkNrf5wNTU46Hy5P/iqOSv/AM+2HNR/nPYaK8f+yX+DnVVwx7I4x+tMNjqIB26svrna/wDjT9nX/kFz0f5z2OivGjZ6mVydVXOOwfj9aUWmptydWQH/AHZOP1o9nX/kDno/znslFePDTtROB/bSDnukp/rT103Ued2uRc9MpKP60uSv/Ix81H+c9eoryH+ytQ/h1+EZGOVmpp0nUMbf7etjx1xNStW/kZV6X86PYKK8fbStRHI121xjoFm/wpo0vUQRnW7X6ETf4UWrfyML0f50exUV5ANNvmJB1y1z6kSj+lPXRNQlIKa5ZfKM43S8/XipftlvBgvZPaaPXKK8j/4R/UpAdutWJ6ch5B/SlPh7VQPm1ixI9pZB/Spc6i+wyuWn/Met0V5GPD2r4JXVrLnv57jH04pk2g64gP8AxMrI57G6Yf0pe0n/ACD5IfzHr9FeNnQ/FS4MU8U3HPlXh5/Mj9Ko3Z8TaevmXD31uinIYuSre2QcVLrtbopUU9pHuVFeBQ6z4kC711e6OMnaXkB/nU3/AAlHiOIZl1O/jbgfJIxx+DA/maPrER/V5Hu9FcD8PPFGsazqF5Y6rMkohiV42KgP1wc4AB7V31bxkpK6MJRcXZhRRRVEhRRRQAUUUUAFFFFAHP8AjS5i/wCEdutP3g3V7C0dvDn5pD7f415PceHNViigSYxQDKoRkMwJ4/zzXpfizjxBpDYHyxTjp67KwtbJEkAZsN5qHHc8ivPxE3z2OyirQujN1Dwlpum2LyMZrqXbgvI+AePRcVt+HdPgi0i3lggSPcmQVUZP1J5p/icBbCTJwMdRznirGkskXhizkzIAIQflGSfanFO9kKUtLsZcR6sCTAICvYO3P8qotPrjOY/IYED+BAR+dULzxHcyTNHB8idt6/OP1qm2sXzfKbuT6D5a96jg5pXaR49TExb0bNKSbUbaPE3nxqf7+RVJ5IlUySMAOrMx4xVOW5lmYvI7yHplmzXK/bItQ1+CDVpWhsVm2yqDjavv9fWuidqMHJr7jnjepK1/vOqi1JNQmMOl2Nxfyg4P2dflH1Y8CtBfD+t+S1xeT6dpcA5YyyGUqPcjC/rXS2M1rDapHpqQi2A+RYMFcfhXBeL9F8Vaxq0spga5tFb/AEdI3G1F/wB0kc+9fNwziriKrgpKmvPf8T1ZZfGlDmacn5Es9/odqxWTxRdXJHX7HZqF/Ns1s2mjWd7pqX39u31qjjcvntADjsSMYFcKngzXTzNbR2y93uJ0QD9aiu9F06wt3NxrdvNcAZWGziMvPu3AFdkp89lTru/lr+SsjFQ5dZU1b7jdWbVLjxC2l6LdxaqgOfPeMIoHckjsPXvWlrtnf6Dp32q81iyWZhiK3jtmJkb0BLdPfFP8GTaX4b0Br67vrQT3C+ZIFmDMFHRAByT7etR6Zr+h6/rtxc6lb2iKqARtfNud+eignagHoMn3rnlmGJ53y3cI7u2r/ryLWGpWV7XZR0DXzeRSLfPAjoQEO8KW9eCa23vbdFy8saDHBZgBWR4itND1LXLWNLzSbDT4xh5LdlMshP8AsqMAD1NW7tfC2kaco0UaLNdE4M9/L5xQeuOcn2AFdqzWPLH3Hd/1qzB4R3eqshz6xpv/AEELXPf94P8AGnLqdoUDC9ttvr5i4/nV/SfEWgw6ORPqlhd3WGJM0Kwru7KF28LXKaPDpd14nOoavq2nlY/3zJEuyNm7KMqAR64FVDM2+bmptcvrr+AnhNrS3No6zpyj5tQtvciQU3+3NNJCjUIOf9qqniTx3ELsW2kWdjJBAwPnyQK4Zv8AZBHAHrUtj4htNZhL+MITFbxSAwAWjJCTj+JgMk+2cU/7QrKCqSpWT6X1+6wfVoOXKpf5Fh9XsIzhr+3z6bwT+lRSa5p6jLXK4H8Wxsfyqf8AtK31TV49O8PanDaWZxlNNsiJMdyzkAKPx/OrfjvxJBYaMdKhuC11OBGwD5dI+5Y9iRxzWP8Aa03UjTVPV9Nbr10K+prlcnLRGcda04IGN/Au7p84z+XWk/tOIjcguHXsy20hH57ataT4g8G6fYFdP8m0n2YEs8JMmfUtg/pVaHxmbBpTDrVu7y/ekYXN25+gbao/DFX/AGnWk2o0Xp3v/kL6pBK7mRJrllI+wXaBs4KvlSD+NVL7XZra/itSscMcn/LzcFvLH/fIyawtcuLzV9Rm1GUXVwGAAme3EeQB/dXIA/GqlnaTanJ5P2u3hCj5Tcz7F+gr0nXfs+aehzKkuay1O40vyNYvFtINdmnlIy32Ox2pGPUs56fhWhrWl6XoVj9pvdS1OZidscSThWlPoAqj86s+Hk0Tw7potoNQtHd/mmmMygyN+fA9BXN3994iub+Wb/hJ9OsoWclI0vVIjXsBgE18t9bxFeu1Go1Fd9L/AHI9b2FOnBXim3+H3staTFZ6vdLGNJ16GE/euZL4hEHqScfpR4lttM0e0eXT/E0/2pfuWxnE2/8ALlfqadpviSz0tZP7X8UjViwwIUgLgH13Ec/yrM1fxB4f127toG077FbLJulvBCBIVH8IC+vqc1tTqYr211zcq9f/AG79EROFLk6X/rsGja9cvBI+oJIUTG2VIGOfXJAx+NaTa1ZCLzWeTYRnf5L7fzxio/EHxCYwR2vh5nVduJJ2iOVHQBQf5msmw8YXV5ci38R3dzPp5TDwxKAHPYNgAlfYV6sMXi3T53T07Xd/usckqFHm5eb/ACNtNb06QhY7oSsf4IlZ2/IDNStdkDd9g1HH/XlJ/hVfUPFVhLapa6NJeWMA/wBYLKx2u3sG421Yg8baXBoosrWPUrWXYVV2hMrqx/iJJ+Y1jPMMXypwpb97/wBfmWsLRu05mJd6/cz6ktjYQSgbgHYwM8g9cJ1496satcR6dEo/tHV/tUg/cxyWSorn6EfypnhnVrPRLy6new1WeSfAFw8OWYdSMA8ZPuaJdTWTxNFrUum6ve+Wx2rJCFWIY42qM5x9RU1a+LnV0i0kunVlQpUYw1au/wADRsvDt0LJb3xHql3GXHy2tu+05PReOST6CqniODStH0okT3dpqTrmOAXjOw5/jBOBxU+r+J5tTCpaJrlqACGWC1VWP/AzyPwrBsND1o6qt5Y6VJGu4EG/ZXz6kkgZ/AZrDD08XVn7SvJx8v0/q5rUlRhHlppPzNbQTqktiZNQ3fMf3RcYYr6mtLY+fftW00JZeVy3cD1qL7KSeF4I9K9r6w0jzHTuyrYN5Moka58gBuQVJz/SuhljiurR45SksUq7Txwc1jC3bGNpA9fetLTFynuv415uNtJcx34VuL5TntJ0XTY4IjLYxyDzDDMjr0OcZz1HameJvD1nb2iy2MS2z+YqsNzBCD/L8K2p1MDagmDw4kB7DoapeNHlTTUaNSSZlGPWvMktLnpRkyv4MgvdL8TWUsyR+Xcb4GMb7uoyPfqK9YHSvI/DyXZ1vRGWQmEzsXB5JJJ/KvWx0rpwzbgZYj4ri0UUV0nOFFFFABRRRQAUUUUAch4xBOs6V15SXp16pWLr7YuLcNgfOuPfmtrxj/yHtF9Ns/8A7JWL4jJEtuO+4d/cV5lb+KdlP4C74kUNpsuCThCSPwq7oOx/DVkOzQDtVHxGRHpFwzHHyEDP0q74XAk8N2GeFEA6nNbRdmRLYry6Bpc8pkeV/dVYAf40j+GtJYbQrLnuJT/Wrz6VbSsWWchj6YpE0WEj5ro/gBXrqq7L32ea6evwIxX8IwEtjUFQZ4yuSPrzUFx4L8PTL/ply0soH3sgH9K27jR4oE3/AGyMIOvmkKKigt7WRiIr61dgfmAetfa8y1m/uMuTlekPxOTPgXSIG32Wt3duD12A5/Ss/U9Lj0zyvN8Q6jKsp2qDIyD+tehnT2BywQj1yMGqup6BY6jZFWbbNHloSrAYfHFZ1OVxutX6L/IuPNfXb5nnSabpEh/e+dcn/bmZs/pU7WekRpt/spMD1yT+eKc/h/xCHx9k1GcjrhUwT7HPNB8OeI2X/kB3nvnaP5tXm/WsWtF+R6H1fDPX9RsFhpUiPJHoiuqffcvhV+pOAKsQ6ZY3NtPcxaRatBbj97IHBVPqQKqN4c1uOQPPoFy4B5Uuq5/EGrtwmuz6ZBpQ8PTJaQEt5S3Kje3qxHLGtoYjFyWv5L/IylRw6f8AwWFnpVlellsNMs7qULnyoZVL49drYJ/CqDT6ZBK0b6TFHIrbWQqAwI7YrRs4vE1grf2doMdjJIu1p0dXlx6B3Y4/ACpI7LxNHawwpoUayRvveYyrvnbrmQ7vm/Gh1sX3f3L/ACEqWH/pszftumMeNNg/75WnltPcDzNJgz2BQCtR7XxTLq8mqf2IiXTAANHcBdv0G7H4VFeaP4gurlp5NBhidhgrFMoX64yeaiVbG20b+5Fqnheq/FmBd6VaTSebbqbY9flbKg+wNalyPElnAsV1rZ3sgb7NJGrybT0JBBx9Cc1dg0/XLR4pYPDsHmxHIkeff83rtzjNRHTtXMkry6FG0spLNIbpgxJ7n5utZSjiKi99Xfml/kWnh4P3Xb5szxBq8ymE6tcLH/Eluqx5/wC+cVNYaRZWj+Z9mheXOd85LnP4nGfwrSEmvj7MF0y2hFr91UdQrH1ZejH3NOV9YWa7m/s2Hzbs5aTzxvX/AHW6j8KIxxcfh09IoHLCy3/NlgWzPbz3UttaJDCMySSR8Z7AdyTVJdRWNFeO0iXjOSMAfiKsk63LaWtu1hC8dnJ5kSvIrAn/AGgeD+NR3dt4hu7mSY28SGUhnRZwFOOQMYwR7Vp/tnd/cjP/AGW+y+9k1zNfWmmw3csEaG4P7uDDbyv94/3V+tYUs8N3Jh9GtJpMZ+7yR+GK25G8UnUjqiW9tHeFdm8zkqoxjhT8o/KqotPEY09LBrWx8pZfNZsDLtnOW4w3PqKp/W31f3IS+q9l97MKVbSJwDodmT1G1yc/k36VImVkRE8NW2+UhUHlNlj6AE8mt8L4hW+uLxbezE1xGI2cEAoMY+Tuv4VHYWeuWEge28sMqkRmSTzdmepG7OCfWn/tfn+Af7N5fiV72S40SVInstOMgXMiwLu8g+jP0z7Amry3uow6Muq3cNnawycQJKW8y49NqDn+VRnTvEj6bNp/mwSwTyeZILh925uvYDj26U57bxi2pQakZdMFzAnlo5TIC/Qrgfhij/aX3F/s67DF8QXkUQkm0ry06FmVgoPpnpUzazIskatp8DySDcqLlm/EDkVCNI8WS3AuPtNi5SXzQhcld/qVIwan/s/xfHeT3qzWCXFyMSypy2PYlTis3HFd3+Balhuy/EZ/bMjoXFkiJ/fCOAD9c0Jq0p6xqCe/PNRy6d4hNg9hd6jZNC0nmFZ7nJJ+pGce1Ul0eWFsG+0gHv8A6Sx/ktYTeMjtJ/gbQ+qPeK/E1m1Nzgoo/Imqv9vXCSYZF2g84t5DVf8As9sDF9pByeMXL5P/AI5VhvB/iFh+5gXno/nyFf5CoU8Y95P8C3HCdIr8TS8Oak2sPeiZEhSBwse4lXb1JU9B6GujNvFDGokdkdvuBMMW/D0+tYvhzQbjw5BNPeR3Ml1cH99KsZ6DoO5xW2s9pqEXmiVS0Z27o8llPoQR+mKrEPE8nuanNCNHm1VixFas6KTEg45Jbk/gP8ajmt/IhC4jPGM5OcVC1tcEZSdR6K4wf0zUH2W8kd1+0RjY2Dwcfy5rx5TxzVuV39TvjDD/AMyFa6hjb97Eypjb8hz/APXqeAbdrxlTE4yNoLZH9KrLpYcMJbhi3YBcA/j/AIVcgjcgReUIljGFMUhx+oregsXb96iZ+wTXszO1U5mvFHU26nn61n+NRs0mBieftCnBq7rDKktwRjcbXkn2aq3jQB9Mts4wZkxXe37hnHcn0B1+06XGT8yzKCAMDoTxXoQ6V57pRU6npjINoM4zk/7Jr0PtVYJ3g/UnE/EgoooruOYKKKKACiiigAooooA5DxiT/bmiqB1Ex/8AQKyPESnzoWIOVdTn8a2vF6htb0QHuZh+i1jeJiVEfP8AEv8AMVwVV+8OuHwEvigF9HuI+T8hP6VZ8Lyxx+FrUkjCw1W8Rtmxm94WzVbR5Xt/BayocssJxuGR+VK/KwaumWpdTjllxaQtMx4wg4qJm1MqztCtrGvVnwv6t/QVxljqN3ZyXOoW07RTBMnaBtb2I6GrLeKdQuz5k6wvllGChHb1Bz+telSxDkrJbHmypxubZMlxJhmD7eWlZjtX8/8A61X7OCzt52e31cLLjJ8yLKtnqDnqKjtFW63b1CokQcInAye/vTJo0CSuqBTHwMd/rWkqnNoVGFtTbl02GWBbmFnR/wCI2LDaffaeDVI3QgYo1zHKR2kjMTf4VmQ3MsLiSFzG6jIKnGfr61oaLq9xrM01lfpFNGO5TDfpUe/T66FNRn0LcN9auMsrx46lRuH6HP6VMb20KbhfIR3BLAj8Kz760TT7lzA7nyj8ofDD9RV7S7eDVbUyTwqjA4/dkjP61Uq1tWSqSeiAX1qZMRh3OOSsZx+uKkivLZ2wJlDDseD+tQzaBaQK0kMk8bD+6/H8q5+9eRJvKMhcerAZ/SrjNS2IlDlOzXysHd09eDTs2y8MD+A6Vx0bSRDfHK6YPRW4/Krul6rcXbSwyrF8v8arg/4fpRJWCKOma5soV/eFVHuRVOTV9PCkoZG/3EJB/GnW+k203zyF3OOATwKbJpluxkc7/wB2OF3cH61mpRT6l8raK8d895KY4hHCqjJaTLH8AP8AGrG25CBpYVlH96Btw+u04P8AOshS0MsqQyPEobojEZqx/aN5BOpFw7hsAq/INXJz3iSox2ZaSS0lcx7kDj+FxtP6046fHOxaN4iegxIDT7Kf+0Jp4bmONhCQUIGCPxqbUYQLVpFYqyjsAQfqCOahV5XsU6EbXKraFcjkbc+m4VCdMuVXLDGD0Jqg99cwqjQzNGScfLjH5dKLvWb+2hiKTAl+pZFz/KunnqHP7KHQvx277vm2jnGScVK1jJtLGWIKO5fFYUmp3NwyrI/1OTk/rVqKNIIhNsWRiOkgyKOdgoLY0o7axPD3sZOeocY/Oor2Gxs7czPeQxrnjc4OT6DHJ/Cs60tf7b8RfYrqeVIUszNiEhCTuxjp0rC8Zy2vh6bFvpltcsowHumkcj/x8CueVeS2epvGjB/FsW7rxDaQkBfMc5wOAoP/AH0c/pVGbxURnyvsyKOCXm3foK45fGd8XIi0/SYcdNlhGSP++gatL4q1okBLqOIEf8s7WFf5JUupiZbSS+R0JYGP/Ltv1l/kjfXXpp3AfVbeHJ7JwB7nk1PcRW0tv5sniq1ZieIyXb8/T8qwovFHiBgSNYuFxx8qoP8A2WpjrmuyD5tcvjx03L/hWDpVpfFO5bq4T7NK3zGSm2QsI9RgYsePlxupjb34S+gKgf3+BUN34i1yHIXV7lgFyN20/wBKkh1bUprVZJbzeWHO6CJs/mlZfVZ/zfga/WMI96P/AJMx9pLqOn6jb6jaywvLCcpubOfwrrk+JN8vF1orZXkvbyq/H0NcBd65cR8vbWUpBHLWyKevqoFdz4g8K6XZ6VcXFsksTpbrMAJWI3HHY9uaXsqseqLjPBSWkZR+af5kc/xOtsEtY3akchXKqB+Of6VvQR5vTqU99axiSMBEjf7y9csxAya8llnlN68DuXUHALdhXUeEZYRbzmaytrnMpC+cpIQDsBnitKVZRdpr7icThLU1OErp90du+q6erYN8pPfYpb+VRvrukx5Vrps+0Z5qzodvp+pTSQzaVZKqJkbIsH9TWfc2GmwWIm/su0dw2MshGeT6EV2RrQmr2PMlTlHqSJ4jsGcIPN2n+JsAH9atWmtWM1yIopiznsIzx+PSqtpo2l3YBaxSMn/nnI4/9mqnrWmweH9Y0lrJpMXbsJFkbcBgcY7/AK1NWUJRaRVNST1LXiFV+2MccvaOCR9RVTxmx/su1wcnz09qua9+8uIixPNu/wDMVU8ZoDotoDz+/QfpXlS+Fnox3RZ0hXM+kHoI7raR274r0SuC0tQH0lh1e4Qn0ztNd7V4F3pv1JxPxhRRRXccwUUUUAf/2Q==" style="width:100%;height:140px;object-fit:cover;display:block">
     <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:space-between;padding:0 16px">
-      <div>
-        <div style="font-family:Georgia,serif;font-style:italic;font-size:26px;font-weight:700;color:#f9d71c;text-shadow:1px 2px 4px rgba(0,0,0,.7)">Charge Brail</div>
-        <div style="font-size:13px;color:#f5e6c0;font-style:italic">Das Ladebüchlein</div>
-      </div>
-      <button onclick="closeBuchliPage()"
-        style="background:rgba(255,255,255,.2);border:2px solid #fff;border-radius:50%;width:38px;height:38px;font-size:20px;color:#fff;cursor:pointer;line-height:1">✕</button>
+      <div><div style="font-size:26px;font-weight:700;color:#f9d71c">Charge Brail</div><div style="font-size:13px;color:#f5e6c0">Das Ladebüchlein</div></div>
+      <button onclick="closeBuchliPage()" style="background:rgba(255,255,255,.2);border:2px solid #fff;border-radius:50%;width:38px;height:38px;font-size:20px;color:#fff;cursor:pointer">&#x2715;</button>
     </div>
   </div>
-
   <div style="padding:14px;max-width:500px;margin:0 auto">
-
-    <!-- Stats -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">
-      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px 4px;text-align:center">
-        <div style="font-size:9px;color:#4a7ab5;letter-spacing:.06em;margin-bottom:2px">LETZTER ZÄHLER</div>
-        <div id="blp-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff">—</div>
-      </div>
-      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px 4px;text-align:center">
-        <div style="font-size:9px;color:#4a7ab5;letter-spacing:.06em;margin-bottom:2px">DIESEN MONAT</div>
-        <div id="blp-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff">—</div>
-      </div>
-      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px 4px;text-align:center">
-        <div style="font-size:9px;color:#4a7ab5;letter-spacing:.06em;margin-bottom:2px">TOTAL</div>
-        <div id="blp-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff">—</div>
-      </div>
+      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#4a7ab5;margin-bottom:2px">LETZTER Z&#196;HLER</div><div id="blp-last" style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff">--</div></div>
+      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#4a7ab5;margin-bottom:2px">DIESEN MONAT</div><div id="blp-month" style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff">--</div></div>
+      <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:10px;padding:8px;text-align:center"><div style="font-size:9px;color:#4a7ab5;margin-bottom:2px">TOTAL</div><div id="blp-total" style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff">--</div></div>
     </div>
-
-    <!-- Formular -->
     <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:12px;padding:14px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:#ff7c2a;margin-bottom:12px">✍ Neuer Eintrag</div>
-
+      <div style="font-size:13px;font-weight:700;color:#ff7c2a;margin-bottom:12px">Neuer Eintrag</div>
       <div style="font-size:11px;color:#888;margin-bottom:4px">Benutzer:</div>
       <select id="blp-user" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:10px;color:#fff;font-size:15px;margin-bottom:10px;box-sizing:border-box"></select>
-
-      <div style="display:grid;grid-template-columns:1fr 28px 1fr;gap:4px;align-items:end;margin-bottom:6px">
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">Zähler alt (kWh):</div>
-          <input type="number" id="blp-alt" step="1" inputmode="decimal" placeholder="12345"
-            style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 6px;font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#fff;box-sizing:border-box;text-align:center"
-            oninput="blpCalc()">
-        </div>
-        <div style="text-align:center;font-size:18px;color:#555;padding-bottom:8px">→</div>
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">Zähler neu (kWh):</div>
-          <input type="number" id="blp-neu" step="1" inputmode="decimal" placeholder="12567"
-            style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 6px;font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#00d4ff;box-sizing:border-box;text-align:center"
-            oninput="blpCalc()">
-        </div>
+      <div style="display:grid;grid-template-columns:1fr 20px 1fr;gap:4px;align-items:end;margin-bottom:6px">
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">Z&#228;hler alt:</div><input type="number" id="blp-alt" step="1" inputmode="decimal" placeholder="12345" oninput="blpCalc()" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 6px;font-family:monospace;font-size:22px;font-weight:700;color:#fff;box-sizing:border-box;text-align:center"></div>
+        <div style="text-align:center;color:#555;padding-bottom:8px">&#8594;</div>
+        <div><div style="font-size:11px;color:#888;margin-bottom:4px">Z&#228;hler neu:</div><input type="number" id="blp-neu" step="1" inputmode="decimal" placeholder="12567" oninput="blpCalc()" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:12px 6px;font-family:monospace;font-size:22px;font-weight:700;color:#00d4ff;box-sizing:border-box;text-align:center"></div>
       </div>
-
-      <div id="blp-delta-box" style="display:none;background:#001a33;border:1px solid #00d4ff44;border-radius:8px;padding:8px;text-align:center;margin-bottom:10px">
-        <div style="font-size:10px;color:#4a7ab5;margin-bottom:2px">VERBRAUCH</div>
-        <div id="blp-delta" style="font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:#00d4ff">—</div>
-      </div>
-
+      <div id="blp-delta-box" style="display:none;background:#001a33;border:1px solid #00d4ff44;border-radius:8px;padding:8px;text-align:center;margin-bottom:10px"><div style="font-size:10px;color:#4a7ab5;margin-bottom:2px">VERBRAUCH</div><div id="blp-delta" style="font-family:monospace;font-size:30px;font-weight:700;color:#00d4ff">--</div></div>
       <div style="font-size:11px;color:#888;margin-bottom:4px">Datum:</div>
-      <input type="date" id="blp-datum"
-        style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:10px;color:#fff;font-size:15px;margin-bottom:10px;box-sizing:border-box">
-
-      <div style="font-size:11px;color:#888;margin-bottom:4px">Bemerkung (optional):</div>
-      <input type="text" id="blp-note" placeholder="z.B. Besuch Familie..."
-        style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:10px;color:#fff;font-size:14px;margin-bottom:12px;box-sizing:border-box">
-
+      <input type="date" id="blp-datum" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:10px;color:#fff;font-size:15px;margin-bottom:10px;box-sizing:border-box">
+      <div style="font-size:11px;color:#888;margin-bottom:4px">Bemerkung:</div>
+      <input type="text" id="blp-note" placeholder="z.B. Besuch Familie..." style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:8px;padding:10px;color:#fff;font-size:14px;margin-bottom:12px;box-sizing:border-box">
       <div id="blp-status" style="display:none;padding:8px;border-radius:8px;font-size:13px;text-align:center;margin-bottom:10px"></div>
-
-      <button onclick="blpSave()" id="blp-save-btn"
-        style="width:100%;padding:14px;background:#ff7c2a;color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer">
-        💾 Speichern
-      </button>
+      <button id="blp-save-btn" onclick="blpSave()" style="width:100%;padding:14px;background:#ff7c2a;color:#fff;border:none;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer">Speichern</button>
     </div>
-
-    <!-- Tabelle -->
     <div style="background:#111a2e;border:1px solid #1e3a5f;border-radius:12px;overflow:hidden;margin-bottom:30px">
-      <!-- Spalten-Header -->
-      <div style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;gap:0;padding:8px 10px;background:#0d1525;border-bottom:1px solid #1e3a5f">
-        <div style="font-size:10px;font-weight:700;color:#4a7ab5">Datum</div>
-        <div style="font-size:10px;font-weight:700;color:#4a7ab5">Benutzer</div>
-        <div style="font-size:10px;font-weight:700;color:#4a7ab5;text-align:right">Z.alt</div>
-        <div style="font-size:10px;font-weight:700;color:#4a7ab5;text-align:right">Z.neu</div>
-        <div style="font-size:10px;font-weight:700;color:#00d4ff;text-align:right">kWh</div>
+      <div style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;padding:8px 10px;background:#0d1525;border-bottom:1px solid #1e3a5f">
+        <div style="font-size:10px;font-weight:700;color:#4a7ab5">Datum</div><div style="font-size:10px;font-weight:700;color:#4a7ab5">Benutzer</div><div style="font-size:10px;font-weight:700;color:#4a7ab5;text-align:right">Z.alt</div><div style="font-size:10px;font-weight:700;color:#4a7ab5;text-align:right">Z.neu</div><div style="font-size:10px;font-weight:700;color:#00d4ff;text-align:right">kWh</div>
       </div>
-      <!-- Rows -->
-      <div id="blp-rows">
-        <div style="padding:20px;text-align:center;color:#555;font-size:13px">Lade...</div>
-      </div>
-      <!-- Total -->
-      <div style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;gap:0;padding:8px 10px;background:#0d1525;border-top:1px solid #1e3a5f">
-        <div style="font-size:12px;font-weight:700;color:#fff;grid-column:1/5">TOTAL</div>
-        <div id="blp-total-row" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff;text-align:right">—</div>
+      <div id="blp-rows"><div style="padding:20px;text-align:center;color:#555">Lade...</div></div>
+      <div style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;padding:8px 10px;background:#0d1525;border-top:1px solid #1e3a5f">
+        <div style="font-size:12px;font-weight:700;color:#fff;grid-column:1/5">TOTAL</div><div id="blp-total-row" style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff;text-align:right">--</div>
       </div>
     </div>
-
   </div>
 </div>
-
 </body></html>');
   w.document.close();w.print();
 }
@@ -2599,18 +2529,6 @@ function setAdminStation(sid){
   document.getElementById('adm-st2').className='adm-st-btn'+(sid===2?' active':'');
   document.querySelectorAll('.adm-st-label').forEach(el=>el.textContent=ST[sid-1].loc);
   refreshAdminContent();
-  // Ladebüchlein-Sektion — sofort UND nach kurzer Verzögerung setzen
-  // (falls refreshAdminContent async etwas resettet)
-  const sec = document.getElementById('adm-buchli-section');
-  if(sec) sec.style.display = (sid===2) ? 'block' : 'none';
-  setTimeout(function() {
-    const s2 = document.getElementById('adm-buchli-section');
-    if(s2) s2.style.display = (sid===2) ? 'block' : 'none';
-    if(sid===2) {
-      try { admUpdateBrailModeButtons(); } catch(e) { console.warn(e); }
-      try { blRefreshTable(); } catch(e) { console.warn(e); }
-    }
-  }, 100);
 }
 
 function refreshAdminContent(){
@@ -3314,393 +3232,6 @@ async function verifyPinSupabase(userId,pin){
     return (await r.json()).ok;
   }catch(e){const u=users.find(x=>x.id===userId);return u&&u.pin===pin;}
 }
-
-// ═══════════════════════════════════════════════════════════════
-// BRAIL LADEBÜCHLEIN — Admin Tab
-// ═══════════════════════════════════════════════════════════════
-
-// Show/hide Buchli section when Brail is selected in Admin
-// Buchli section logic moved into setAdminStation directly
-
-// Mode toggle buttons
-function admSetBrailMode(mode) {
-  if(!ST[1]) return;
-  ST[1].brailMode = mode;
-  admUpdateBrailModeButtons();
-  sbPatch('stations','id=eq.2',{brail_mode: mode});
-  const ui = document.getElementById('adm-buchli-ui');
-  if(ui) ui.style.display = (mode==='buchli') ? 'block' : 'none';
-}
-
-function admUpdateBrailModeButtons() {
-  const mode = (ST[1] && ST[1].brailMode) ? ST[1].brailMode : 'buchli';
-  const bs = document.getElementById('adm-mode-shelly');
-  const bb = document.getElementById('adm-mode-buchli');
-  if(bs) {
-    if(mode==='shelly') {
-      bs.style.border='2px solid var(--neerach)'; bs.style.background='#00d4ff22'; bs.style.color='var(--neerach)';
-    } else {
-      bs.style.border='2px solid var(--border)'; bs.style.background='var(--surface2)'; bs.style.color='var(--text-dim)';
-    }
-  }
-  if(bb) {
-    if(mode==='buchli') {
-      bb.style.border='2px solid #ff7c2a'; bb.style.background='#ff7c2a22'; bb.style.color='#ff7c2a';
-    } else {
-      bb.style.border='2px solid var(--border)'; bb.style.background='var(--surface2)'; bb.style.color='var(--text-dim)';
-    }
-  }
-  const ui = document.getElementById('adm-buchli-ui');
-  if(ui) ui.style.display = (mode==='buchli') ? 'block' : 'none';
-}
-
-// Calculate delta on input
-function blCalcDelta() {
-  const alt = parseFloat(document.getElementById('bl-kwh-alt').value);
-  const neu = parseFloat(document.getElementById('bl-kwh-neu').value);
-  const box = document.getElementById('bl-delta-box');
-  const val = document.getElementById('bl-delta-val');
-  if(!isNaN(alt) && !isNaN(neu) && neu > alt) {
-    if(val) val.textContent = (neu-alt).toFixed(1) + ' kWh';
-    if(box) box.style.display = 'block';
-  } else {
-    if(box) box.style.display = 'none';
-  }
-}
-
-// Refresh stats + table
-function blRefreshTable() {
-  const brailSess = sessions
-    .filter(s => s.stationId === 2)
-    .sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
-
-  const now = new Date();
-  const totalKwh = brailSess.reduce((a,s)=>a+(s.kwh||0), 0);
-  const monthKwh = brailSess.filter(s=>{
-    const d=new Date(s.startedAt);
-    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  }).reduce((a,s)=>a+(s.kwh||0), 0);
-  const lastMeter = (ST[1] && ST[1].lastMeterReading>0) ? Math.round(ST[1].lastMeterReading).toLocaleString('de-CH')+' kWh' : '—';
-
-  const e = id => document.getElementById(id);
-  if(e('bl-last-meter'))  e('bl-last-meter').textContent  = lastMeter;
-  if(e('bl-month-kwh'))   e('bl-month-kwh').textContent   = monthKwh.toFixed(1)+' kWh';
-  if(e('bl-total-kwh'))   e('bl-total-kwh').textContent   = totalKwh.toFixed(1)+' kWh';
-  if(e('bl-total-row'))   e('bl-total-row').textContent   = totalKwh.toFixed(1)+' kWh';
-
-  // Fill user dropdown
-  const sel = e('bl-user-sel');
-  if(sel) {
-    const brailUsers = users.filter(u => u.stations && u.stations.includes(2));
-    sel.innerHTML = (brailUsers.length ? brailUsers : users)
-      .map(u => `<option value="${u.id}">${u.emoji||''} ${u.name}</option>`).join('');
-  }
-
-  // Set today as default date
-  const datEl = e('bl-datum');
-  if(datEl && !datEl.value) datEl.value = new Date().toISOString().split('T')[0];
-
-  // Pre-fill Zähler alt from last entry
-  const altEl = e('bl-kwh-alt');
-  if(altEl && !altEl.value && ST[1] && ST[1].lastMeterReading > 0) {
-    altEl.value = Math.round(ST[1].lastMeterReading);
-    blCalcDelta();
-  }
-
-  // Render rows
-  const el = e('bl-entries');
-  if(!el) return;
-  if(!brailSess.length) {
-    el.innerHTML='<div style="padding:20px;text-align:center;font-style:italic;color:#aaa;font-size:13px">Noch keine Einträge — ersten Zählerstand erfassen!</div>';
-    return;
-  }
-  el.innerHTML = brailSess.map((s,i) => {
-    const u = users.find(x=>x.id===s.userId);
-    const dt = new Date(s.startedAt);
-    const dStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    const name = u ? u.name.split(' ').slice(-1)[0] : '?';
-    const mAlt = s.manual_start_kwh!=null ? Math.round(s.manual_start_kwh).toLocaleString('de-CH') : '—';
-    const mNeu = s.manual_stop_kwh!=null  ? Math.round(s.manual_stop_kwh).toLocaleString('de-CH')  : '—';
-    const kwh  = (s.kwh||0).toFixed(1);
-    const bg   = i%2===0 ? '#fffef5' : '#f0f5ff';
-    const sData = JSON.stringify({id:s.id,userId:s.userId,startedAt:s.startedAt,
-      manual_start_kwh:s.manual_start_kwh,manual_stop_kwh:s.manual_stop_kwh,kwh:s.kwh,note:s.note
-    }).replace(/"/g,'&quot;');
-    return `<div onclick="blEditEntry(JSON.parse(this.dataset.s))" data-s="${sData}"
-      style="display:grid;grid-template-columns:50px 1fr 52px 52px 48px;gap:0;padding:8px 10px;background:${bg};border-bottom:1px solid #d0dce8;cursor:pointer"
-      onmouseover="this.style.background='#ddeaff'" onmouseout="this.style.background='${bg}'">
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:#555;padding-top:2px">${dStr}</div>
-      <div style="font-size:13px;font-weight:700;color:#1a3a6a">${name}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:#777;text-align:right;padding-top:2px">${mAlt}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:#777;text-align:right;padding-top:2px">${mNeu}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#1a3a6a;text-align:right">${kwh}</div>
-    </div>`;
-  }).join('');
-}
-
-// Edit existing entry
-let blEditId = null;
-function blEditEntry(s) {
-  blEditId = s.id;
-  const e = id => document.getElementById(id);
-  if(e('bl-user-sel')) e('bl-user-sel').value = s.userId;
-  if(e('bl-kwh-alt'))  e('bl-kwh-alt').value  = s.manual_start_kwh || '';
-  if(e('bl-kwh-neu'))  e('bl-kwh-neu').value  = s.manual_stop_kwh  || '';
-  if(e('bl-bemerkung')) e('bl-bemerkung').value = (s.note && s.note!=='Buchli-Eintrag') ? s.note : '';
-  const d = new Date(s.startedAt);
-  if(e('bl-datum')) e('bl-datum').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  blCalcDelta();
-  // Scroll form into view
-  const card = document.querySelector('#adm-buchli-ui .card');
-  if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
-}
-
-// Save entry
-async function blSaveEntry() {
-  const e = id => document.getElementById(id);
-  const userId  = parseInt(e('bl-user-sel').value);
-  const kwhAlt  = parseFloat(e('bl-kwh-alt').value);
-  const kwhNeu  = parseFloat(e('bl-kwh-neu').value);
-  const datum   = e('bl-datum').value;
-  const note    = e('bl-bemerkung').value.trim();
-
-  const showStatus = (msg, ok) => {
-    const el = e('bl-save-status');
-    if(el){ el.textContent=msg; el.style.background=ok?'#1a3a6a22':'#ff444422';
-            el.style.color=ok?'var(--accent)':'var(--red)'; el.style.display='block'; }
-  };
-
-  if(!userId)                         { showStatus('❌ Benutzer wählen', false); return; }
-  if(isNaN(kwhAlt)||kwhAlt<0)         { showStatus('❌ Zähler alt eingeben', false); return; }
-  if(isNaN(kwhNeu)||kwhNeu<=kwhAlt)   { showStatus('❌ Zähler neu muss grösser sein', false); return; }
-  if(!datum)                           { showStatus('❌ Datum wählen', false); return; }
-
-  const kwh     = parseFloat((kwhNeu-kwhAlt).toFixed(2));
-  const tariff  = (ST[1]&&ST[1].tariff) ? ST[1].tariff : 0.25;
-  const chf     = parseFloat((kwh*tariff).toFixed(2));
-  const startAt = new Date(datum+'T12:00:00').toISOString();
-  const data    = { station_id:2, user_id:userId, started_at:startAt, stopped_at:startAt,
-                    kwh, chf, tariff, is_manual:true,
-                    manual_start_kwh:kwhAlt, manual_stop_kwh:kwhNeu,
-                    note: note||'Buchli-Eintrag' };
-
-  const btn = e('bl-save-btn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Speichern...'; }
-  showStatus('⏳ Wird gespeichert...', true);
-
-  try {
-    const origOnline = supaOnline; supaOnline = true;
-    let ok = false;
-    if(blEditId) {
-      const res = await sbPatch('sessions',`id=eq.${blEditId}`,data);
-      ok = (res!==null);
-      if(ok) { const idx=sessions.findIndex(s=>s.id===blEditId); const upd={...sessions[idx]||{}, id:blEditId, userId, stationId:2, startedAt:startAt, stoppedAt:startAt, kwh, chf, tariff, is_manual:true, manual_start_kwh:kwhAlt, manual_stop_kwh:kwhNeu, note:data.note}; if(idx>=0)sessions[idx]=upd; else sessions.unshift(upd); }
-    } else {
-      const res = await sbPost('sessions',data);
-      ok = (res!==null);
-      if(ok) { const newId=(Array.isArray(res)&&res[0])?res[0].id:Date.now(); sessions.unshift({id:newId,userId,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh,chf,tariff,is_manual:true,manual_start_kwh:kwhAlt,manual_stop_kwh:kwhNeu,note:data.note}); }
-    }
-    supaOnline = origOnline;
-
-    if(ok) {
-      await sbPatch('stations','id=eq.2',{last_meter_reading:kwhNeu});
-      if(ST[1]) ST[1].lastMeterReading = kwhNeu;
-      localStorage.setItem('cg_s',JSON.stringify(sessions));
-      showStatus('✓ Gespeichert!', true);
-      blEditId = null;
-      // Reset form
-      e('bl-kwh-neu').value=''; e('bl-bemerkung').value='';
-      e('bl-kwh-alt').value = Math.round(kwhNeu);
-      e('bl-delta-box').style.display='none';
-      setTimeout(()=>{ blRefreshTable(); renderSessions(); renderBilling(); }, 400);
-    } else {
-      showStatus('❌ Supabase nicht erreichbar!', false);
-    }
-  } catch(err) {
-    showStatus('❌ Fehler: '+err.message, false);
-  }
-  if(btn){ btn.disabled=false; btn.textContent='💾 Speichern'; }
-}
-
-
-// ════════════════════════════════════════
-// LADEBÜCHLEIN FULL PAGE
-// ════════════════════════════════════════
-let blpEditId = null;
-
-function openBuchliPage() {
-  document.getElementById('buchli-page').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  blpInit();
-}
-
-function closeBuchliPage() {
-  document.getElementById('buchli-page').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-function blpInit() {
-  // Fill user dropdown
-  const sel = document.getElementById('blp-user');
-  if(sel) {
-    const bu = users.filter(u => u.stations && u.stations.includes(2));
-    sel.innerHTML = (bu.length ? bu : users)
-      .map(u => `<option value="${u.id}">${u.emoji||''} ${u.name}</option>`).join('');
-  }
-  // Set today
-  const d = document.getElementById('blp-datum');
-  if(d && !d.value) d.value = new Date().toISOString().split('T')[0];
-  // Pre-fill Zähler alt
-  const a = document.getElementById('blp-alt');
-  if(a && !a.value && ST[1] && ST[1].lastMeterReading > 0)
-    a.value = Math.round(ST[1].lastMeterReading);
-  // Reset edit
-  blpEditId = null;
-  document.getElementById('blp-neu').value = '';
-  document.getElementById('blp-note').value = '';
-  document.getElementById('blp-delta-box').style.display = 'none';
-  const st = document.getElementById('blp-status');
-  if(st) st.style.display = 'none';
-  blpRender();
-}
-
-function blpCalc() {
-  const alt = parseFloat(document.getElementById('blp-alt').value);
-  const neu = parseFloat(document.getElementById('blp-neu').value);
-  const box = document.getElementById('blp-delta-box');
-  const val = document.getElementById('blp-delta');
-  if(!isNaN(alt) && !isNaN(neu) && neu > alt) {
-    if(val) val.textContent = (neu-alt).toFixed(1) + ' kWh';
-    if(box) box.style.display = 'block';
-  } else {
-    if(box) box.style.display = 'none';
-  }
-}
-
-function blpRender() {
-  const sess = sessions.filter(s => s.stationId === 2)
-    .sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
-
-  const now = new Date();
-  const total = sess.reduce((a,s)=>a+(s.kwh||0),0);
-  const month = sess.filter(s=>{const d=new Date(s.startedAt);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+(s.kwh||0),0);
-  const last  = (ST[1]&&ST[1].lastMeterReading>0) ? Math.round(ST[1].lastMeterReading).toLocaleString('de-CH')+' kWh' : '—';
-
-  const e = id => document.getElementById(id);
-  if(e('blp-last'))      e('blp-last').textContent   = last;
-  if(e('blp-month'))     e('blp-month').textContent  = month.toFixed(1)+' kWh';
-  if(e('blp-total'))     e('blp-total').textContent  = total.toFixed(1)+' kWh';
-  if(e('blp-total-row')) e('blp-total-row').textContent = total.toFixed(1)+' kWh';
-
-  const el = e('blp-rows');
-  if(!el) return;
-  if(!sess.length) {
-    el.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-size:13px">Noch keine Einträge</div>';
-    return;
-  }
-  el.innerHTML = sess.map((s,i) => {
-    const u = users.find(x=>x.id===s.userId);
-    const dt = new Date(s.startedAt);
-    const dStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    const name = u ? u.name.split(' ').slice(-1)[0] : '?';
-    const mAlt = s.manual_start_kwh!=null ? Math.round(s.manual_start_kwh).toLocaleString('de-CH') : '—';
-    const mNeu = s.manual_stop_kwh!=null  ? Math.round(s.manual_stop_kwh).toLocaleString('de-CH')  : '—';
-    const kwh  = (s.kwh||0).toFixed(1);
-    const bg   = i%2===0 ? '#111a2e' : '#0d1525';
-    const sd   = JSON.stringify({id:s.id,userId:s.userId,startedAt:s.startedAt,
-      manual_start_kwh:s.manual_start_kwh,manual_stop_kwh:s.manual_stop_kwh,kwh:s.kwh,note:s.note
-    }).replace(/"/g,'&quot;');
-    return `<div onclick="blpEdit(JSON.parse(this.dataset.s))" data-s="${sd}"
-      style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;gap:0;padding:8px 10px;background:${bg};border-bottom:1px solid #1e3a5f;cursor:pointer"
-      onmouseover="this.style.background='#162035'" onmouseout="this.style.background='${bg}'">
-      <div style="font-family:'Space Mono',monospace;font-size:9px;color:#666;padding-top:2px">${dStr}</div>
-      <div style="font-size:13px;font-weight:700;color:#fff">${name}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:#666;text-align:right;padding-top:2px">${mAlt}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:10px;color:#666;text-align:right;padding-top:2px">${mNeu}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#00d4ff;text-align:right">${kwh}</div>
-    </div>`;
-  }).join('');
-}
-
-function blpEdit(s) {
-  blpEditId = s.id;
-  const e = id => document.getElementById(id);
-  if(e('blp-user')) e('blp-user').value = s.userId;
-  if(e('blp-alt'))  e('blp-alt').value  = s.manual_start_kwh || '';
-  if(e('blp-neu'))  e('blp-neu').value  = s.manual_stop_kwh  || '';
-  if(e('blp-note')) e('blp-note').value = (s.note&&s.note!=='Buchli-Eintrag') ? s.note : '';
-  const d = new Date(s.startedAt);
-  if(e('blp-datum')) e('blp-datum').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  blpCalc();
-  document.getElementById('buchli-page').scrollTo({top:0, behavior:'smooth'});
-}
-
-function blpStatus(msg, ok) {
-  const el = document.getElementById('blp-status');
-  if(!el) return;
-  el.textContent = msg;
-  el.style.background = ok ? 'rgba(0,212,255,.1)' : 'rgba(255,68,68,.1)';
-  el.style.color = ok ? '#00d4ff' : '#ff4444';
-  el.style.border = '1px solid ' + (ok?'#00d4ff44':'#ff444444');
-  el.style.display = 'block';
-}
-
-async function blpSave() {
-  const e    = id => document.getElementById(id);
-  const uid  = parseInt(e('blp-user').value);
-  const alt  = parseFloat(e('blp-alt').value);
-  const neu  = parseFloat(e('blp-neu').value);
-  const dat  = e('blp-datum').value;
-  const note = e('blp-note').value.trim();
-
-  if(!uid)              { blpStatus('❌ Benutzer wählen', false); return; }
-  if(isNaN(alt)||alt<0) { blpStatus('❌ Zähler alt eingeben', false); return; }
-  if(isNaN(neu)||neu<=alt){ blpStatus('❌ Zähler neu muss grösser sein', false); return; }
-  if(!dat)              { blpStatus('❌ Datum wählen', false); return; }
-
-  const kwh    = parseFloat((neu-alt).toFixed(2));
-  const tariff = (ST[1]&&ST[1].tariff)||0.25;
-  const chf    = parseFloat((kwh*tariff).toFixed(2));
-  const startAt = new Date(dat+'T12:00:00').toISOString();
-  const data = { station_id:2, user_id:uid, started_at:startAt, stopped_at:startAt,
-                 kwh, chf, tariff, is_manual:true,
-                 manual_start_kwh:alt, manual_stop_kwh:neu,
-                 note: note||'Buchli-Eintrag' };
-
-  const btn = e('blp-save-btn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳...'; }
-  blpStatus('⏳ Speichern...', true);
-
-  try {
-    const orig = supaOnline; supaOnline = true;
-    let ok = false;
-    if(blpEditId) {
-      const r = await sbPatch('sessions',`id=eq.${blpEditId}`,data);
-      ok = r!==null;
-      if(ok) { const i=sessions.findIndex(s=>s.id===blpEditId); const u={...(sessions[i]||{}),id:blpEditId,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh,chf,tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note}; if(i>=0)sessions[i]=u; else sessions.unshift(u); }
-    } else {
-      const r = await sbPost('sessions',data);
-      ok = r!==null;
-      if(ok) { const nid=(Array.isArray(r)&&r[0])?r[0].id:Date.now(); sessions.unshift({id:nid,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh,chf,tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note}); }
-    }
-    supaOnline = orig;
-
-    if(ok) {
-      await sbPatch('stations','id=eq.2',{last_meter_reading:neu});
-      if(ST[1]) ST[1].lastMeterReading = neu;
-      localStorage.setItem('cg_s',JSON.stringify(sessions));
-      blpStatus('✓ Gespeichert!', true);
-      blpEditId = null;
-      e('blp-neu').value=''; e('blp-note').value=''; e('blp-alt').value=Math.round(neu);
-      e('blp-delta-box').style.display='none';
-      setTimeout(()=>{ blpRender(); renderSessions(); renderBilling(); }, 300);
-    } else {
-      blpStatus('❌ Supabase Fehler!', false);
-    }
-  } catch(err) { blpStatus('❌ '+err.message, false); }
-  if(btn){ btn.disabled=false; btn.textContent='💾 Speichern'; }
-}
-
 </script>
 <!-- NACHTRAG MODAL -->
 <div id="nachtrag-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
@@ -3752,3 +3283,95 @@ async function blpSave() {
 
 </body>
 </html>
+<script>
+// LADEBÜCHLEIN JS
+let blpEditId=null;
+function openBuchliPage(){document.getElementById('buchli-page').style.display='block';document.body.style.overflow='hidden';blpInit();}
+function closeBuchliPage(){document.getElementById('buchli-page').style.display='none';document.body.style.overflow='';}
+function blpInit(){
+  const sel=document.getElementById('blp-user');
+  if(sel){const bu=users.filter(u=>u.stations&&u.stations.includes(2));sel.innerHTML=(bu.length?bu:users).map(u=>'<option value="'+u.id+'">'+(u.emoji||'')+' '+u.name+'</option>').join('');}
+  const d=document.getElementById('blp-datum');if(d&&!d.value)d.value=new Date().toISOString().split('T')[0];
+  const a=document.getElementById('blp-alt');if(a&&!a.value&&ST[1]&&ST[1].lastMeterReading>0)a.value=Math.round(ST[1].lastMeterReading);
+  blpEditId=null;
+  ['blp-neu','blp-note'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['blp-delta-box','blp-status'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  blpRender();
+}
+function blpCalc(){
+  var alt=parseFloat(document.getElementById('blp-alt').value);
+  var neu=parseFloat(document.getElementById('blp-neu').value);
+  var box=document.getElementById('blp-delta-box');
+  var val=document.getElementById('blp-delta');
+  if(!isNaN(alt)&&!isNaN(neu)&&neu>alt){if(val)val.textContent=(neu-alt).toFixed(1)+' kWh';if(box)box.style.display='block';}
+  else{if(box)box.style.display='none';}
+}
+function blpRender(){
+  var sess=sessions.filter(function(s){return s.stationId===2;}).sort(function(a,b){return new Date(b.startedAt)-new Date(a.startedAt);});
+  var now=new Date();
+  var total=sess.reduce(function(a,s){return a+(s.kwh||0);},0);
+  var month=sess.filter(function(s){var d=new Date(s.startedAt);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce(function(a,s){return a+(s.kwh||0);},0);
+  var last=(ST[1]&&ST[1].lastMeterReading>0)?Math.round(ST[1].lastMeterReading).toLocaleString('de-CH')+' kWh':'--';
+  function e(id){return document.getElementById(id);}
+  if(e('blp-last'))e('blp-last').textContent=last;
+  if(e('blp-month'))e('blp-month').textContent=month.toFixed(1)+' kWh';
+  if(e('blp-total'))e('blp-total').textContent=total.toFixed(1)+' kWh';
+  if(e('blp-total-row'))e('blp-total-row').textContent=total.toFixed(1)+' kWh';
+  var el=e('blp-rows');if(!el)return;
+  if(!sess.length){el.innerHTML='<div style="padding:20px;text-align:center;color:#555">Noch keine Eintraege</div>';return;}
+  el.innerHTML=sess.map(function(s,i){
+    var u=users.find(function(x){return x.id===s.userId;});
+    var dt=new Date(s.startedAt);
+    var dStr=dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    var name=u?u.name.split(' ').slice(-1)[0]:'?';
+    var mAlt=s.manual_start_kwh!=null?Math.round(s.manual_start_kwh).toLocaleString('de-CH'):'--';
+    var mNeu=s.manual_stop_kwh!=null?Math.round(s.manual_stop_kwh).toLocaleString('de-CH'):'--';
+    var kwh=(s.kwh||0).toFixed(1);
+    var bg=i%2===0?'#111a2e':'#0d1525';
+    var sd=JSON.stringify({id:s.id,userId:s.userId,startedAt:s.startedAt,manual_start_kwh:s.manual_start_kwh,manual_stop_kwh:s.manual_stop_kwh,kwh:s.kwh,note:s.note}).replace(/"/g,'&quot;');
+    return '<div onclick="blpEdit(JSON.parse(this.dataset.s))" data-s="'+sd+'" style="display:grid;grid-template-columns:46px 1fr 50px 50px 46px;padding:8px 10px;background:'+bg+';border-bottom:1px solid #1e3a5f;cursor:pointer" onmouseover="this.style.background=\'#162035\'" onmouseout="this.style.background=\''+bg+'\'"><div style="font-size:9px;color:#666">'+dStr+'</div><div style="font-size:13px;font-weight:700;color:#fff">'+name+'</div><div style="font-size:10px;color:#666;text-align:right">'+mAlt+'</div><div style="font-size:10px;color:#666;text-align:right">'+mNeu+'</div><div style="font-family:monospace;font-size:13px;font-weight:700;color:#00d4ff;text-align:right">'+kwh+'</div></div>';
+  }).join('');
+}
+function blpEdit(s){
+  blpEditId=s.id;
+  function e(id){return document.getElementById(id);}
+  if(e('blp-user'))e('blp-user').value=s.userId;
+  if(e('blp-alt'))e('blp-alt').value=s.manual_start_kwh||'';
+  if(e('blp-neu'))e('blp-neu').value=s.manual_stop_kwh||'';
+  if(e('blp-note'))e('blp-note').value=(s.note&&s.note!=='Buchli-Eintrag')?s.note:'';
+  var d=new Date(s.startedAt);
+  if(e('blp-datum'))e('blp-datum').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  blpCalc();
+  document.getElementById('buchli-page').scrollTo({top:0,behavior:'smooth'});
+}
+function blpStatus(msg,ok){var el=document.getElementById('blp-status');if(!el)return;el.textContent=msg;el.style.background=ok?'rgba(0,212,255,.1)':'rgba(255,68,68,.1)';el.style.color=ok?'#00d4ff':'#ff4444';el.style.display='block';}
+async function blpSave(){
+  function e(id){return document.getElementById(id);}
+  var uid=parseInt(e('blp-user').value);
+  var alt=parseFloat(e('blp-alt').value);
+  var neu=parseFloat(e('blp-neu').value);
+  var dat=e('blp-datum').value;
+  var note=e('blp-note').value.trim();
+  if(!uid){blpStatus('Benutzer waehlen',false);return;}
+  if(isNaN(alt)||alt<0){blpStatus('Zaehler alt eingeben',false);return;}
+  if(isNaN(neu)||neu<=alt){blpStatus('Zaehler neu groesser als alt!',false);return;}
+  if(!dat){blpStatus('Datum waehlen',false);return;}
+  var kwh=parseFloat((neu-alt).toFixed(2));
+  var tariff=(ST[1]&&ST[1].tariff)||0.25;
+  var chf=parseFloat((kwh*tariff).toFixed(2));
+  var startAt=new Date(dat+'T12:00:00').toISOString();
+  var data={station_id:2,user_id:uid,started_at:startAt,stopped_at:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:note||'Buchli-Eintrag'};
+  var btn=e('blp-save-btn');if(btn){btn.disabled=true;btn.textContent='...';}
+  blpStatus('Speichern...',true);
+  try{
+    var orig=supaOnline;supaOnline=true;
+    var ok=false;
+    if(blpEditId){var r=await sbPatch('sessions','id=eq.'+blpEditId,data);ok=r!==null;if(ok){var idx=sessions.findIndex(function(s){return s.id===blpEditId;});var upd=Object.assign({},sessions[idx]||{},{id:blpEditId,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note});if(idx>=0)sessions[idx]=upd;else sessions.unshift(upd);}}
+    else{var r=await sbPost('sessions',data);ok=r!==null;if(ok){var nid=(Array.isArray(r)&&r[0])?r[0].id:Date.now();sessions.unshift({id:nid,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note});}}
+    supaOnline=orig;
+    if(ok){await sbPatch('stations','id=eq.2',{last_meter_reading:neu});if(ST[1])ST[1].lastMeterReading=neu;localStorage.setItem('cg_s',JSON.stringify(sessions));blpStatus('Gespeichert!',true);blpEditId=null;e('blp-neu').value='';e('blp-note').value='';e('blp-alt').value=Math.round(neu);e('blp-delta-box').style.display='none';setTimeout(function(){blpRender();renderSessions();renderBilling();},300);}
+    else{blpStatus('Supabase Fehler!',false);}
+  }catch(err){blpStatus(err.message,false);}
+  if(btn){btn.disabled=false;btn.textContent='Speichern';}
+}
+</script>
