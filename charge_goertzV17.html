@@ -2599,6 +2599,10 @@ function setAdminStation(sid){
   document.getElementById('adm-st2').className='adm-st-btn'+(sid===2?' active':'');
   document.querySelectorAll('.adm-st-label').forEach(el=>el.textContent=ST[sid-1].loc);
   refreshAdminContent();
+  // Ladebüchlein-Sektion nur bei Brail
+  const sec = document.getElementById('adm-buchli-section');
+  if(sec) sec.style.display = (sid===2) ? 'block' : 'none';
+  if(sid===2) { blRefreshTable(); admUpdateBrailModeButtons(); }
 }
 
 function refreshAdminContent(){
@@ -3308,16 +3312,7 @@ async function verifyPinSupabase(userId,pin){
 // ═══════════════════════════════════════════════════════════════
 
 // Show/hide Buchli section when Brail is selected in Admin
-const _origSetAdminStation = setAdminStation;
-function setAdminStation(sid) {
-  _origSetAdminStation(sid);
-  const sec = document.getElementById('adm-buchli-section');
-  if(sec) sec.style.display = (sid===2) ? 'block' : 'none';
-  if(sid===2) {
-    blRefreshTable();
-    admUpdateBrailModeButtons();
-  }
-}
+// Buchli section logic moved into setAdminStation directly
 
 // Mode toggle buttons
 function admSetBrailMode(mode) {
