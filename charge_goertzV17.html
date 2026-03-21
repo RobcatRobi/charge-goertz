@@ -511,8 +511,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <button class="btn-s" style="width:100%;padding:10px;font-size:13px;margin-bottom:12px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
 
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button id="adm-st1" onclick="setAdminStation(1)" class="adm-st-btn active">&#127968; Neerach</button>
-      <button id="adm-st2" onclick="setAdminStation(2)" class="adm-st-btn">&#127807; Brail</button>
+      <button id="adm-st1" onclick="setAdminStation(1);document.getElementById('adm-buchli-section').style.display='none';" class="adm-st-btn active">&#127968; Neerach</button>
+      <button id="adm-st2" onclick="setAdminStation(2);document.getElementById('adm-buchli-section').style.display='block';try{blRefreshTable();}catch(e){}" class="adm-st-btn">&#127807; Brail</button>
     </div>
 
         <!-- ═══ BRAIL LADEBÜCHLEIN (nur sichtbar wenn Brail gewählt) ═══ -->
@@ -2601,13 +2601,18 @@ function setAdminStation(sid){
   document.getElementById('adm-st2').className='adm-st-btn'+(sid===2?' active':'');
   document.querySelectorAll('.adm-st-label').forEach(el=>el.textContent=ST[sid-1].loc);
   refreshAdminContent();
-  // Ladebüchlein-Sektion nur bei Brail
+  // Ladebüchlein-Sektion — sofort UND nach kurzer Verzögerung setzen
+  // (falls refreshAdminContent async etwas resettet)
   const sec = document.getElementById('adm-buchli-section');
   if(sec) sec.style.display = (sid===2) ? 'block' : 'none';
-  if(sid===2) {
-    try { admUpdateBrailModeButtons(); } catch(e) { console.warn('admUpdateBrailModeButtons:',e); }
-    try { blRefreshTable(); } catch(e) { console.warn('blRefreshTable:',e); }
-  }
+  setTimeout(function() {
+    const s2 = document.getElementById('adm-buchli-section');
+    if(s2) s2.style.display = (sid===2) ? 'block' : 'none';
+    if(sid===2) {
+      try { admUpdateBrailModeButtons(); } catch(e) { console.warn(e); }
+      try { blRefreshTable(); } catch(e) { console.warn(e); }
+    }
+  }, 100);
 }
 
 function refreshAdminContent(){
