@@ -10,13 +10,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ChargeGörtz EV">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet">
 <title>ChargeGörtz EV — Neerach &amp; Brail</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   --bg:#060a0f; --surface:#0d1520; --surface2:#121c2e; --surface3:#1a2640;
+  --font-schurl:'Caveat','Comic Sans MS',cursive;
   --border:#1e2f48; --text:#dce8f5; --text-dim:#5a7a9a; --text-muted:#334a66;
   --neerach:#00d4ff; --brail:#ff7c2a;
   --accent:#00d4ff; --accent-dim:rgba(0,212,255,0.15);
@@ -266,7 +268,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17.6</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17.7</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -352,95 +354,79 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
   <!-- ✅ v18: Brail Büchlein Card (hidden for Neerach/Shelly mode) -->
   <!-- ═══ BRAIL LADEBÜCHLEIN ═══ -->
-  <!-- ═══ BRAIL LADEBÜCHLEIN — Weisses Notizbuch ═══ -->
-  <div id="brail-buchli-card" style="display:none;margin-bottom:10px">
+  <!-- ═══ BRAIL LADEBÜCHLEIN ═══ -->
+  <div id="brail-buchli-card" style="display:none;margin-bottom:14px">
 
-    <!-- BÜCHLEIN COVER: weiss, Notizbuch-Optik -->
-    <div style="background:#fff;border-radius:14px;overflow:hidden;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,.18);border:1px solid #ddd">
+    <!-- COVER: echtes Bild -->
+    <div style="border-radius:16px 16px 0 0;overflow:hidden;border:2px solid #c8a84b;border-bottom:none;box-shadow:0 -2px 12px rgba(0,0,0,.2)">
+      <img src="data:image/jpeg;base64,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"
+           alt="Charge Brail Cover"
+           style="width:100%;display:block;object-fit:cover;height:200px;object-position:center 20%">
+      <!-- Spiralbindung -->
+      <div style="height:13px;background:#b8b8b8;display:flex;align-items:center;padding:0 14px;gap:22px;border-top:1px solid #999">
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+        <div style="width:20px;height:8px;border-radius:8px;background:#777;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)"></div>
+      </div>
+    </div>
 
-      <!-- Deckblatt: Bergbild-Streifen simuliert mit Farbe -->
-      <div style="height:64px;background:linear-gradient(180deg,#87ceeb 0%,#b0d9f0 45%,#8fbc8f 46%,#6aaa6a 100%);position:relative;overflow:hidden">
-        <!-- Berge -->
-        <svg width="100%" height="64" viewBox="0 0 400 64" preserveAspectRatio="none" style="position:absolute;bottom:0">
-          <polygon points="0,64 60,20 120,64" fill="#5a8a5a" opacity=".7"/>
-          <polygon points="80,64 160,10 240,64" fill="#4a7a4a" opacity=".9"/>
-          <polygon points="180,64 260,18 340,64" fill="#5a8a5a" opacity=".7"/>
-          <polygon points="300,64 370,22 400,64" fill="#4a7a4a" opacity=".8"/>
-          <!-- Sonne -->
-          <circle cx="340" cy="16" r="10" fill="#f9d71c" opacity=".9"/>
-        </svg>
-        <!-- Murmeltier Emoji -->
-        <div style="position:absolute;bottom:4px;left:12px;font-size:22px">🦫</div>
-        <!-- Ladestation Emoji -->
-        <div style="position:absolute;bottom:4px;right:12px;font-size:22px">⚡</div>
+    <!-- BUCHSEITE: weisses Papier mit blauen Linien -->
+    <div style="background:#fffef5;border:2px solid #c8a84b;border-top:none;border-radius:0 0 16px 16px;box-shadow:0 4px 16px rgba(0,0,0,.15);overflow:hidden">
+
+      <!-- Allegra Titel (Schürlischrift) -->
+      <div style="padding:14px 18px 4px;border-bottom:2px solid #3a6aaa">
+        <div style="font-family:'Caveat','Comic Sans MS',cursive;font-size:28px;font-weight:700;color:#1a3a6a">Alegra! Das Ladebüchlein</div>
+        <div style="height:1px;background:#3a6aaa;margin-top:6px;opacity:.4"></div>
       </div>
 
-      <!-- Spiralbindung simuliert -->
-      <div style="height:10px;background:#e0e0e0;display:flex;align-items:center;padding:0 8px;gap:16px">
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-        <div style="width:14px;height:6px;border-radius:6px;background:#999;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)"></div>
-      </div>
-
-      <!-- Titelzeile auf weissem Papier -->
-      <div style="background:#fffef8;padding:12px 16px 8px 16px;border-bottom:2px solid #6aaa6a">
-        <div style="font-family:Georgia,'Palatino Linotype',serif;font-size:22px;font-weight:700;color:#2a5a2a;text-align:center">Charge Brail</div>
-        <div style="font-family:Georgia,serif;font-size:12px;color:#5a8a5a;text-align:center;letter-spacing:.08em;margin-top:2px">Das Ladebüchlein</div>
-      </div>
-
-      <!-- Begrüssung Zeile 1 = ALLEGRA -->
-      <div style="background:#fffef8;padding:10px 16px 6px 16px;border-bottom:1px solid #c8e6c8">
-        <div style="font-family:Georgia,serif;font-size:17px;font-style:italic;color:#2a5a2a">Allegra! 👋</div>
-      </div>
-
-      <!-- Stats Heute / Monat / Zähler auf weiss -->
-      <div style="background:#fffef8;display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid #6aaa6a">
-        <div style="padding:10px 8px;text-align:center;border-right:1px solid #c8e6c8">
-          <div style="font-size:10px;color:#5a8a5a;letter-spacing:.08em;margin-bottom:4px">HEUTE</div>
-          <div id="buchli-today" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#2a2a2a">0.0 kWh</div>
+      <!-- Stats: Letzter Zähler / Monat / Total -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #b0c8e8;background:#f0f5ff">
+        <div style="padding:8px 10px;text-align:center;border-right:1px solid #b0c8e8">
+          <div style="font-family:'Caveat',cursive;font-size:12px;color:#4a7ab5;margin-bottom:2px">Letzter Zähler</div>
+          <div id="buchli-last-meter" style="font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:#1a3a6a">—</div>
         </div>
-        <div style="padding:10px 8px;text-align:center;border-right:1px solid #c8e6c8">
-          <div style="font-size:10px;color:#5a8a5a;letter-spacing:.08em;margin-bottom:4px">MONAT</div>
-          <div id="buchli-month" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#2a2a2a">0 kWh</div>
+        <div style="padding:8px 10px;text-align:center;border-right:1px solid #b0c8e8">
+          <div style="font-family:'Caveat',cursive;font-size:12px;color:#4a7ab5;margin-bottom:2px">Diesen Monat</div>
+          <div id="buchli-month" style="font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:#1a3a6a">—</div>
         </div>
-        <div style="padding:10px 8px;text-align:center">
-          <div style="font-size:10px;color:#5a8a5a;letter-spacing:.08em;margin-bottom:4px">ZÄHLER</div>
-          <div id="buchli-last-meter" style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#2a2a2a">— kWh</div>
+        <div style="padding:8px 10px;text-align:center">
+          <div style="font-family:'Caveat',cursive;font-size:12px;color:#4a7ab5;margin-bottom:2px">Total</div>
+          <div id="buchli-today" style="font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:#1a3a6a">—</div>
         </div>
       </div>
 
-      <!-- SPALTEN-HEADER wie im Notizbuch -->
-      <div style="background:#f0f8f0;display:grid;grid-template-columns:62px 1fr 58px 58px 54px;gap:0;padding:7px 10px;border-bottom:2px solid #6aaa6a">
-        <div style="font-size:10px;font-weight:700;color:#5a8a5a;letter-spacing:.06em">DATUM</div>
-        <div style="font-size:10px;font-weight:700;color:#5a8a5a;letter-spacing:.06em">BENUTZER</div>
-        <div style="font-size:10px;font-weight:700;color:#5a8a5a;text-align:right;letter-spacing:.04em">ALT</div>
-        <div style="font-size:10px;font-weight:700;color:#5a8a5a;text-align:right;letter-spacing:.04em">NEU</div>
-        <div style="font-size:10px;font-weight:700;color:#5a8a5a;text-align:right;letter-spacing:.04em">kWh</div>
+      <!-- Spalten-Header -->
+      <div style="display:grid;grid-template-columns:1fr 56px 56px 48px 52px;gap:0;padding:7px 12px 5px;background:#e8f0ff;border-bottom:2px solid #3a6aaa">
+        <div style="font-family:'Caveat',cursive;font-size:14px;color:#1a3a6a;font-weight:700">Fam / Benutzer</div>
+        <div style="font-family:'Caveat',cursive;font-size:12px;color:#3a6aaa;text-align:right">alt</div>
+        <div style="font-family:'Caveat',cursive;font-size:12px;color:#3a6aaa;text-align:right">neu</div>
+        <div style="font-family:'Caveat',cursive;font-size:13px;color:#1a3a6a;text-align:right;font-weight:700">kWh</div>
+        <div style="font-family:'Caveat',cursive;font-size:12px;color:#3a6aaa;text-align:right">Datum</div>
       </div>
 
-      <!-- EINTRÄGE — Büchlein-Zeilen auf liniertem Papier -->
-      <div id="buchli-entries" style="background:#fffef8">
-        <div style="padding:20px;text-align:center;color:#999;font-family:Georgia,serif;font-style:italic">Lade Einträge...</div>
+      <!-- Einträge -->
+      <div id="buchli-entries" style="background:#fffef5;min-height:80px">
+        <div style="padding:20px;text-align:center;font-family:'Caveat',cursive;font-size:18px;color:#aaa">Noch keine Einträge...</div>
       </div>
 
-      <!-- TOTAL Zeile -->
-      <div style="background:#f0f8f0;display:grid;grid-template-columns:62px 1fr 58px 58px 54px;gap:0;padding:9px 10px;border-top:2px solid #6aaa6a">
-        <div style="font-size:11px;font-weight:700;color:#2a5a2a;grid-column:1/3">TOTAL</div>
+      <!-- Total Zeile -->
+      <div style="display:grid;grid-template-columns:1fr 56px 56px 48px 52px;gap:0;padding:9px 12px;background:#ddeaff;border-top:2px solid #3a6aaa">
+        <div style="font-family:'Caveat',cursive;font-size:15px;font-weight:700;color:#1a3a6a">Total</div>
+        <div></div><div></div>
+        <div id="buchli-total-kwh" style="font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:#1a3a6a;text-align:right">—</div>
         <div></div>
-        <div></div>
-        <div id="buchli-total-kwh" style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#2a5a2a;text-align:right">—</div>
       </div>
 
-    </div><!-- /büchlein -->
-  </div>
+    </div><!-- /buchseite -->
 
-  <div id="start-wrap">  <div id="start-wrap">
-    <button class="btn-p" style="width:100%;padding:18px;font-size:17px;font-weight:700;border-radius:var(--radius)" onclick="openStartSession()">✍ Ladevorgang eintragen</button>
+  </div><!-- /buchli -->
+
+  <!-- Eintragen Button -->
+  <div id="start-wrap">
+    <button onclick="openBuchliEintrag(null)" style="width:100%;padding:18px;font-family:'Caveat',cursive;font-size:22px;font-weight:700;background:#3a6aaa;color:#fff;border:none;border-radius:12px;cursor:pointer;letter-spacing:.04em">✍ Eintrag erfassen</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -745,22 +731,52 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <!-- SESSION EDIT MODAL -->
-<div id="sess-edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:380px">
-    <div style="font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px">✏ Session editieren</div>
+<div id="sess-edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:flex-end;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:22px 18px 36px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:700;color:var(--accent)" id="sess-edit-title">✏ Session editieren</div>
+      <button onclick="closeSessEdit()" style="background:none;border:none;font-size:22px;color:var(--text-dim);cursor:pointer">✕</button>
+    </div>
     <input type="hidden" id="edit-sess-id">
+
     <div class="s-label">Benutzer</div>
-    <select id="edit-sess-user" class="s-input" style="width:100%;margin-bottom:10px"></select>
-    <div class="s-label">kWh</div>
-    <input type="number" id="edit-sess-kwh" class="s-input" step="0.01" style="width:100%;margin-bottom:10px">
-    <div class="s-label">Start (ISO)</div>
-    <input type="datetime-local" id="edit-sess-start" class="s-input" style="width:100%;margin-bottom:10px">
-    <div class="s-label">Ende (ISO)</div>
-    <input type="datetime-local" id="edit-sess-end" class="s-input" style="width:100%;margin-bottom:16px">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <button onclick="admSessSave()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">💾 Speichern</button>
-      <button onclick="admSessDelete()" style="background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">🗑 Löschen</button>
-      <button onclick="closeSessEdit()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:12px;cursor:pointer">✕</button>
+    <select id="edit-sess-user" class="s-input" style="width:100%;margin-bottom:12px;font-size:16px;padding:12px"></select>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div class="s-label">Datum</div>
+        <input type="date" id="edit-sess-date" class="s-input" style="width:100%;font-size:15px;padding:11px;box-sizing:border-box">
+      </div>
+      <div>
+        <div class="s-label">Uhrzeit</div>
+        <input type="time" id="edit-sess-time" class="s-input" style="width:100%;font-size:15px;padding:11px;box-sizing:border-box">
+      </div>
+    </div>
+
+    <div class="s-label">kWh (Menge)</div>
+    <input type="number" id="edit-sess-kwh" class="s-input" step="0.01" style="width:100%;margin-bottom:12px;font-size:18px;padding:12px;box-sizing:border-box">
+
+    <!-- Zähler alt/neu (für Brail/manuelle Sessions) -->
+    <div id="edit-manual-fields" style="display:none">
+      <div class="s-label" style="color:var(--accent)">Zählerstand (Brail/Manuell)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <div class="s-label">Zähler alt</div>
+          <input type="number" id="edit-sess-kwh-alt" class="s-input" step="0.1" style="width:100%;font-size:15px;padding:11px;box-sizing:border-box">
+        </div>
+        <div>
+          <div class="s-label">Zähler neu</div>
+          <input type="number" id="edit-sess-kwh-neu" class="s-input" step="0.1" style="width:100%;font-size:15px;padding:11px;box-sizing:border-box">
+        </div>
+      </div>
+    </div>
+
+    <div class="s-label">Bemerkung</div>
+    <input type="text" id="edit-sess-note" class="s-input" placeholder="optional..." style="width:100%;margin-bottom:18px;font-size:15px;padding:12px;box-sizing:border-box">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="admSessSave()" style="background:var(--accent);color:#000;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer">💾 Speichern</button>
+      <button onclick="admSessDelete()" style="background:rgba(255,68,68,.1);border:2px solid #ff4444;color:#ff4444;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer">🗑 Löschen</button>
     </div>
   </div>
 </div>
@@ -843,7 +859,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 </div>
 
 <!-- ZÄHLERSTAND ENDE MODAL (BRAIL stopSession) -->
-<div id="stop-meter-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px">
+<div id="stop-meter-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fffef8;border:2px solid #6aaa6a;border-radius:16px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.4)">
     <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#2a5a2a;margin-bottom:6px;text-align:center">📖 Ladeende eintragen</div>
     <div style="font-size:13px;color:#5a8a5a;text-align:center;margin-bottom:16px">Aktuellen Zählerstand eingeben</div>
@@ -860,6 +876,74 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <button onclick="stopMeterCancel()" style="padding:14px;border-radius:10px;border:2px solid #ccc;background:#fff;color:#666;font-size:15px;font-weight:700;cursor:pointer">Abbrechen</button>
       <button onclick="stopMeterConfirm()" style="padding:14px;border-radius:10px;border:none;background:#6aaa6a;color:#fff;font-size:15px;font-weight:700;cursor:pointer">✓ Speichern</button>
     </div>
+  </div>
+</div>
+
+<!-- BUCHLI EINTRAG MODAL -->
+<div id="buchli-eintrag-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;align-items:flex-end;justify-content:center">
+  <div style="background:#fffef5;border-radius:20px 20px 0 0;border-top:3px solid #c8a84b;padding:20px 18px 40px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,.3)">
+
+    <!-- Modal Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-family:'Caveat',cursive;font-size:26px;font-weight:700;color:#1a3a6a">✍ Eintrag erfassen</div>
+      <button onclick="closeBuchliEintrag()" style="background:none;border:none;font-size:26px;color:#999;cursor:pointer;line-height:1">✕</button>
+    </div>
+
+    <!-- Status Meldung -->
+    <div id="buchli-save-status" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-family:'Caveat',cursive;font-size:16px;text-align:center"></div>
+
+    <!-- Benutzer -->
+    <div style="margin-bottom:14px">
+      <div style="font-family:'Caveat',cursive;font-size:17px;color:#1a3a6a;margin-bottom:6px;font-weight:700">Benutzer:</div>
+      <select id="buchli-user-sel" style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:12px 14px;font-family:'Caveat',cursive;font-size:20px;color:#1a3a1a;box-sizing:border-box"></select>
+    </div>
+
+    <!-- Datum -->
+    <div style="margin-bottom:14px">
+      <div style="font-family:'Caveat',cursive;font-size:17px;color:#1a3a6a;margin-bottom:6px;font-weight:700">Datum:</div>
+      <input type="date" id="buchli-datum" style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:12px 14px;font-family:'Courier New',monospace;font-size:18px;color:#1a3a1a;box-sizing:border-box">
+    </div>
+
+    <!-- Zähler alt / neu -->
+    <div style="margin-bottom:8px">
+      <div style="font-family:'Caveat',cursive;font-size:17px;color:#1a3a6a;margin-bottom:8px;font-weight:700">Zählerstand:</div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+        <div>
+          <div style="font-family:'Caveat',cursive;font-size:14px;color:#666;margin-bottom:4px;text-align:center">alt (kWh)</div>
+          <input type="number" id="buchli-kwh-alt" step="1" inputmode="decimal" placeholder="12345"
+            style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:14px 8px;font-family:'Courier New',monospace;font-size:24px;font-weight:700;color:#1a3a1a;box-sizing:border-box;text-align:center">
+        </div>
+        <div style="font-family:'Caveat',cursive;font-size:22px;color:#aaa;padding-top:18px">→</div>
+        <div>
+          <div style="font-family:'Caveat',cursive;font-size:14px;color:#666;margin-bottom:4px;text-align:center">neu (kWh)</div>
+          <input type="number" id="buchli-kwh-neu" step="1" inputmode="decimal" placeholder="12567"
+            style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:14px 8px;font-family:'Courier New',monospace;font-size:24px;font-weight:700;color:#1a3a1a;box-sizing:border-box;text-align:center"
+            oninput="buchliCalcDelta()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Delta anzeige -->
+    <div id="buchli-delta-box" style="display:none;background:#ddeaff;border:2px solid #3a6aaa;border-radius:10px;padding:10px 16px;margin-bottom:14px;text-align:center">
+      <div style="font-family:'Caveat',cursive;font-size:14px;color:#3a6aaa;margin-bottom:2px">Geladen:</div>
+      <div id="buchli-delta-val" style="font-family:'Courier New',monospace;font-size:36px;font-weight:700;color:#1a3a6a">—</div>
+    </div>
+
+    <!-- Bemerkung -->
+    <div style="margin-bottom:18px">
+      <div style="font-family:'Caveat',cursive;font-size:17px;color:#1a3a6a;margin-bottom:6px;font-weight:700">Bemerkung (optional):</div>
+      <input type="text" id="buchli-bemerkung" placeholder="z.B. Besuch Familie..."
+        style="width:100%;background:#fff;border:2px solid #ccc;border-radius:10px;padding:12px 14px;font-family:'Caveat',cursive;font-size:18px;color:#333;box-sizing:border-box">
+    </div>
+
+    <!-- Speichern -->
+    <button onclick="saveBuchliEintrag()" id="buchli-save-btn" style="width:100%;padding:16px;font-family:'Caveat',cursive;font-size:24px;font-weight:700;background:#3a6aaa;color:#fff;border:none;border-radius:12px;cursor:pointer">💾 Speichern</button>
+
+    <!-- Löschen (nur beim Editieren) -->
+    <div id="buchli-delete-row" style="display:none;margin-top:10px">
+      <button onclick="deleteBuchliEintrag()" style="width:100%;padding:12px;font-family:'Caveat',cursive;font-size:18px;font-weight:700;background:#fff;color:#cc3333;border:2px solid #cc3333;border-radius:10px;cursor:pointer">🗑 Eintrag löschen</button>
+    </div>
+
   </div>
 </div>
 
@@ -978,16 +1062,18 @@ async function sbGet(table, params='') {
 async function sbPost(table, data) {
   try {
     const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {method:'POST', headers: SUPA_HDR, body: JSON.stringify(data), signal: AbortSignal.timeout(5000)});
-    if(!r.ok) throw new Error(await r.text());
-    return await r.json();
+    if(!r.ok) { const err=await r.text(); console.warn('sbPost error:',err); return null; }
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : [{}]; // leerer Body = Erfolg
   } catch(e) { console.warn('sbPost failed:', e); return null; }
 }
 
 async function sbPatch(table, filter, data) {
   try {
     const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {method:'PATCH', headers: SUPA_HDR, body: JSON.stringify(data), signal: AbortSignal.timeout(5000)});
-    if(!r.ok) throw new Error(await r.text());
-    return await r.json();
+    if(!r.ok) { const err=await r.text(); console.warn('sbPatch error:',err); return null; }
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : [{}]; // leerer Body = Erfolg
   } catch(e) { console.warn('sbPatch failed:', e); return null; }
 }
 
@@ -1602,73 +1688,270 @@ async function saveNachtrag() {
 }
 
 // ═══════════════════════════════════════════
-// BRAIL BÜCHLEIN STATUS
+// BRAIL LADEBÜCHLEIN — Eintragen & Anzeigen
 // ═══════════════════════════════════════════
+
+let buchliEditId = null; // null = neuer Eintrag, sonst session.id
+
+function openBuchliEintrag(editSess) {
+  buchliEditId = editSess ? editSess.id : null;
+  const ov = document.getElementById('buchli-eintrag-ov');
+  if(!ov) return;
+
+  // Benutzer Dropdown füllen
+  const sel = document.getElementById('buchli-user-sel');
+  const brailUsers = users.filter(u => u.stations.includes(2));
+  sel.innerHTML = brailUsers.map(u =>
+    `<option value="${u.id}">${u.emoji} ${u.name}</option>`
+  ).join('');
+
+  // Datum auf heute setzen
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('buchli-datum');
+  if(dateEl) dateEl.value = today;
+
+  // Letzten Zählerstand als Vorbelegung für "alt"
+  const altEl = document.getElementById('buchli-kwh-alt');
+  const neuEl = document.getElementById('buchli-kwh-neu');
+  const bemEl = document.getElementById('buchli-bemerkung');
+  const delRow = document.getElementById('buchli-delete-row');
+
+  if(editSess) {
+    // Editieren: Werte füllen
+    if(sel) sel.value = editSess.userId;
+    if(altEl) altEl.value = editSess.manual_start_kwh || '';
+    if(neuEl) neuEl.value = editSess.manual_stop_kwh  || '';
+    if(bemEl) bemEl.value = (editSess.note && editSess.note !== 'Buchli-Eintrag') ? editSess.note : '';
+    const d = new Date(editSess.startedAt);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(dateEl) dateEl.value = ds;
+    if(delRow) delRow.style.display = 'block';
+  } else {
+    // Neu: letzten Zähler als "alt" vorbefüllen
+    const lastMeter = ST[1].lastMeterReading || 0;
+    if(altEl) altEl.value = lastMeter > 0 ? lastMeter.toFixed(1) : '';
+    if(neuEl) neuEl.value = '';
+    if(bemEl) bemEl.value = '';
+    if(delRow) delRow.style.display = 'none';
+  }
+
+  document.getElementById('buchli-delta-box').style.display = 'none';
+  const statusEl = document.getElementById('buchli-save-status');
+  if(statusEl) statusEl.style.display = 'none';
+  const btn = document.getElementById('buchli-save-btn');
+  if(btn) { btn.disabled=false; btn.textContent='💾 Speichern'; }
+  ov.style.display = 'flex';
+  buchliCalcDelta();
+  setTimeout(() => { if(neuEl) neuEl.focus(); }, 200);
+}
+
+function closeBuchliEintrag() {
+  const ov = document.getElementById('buchli-eintrag-ov');
+  if(ov) ov.style.display = 'none';
+  buchliEditId = null;
+}
+
+function buchliCalcDelta() {
+  const alt = parseFloat(document.getElementById('buchli-kwh-alt').value);
+  const neu = parseFloat(document.getElementById('buchli-kwh-neu').value);
+  const box = document.getElementById('buchli-delta-box');
+  const val = document.getElementById('buchli-delta-val');
+  if(!isNaN(alt) && !isNaN(neu) && neu > alt) {
+    const delta = (neu - alt).toFixed(1);
+    if(val) val.textContent = delta + ' kWh';
+    if(box) box.style.display = 'block';
+  } else {
+    if(box) box.style.display = 'none';
+  }
+}
+
+async function saveBuchliEintrag() {
+  const userId   = parseInt(document.getElementById('buchli-user-sel').value);
+  const kwh_alt  = parseFloat(document.getElementById('buchli-kwh-alt').value);
+  const kwh_neu  = parseFloat(document.getElementById('buchli-kwh-neu').value);
+  const datum    = document.getElementById('buchli-datum').value;
+  const bemerkung= document.getElementById('buchli-bemerkung').value.trim();
+
+  // Validierung mit visuellen Hinweisen
+  const setErr = (id, msg) => {
+    const el = document.getElementById(id);
+    if(el) { el.style.borderColor='#cc3333'; el.focus(); }
+    buchliShowStatus('❌ ' + msg, '#ffeded', '#cc3333');
+  };
+
+  if(!userId)                            { buchliShowStatus('❌ Benutzer wählen', '#ffeded', '#cc3333'); return; }
+  if(isNaN(kwh_alt) || kwh_alt <= 0)   { setErr('buchli-kwh-alt', 'Zähler alt eingeben'); return; }
+  if(isNaN(kwh_neu) || kwh_neu<=kwh_alt){ setErr('buchli-kwh-neu', 'Zähler neu muss grösser sein'); return; }
+  if(!datum)                             { buchliShowStatus('❌ Datum wählen', '#ffeded', '#cc3333'); return; }
+
+  // Borders zurücksetzen
+  ['buchli-kwh-alt','buchli-kwh-neu'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.style.borderColor='#3a6aaa';
+  });
+
+  const kwh    = parseFloat((kwh_neu - kwh_alt).toFixed(2));
+  const tariff = (ST[1] && ST[1].tariff) ? ST[1].tariff : 0.25;
+  const chf    = parseFloat((kwh * tariff).toFixed(2));
+  const startedAt = new Date(datum + 'T12:00:00').toISOString();
+
+  const sessData = {
+    station_id:       2,
+    user_id:          userId,
+    started_at:       startedAt,
+    stopped_at:       startedAt,
+    kwh,
+    chf,
+    tariff,
+    is_manual:        true,
+    manual_start_kwh: kwh_alt,
+    manual_stop_kwh:  kwh_neu,
+    note:             bemerkung || 'Buchli-Eintrag'
+  };
+
+  // UI: Button deaktivieren, Laden anzeigen
+  const btn = document.getElementById('buchli-save-btn');
+  if(btn) { btn.disabled=true; btn.textContent='⏳ Speichern...'; }
+  buchliShowStatus('⏳ Wird gespeichert...', '#eef4ff', '#3a6aaa');
+
+  // Supabase immer versuchen, auch wenn supaOnline=false
+  const origOnline = supaOnline;
+  supaOnline = true; // Force-try
+
+  try {
+    let success = false;
+
+    if(buchliEditId) {
+      // UPDATE
+      const res = await sbPatch('sessions', `id=eq.${buchliEditId}`, sessData);
+      success = (res !== null);
+      if(success) {
+        // Update lokales Array
+        const idx = sessions.findIndex(s=>s.id===buchliEditId);
+        const updated = {...(sessions[idx]||{}), ...{
+          id:buchliEditId, userId, stationId:2, startedAt:startedAt, stoppedAt:startedAt,
+          kwh, chf, tariff, is_manual:true, manual_start_kwh:kwh_alt, manual_stop_kwh:kwh_neu, note:sessData.note
+        }};
+        if(idx>=0) sessions[idx]=updated; else sessions.unshift(updated);
+      }
+    } else {
+      // INSERT
+      const res = await sbPost('sessions', sessData);
+      success = (res !== null);
+      if(success) {
+        // Neuen Eintrag direkt ins Array
+        const newSess = {
+          id: (Array.isArray(res)&&res[0]) ? res[0].id : Date.now(),
+          userId, stationId:2, startedAt, stoppedAt:startedAt,
+          kwh, chf, tariff, is_manual:true, manual_start_kwh:kwh_alt, manual_stop_kwh:kwh_neu, note:sessData.note
+        };
+        sessions.unshift(newSess);
+      }
+    }
+
+    supaOnline = origOnline; // Restore
+    if(success) {
+      // Zählerstand aktualisieren
+      await sbPatch('stations','id=eq.2',{last_meter_reading: kwh_neu});
+      ST[1].lastMeterReading = kwh_neu;
+      localStorage.setItem('cg_s', JSON.stringify(sessions));
+      buchliShowStatus('✓ Gespeichert!', '#eaffea', '#2a7a2a');
+      setTimeout(() => {
+        closeBuchliEintrag();
+        renderBrailBuchliStatus();
+        renderSessions();
+        renderBilling();
+        if(typeof refreshAdminContent==='function' && document.getElementById('tab-admin').classList.contains('active')) refreshAdminContent();
+      }, 600);
+    } else {
+      buchliShowStatus('❌ Fehler — Supabase nicht erreichbar', '#ffeded', '#cc3333');
+      if(btn) { btn.disabled=false; btn.textContent='💾 Speichern'; }
+    }
+  } catch(e) {
+    console.error('saveBuchliEintrag error:', e);
+    buchliShowStatus('❌ Fehler: ' + e.message, '#ffeded', '#cc3333');
+    if(btn) { btn.disabled=false; btn.textContent='💾 Speichern'; }
+  }
+}
+
+function buchliShowStatus(msg, bg, color) {
+  const el = document.getElementById('buchli-save-status');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.background = bg;
+  el.style.color = color;
+  el.style.border = '1px solid ' + color + '44';
+  el.style.display = 'block';
+}
+
+async function deleteBuchliEintrag() {
+  if(!buchliEditId) return;
+  if(!confirm('Eintrag wirklich löschen?')) return;
+  if(supaOnline) {
+    await sbDelete('sessions', `id=eq.${buchliEditId}`);
+  }
+  sessions = sessions.filter(s => s.id !== buchliEditId);
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  closeBuchliEintrag();
+  renderBrailBuchliStatus();
+  renderSessions();
+  renderBilling();
+}
+
 function renderBrailBuchliStatus() {
-  const brailSess = sessions.filter(s=>s.stationId===2);
+  const brailSess = sessions
+    .filter(s => s.stationId === 2)
+    .sort((a,b) => new Date(b.startedAt) - new Date(a.startedAt));
+
+  // Stats
   const now = new Date();
+  const totalKwh = brailSess.reduce((a,s)=>a+(s.kwh||0),0);
+  const month    = brailSess.filter(s=>{ const d=new Date(s.startedAt); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((a,s)=>a+(s.kwh||0),0);
+  const lastMeter = ST[1] ? (ST[1].lastMeterReading||0) : 0;
 
-  // Stats: Heute / Monat / Letzter Zählerstand
-  const today = brailSess.filter(s=>{
-    return new Date(s.startedAt).toDateString()===now.toDateString();
-  }).reduce((a,s)=>a+(s.kwh||0),0);
-
-  const month = brailSess.filter(s=>{
-    const d=new Date(s.startedAt);
-    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  }).reduce((a,s)=>a+(s.kwh||0),0);
-
-  const tEl=document.getElementById('buchli-today');
-  if(tEl) tEl.textContent = today.toFixed(1)+' kWh';
+  const lmEl=document.getElementById('buchli-last-meter');
+  if(lmEl) lmEl.textContent = lastMeter>0 ? Math.round(lastMeter).toLocaleString('de-CH')+' kWh' : '—';
   const mEl=document.getElementById('buchli-month');
   if(mEl) mEl.textContent = month.toFixed(0)+' kWh';
-
-  // Letzter Zählerstand aus letzter beendeter Brail-Session
-  const lastMeter = ST[1].lastMeterReading||0;
-  const lmEl=document.getElementById('buchli-last-meter');
-  if(lmEl) lmEl.textContent = lastMeter>0 ? lastMeter.toFixed(0)+' kWh' : '—';
-
-  // Total kWh
-  const totalKwh = brailSess.reduce((a,s)=>a+(s.kwh||0),0);
+  const tEl=document.getElementById('buchli-today');
+  if(tEl) tEl.textContent = totalKwh.toFixed(1)+' kWh';
   const tkEl=document.getElementById('buchli-total-kwh');
   if(tkEl) tkEl.textContent = totalKwh.toFixed(1)+' kWh';
 
-  // Einträge-Liste
-  const entriesEl = document.getElementById('buchli-entries');
-  if(!entriesEl) return;
+  const el = document.getElementById('buchli-entries');
+  if(!el) return;
 
   if(brailSess.length===0){
-    entriesEl.innerHTML='<div style="padding:24px;text-align:center;font-family:Georgia,serif;font-style:italic;color:#999;font-size:15px">Noch keine Einträge —<br>erste Ladung eintragen!</div>';
+    el.innerHTML='<div style="padding:24px;text-align:center;font-family:'Caveat',cursive;font-size:20px;color:#aaa">Noch keine Einträge...<br><span style="font-size:15px">Ersten Eintrag mit dem Button unten erfassen!</span></div>';
     return;
   }
 
-  entriesEl.innerHTML = brailSess.map((s,i) => {
-    const u  = users.find(x=>x.id===s.userId);
-    const dt = new Date(s.startedAt);
+  el.innerHTML = brailSess.map((s,i)=>{
+    const u   = users.find(x=>x.id===s.userId);
+    const dt  = new Date(s.startedAt);
     const dateStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-
-    // Zähler alt / neu
-    const mAlt = s.manual_start_kwh!=null ? Math.round(s.manual_start_kwh) : '—';
-    const mNeu = s.manual_stop_kwh!=null  ? Math.round(s.manual_stop_kwh)  : '—';
+    const name = u ? u.name : '?';
+    const mAlt = s.manual_start_kwh!=null ? Math.round(s.manual_start_kwh).toLocaleString('de-CH') : '—';
+    const mNeu = s.manual_stop_kwh!=null  ? Math.round(s.manual_stop_kwh).toLocaleString('de-CH')  : '—';
     const kwh  = (s.kwh||0).toFixed(1);
+    const note = (s.note && s.note!=='Buchli-Eintrag') ? s.note : '';
+    const bg   = i%2===0 ? '#fffef5' : '#f5f8ff';
+    // Pass only needed fields to avoid stringify issues
+    const onclickData = JSON.stringify({
+      id:s.id, userId:s.userId, startedAt:s.startedAt,
+      manual_start_kwh:s.manual_start_kwh, manual_stop_kwh:s.manual_stop_kwh,
+      kwh:s.kwh, note:s.note
+    }).replace(/"/g,'&quot;');
 
-    // Name: kurz halten
-    const name = u ? (u.name.split(' ').slice(-1)[0]) : '?'; // Nur Nachname
-
-    const isActive = !s.stoppedAt;
-    const rowBg = isActive ? '#fff9e6' : (i%2===0 ? '#fffef8' : '#f7faf7');
-    const kwhColor = isActive ? '#e65c00' : '#2a5a2a';
-    const activeDot = isActive ? '🟡 ' : '';
-
-    // Linien-Effekt
-    const borderB = i < brailSess.length-1 ? '1px solid #d4e8d4' : 'none';
-
-    return `<div style="display:grid;grid-template-columns:62px 1fr 58px 58px 54px;gap:0;padding:9px 10px;background:${rowBg};border-bottom:${borderB}">
-      <div style="font-family:'Space Mono',monospace;font-size:12px;color:#666;line-height:1.3">${dateStr}</div>
-      <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1a3a1a">${activeDot}${name}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:12px;color:#888;text-align:right;padding-top:2px">${mAlt}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:12px;color:#888;text-align:right;padding-top:2px">${mNeu}</div>
-      <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:${kwhColor};text-align:right">${kwh}</div>
+    return `<div onclick="openBuchliEintrag(JSON.parse(this.dataset.s))" data-s="${onclickData}"
+      style="display:grid;grid-template-columns:1fr 56px 56px 48px 52px;gap:0;padding:10px 12px;background:${bg};border-bottom:1px solid #d0dcf0;cursor:pointer">
+      <div>
+        <div style="font-family:'Caveat',cursive;font-size:18px;font-weight:700;color:#1a3a6a">${name}</div>
+        ${note ? `<div style="font-family:'Caveat',cursive;font-size:13px;color:#888">${note}</div>` : ''}
+      </div>
+      <div style="font-family:'Courier New',monospace;font-size:12px;color:#777;text-align:right;padding-top:4px">${mAlt}</div>
+      <div style="font-family:'Courier New',monospace;font-size:12px;color:#777;text-align:right;padding-top:4px">${mNeu}</div>
+      <div style="font-family:'Courier New',monospace;font-size:17px;font-weight:700;color:#1a3a6a;text-align:right">${kwh}</div>
+      <div style="font-family:'Courier New',monospace;font-size:11px;color:#888;text-align:right;padding-top:5px">${dateStr}</div>
     </div>`;
   }).join('');
 }
@@ -1780,9 +2063,9 @@ function switchStation(id){
   // Modus-Bar im Dashboard: nur bei Brail anzeigen
   const modeBar = document.getElementById('brail-mode-bar');
   if(modeBar) modeBar.style.display = isBrail ? 'block' : 'none';
-  // Ladevorgang Button Text
-  const startBtn = document.querySelector('#start-wrap .btn-p');
-  if(startBtn) startBtn.textContent = isBuchli ? '✍ Ladevorgang eintragen' : '⚡ Ladevorgang starten';
+  // Start button
+  const startBtn = document.querySelector('#start-wrap button');
+  if(startBtn){if(isBuchli){startBtn.textContent='✍ Eintrag erfassen';startBtn.style.background='#4a7ab5';}else{startBtn.textContent='⚡ Ladevorgang starten';startBtn.style.background='';} }
   // Modus-Buttons markieren (Dashboard + Settings)
   const mode = ST[id-1] ? (ST[1].brailMode||'buchli') : 'shelly';
   ['btn-mode-buchli','dash-mode-buchli'].forEach(bid=>{
@@ -2229,6 +2512,8 @@ function renderDashboard(){
 // SESSION MODAL
 // ═══════════════════════════════════════════
 function openStartSession(){
+  // BRAIL Buchli-Modus: direkt Buchli-Eintrag öffnen
+  if(cs===2 && ST[1].brailMode==='buchli') { openBuchliEintrag(null); return; }
   document.getElementById('modal-ov').style.display='flex';
   pinBuf='';modalUser=null;updatePD();
   const su=document.getElementById('modal-users');
@@ -2475,7 +2760,8 @@ function renderSessions(){
           timeDisplay = `${s.manual_start_kwh.toFixed(1)} → ${s.manual_stop_kwh.toFixed(1)} kWh`;
         }
         
-        html+=`<div class="sess-row"><div style="font-size:19px">${u.emoji}</div><div style="flex:1"><div class="sess-name">${u.name} <span style="font-size:10px;opacity:0.6">${icon} ${typeLabel}</span></div><div class="sess-date">${timeDisplay} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:${u.color||'var(--accent)'}">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div></div></div>`;
+        const sData=JSON.stringify(s).replace(/"/g,'&quot;');
+        html+=`<div class="sess-row" onclick="openSessEdit(${sData})" style="cursor:pointer"><div style="font-size:19px">${u.emoji}</div><div style="flex:1"><div class="sess-name">${u.name} <span style="font-size:10px;opacity:0.6">${icon} ${typeLabel}</span></div><div class="sess-date">${timeDisplay} · <span class="sess-duration">${dur}</span></div></div><div style="text-align:right"><div class="sess-kwh" style="color:${u.color||'var(--accent)'}">${s.kwh.toFixed(2)} kWh</div><div class="sess-chf">${s.chf.toFixed(2)} CHF</div></div><div style="font-size:16px;color:var(--text-dim);margin-left:4px;align-self:center">›</div></div>`;
       }
     });
   });
@@ -3158,42 +3444,97 @@ function openSessEdit(s){
   editSessObj=s;
   document.getElementById('edit-sess-id').value=s.id||s.startedAt;
   document.getElementById('edit-sess-kwh').value=s.kwh;
-  // Benutzer Dropdown
+
+  // Benutzer Dropdown — alle User aus beiden Stationen
   const sel=document.getElementById('edit-sess-user');
   sel.innerHTML=users.map(u=>`<option value="${u.id}" ${u.id===s.userId?'selected':''}>${u.emoji} ${u.name}</option>`).join('');
-  // Datum/Zeit
-  const toLocal=ts=>{const d=new Date(ts);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);};
-  document.getElementById('edit-sess-start').value=toLocal(s.startedAt);
-  document.getElementById('edit-sess-end').value=s.stoppedAt?toLocal(s.stoppedAt):'';
+
+  // Datum + Uhrzeit getrennt
+  const dt = new Date(s.startedAt);
+  const pad = n=>String(n).padStart(2,'0');
+  document.getElementById('edit-sess-date').value = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  document.getElementById('edit-sess-time').value = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+
+  // Bemerkung
+  const noteEl = document.getElementById('edit-sess-note');
+  if(noteEl) noteEl.value = (s.note && s.note!=='Buchli-Eintrag'&&s.note!=='Hand-Nachtrag') ? s.note : '';
+
+  // Manuelle Felder (Zähler alt/neu) — für Brail/is_manual
+  const manualFields = document.getElementById('edit-manual-fields');
+  const altEl = document.getElementById('edit-sess-kwh-alt');
+  const neuEl = document.getElementById('edit-sess-kwh-neu');
+  if(s.is_manual && (s.manual_start_kwh!=null || s.stationId===2)) {
+    if(manualFields) manualFields.style.display='block';
+    if(altEl) altEl.value = s.manual_start_kwh!=null ? s.manual_start_kwh : '';
+    if(neuEl) neuEl.value = s.manual_stop_kwh!=null  ? s.manual_stop_kwh  : '';
+  } else {
+    if(manualFields) manualFields.style.display='none';
+  }
+
+  // Titel anpassen
+  const titleEl = document.getElementById('sess-edit-title');
+  if(titleEl) titleEl.textContent = s.is_manual ? '✏ Buchli-Eintrag editieren' : '✏ Session editieren';
+
   const ov=document.getElementById('sess-edit-ov');ov.style.display='flex';
 }
 function closeSessEdit(){document.getElementById('sess-edit-ov').style.display='none';editSessObj=null;}
 
 async function admSessSave(){
-  if(!editSessObj)return;
-  const uid=parseInt(document.getElementById('edit-sess-user').value);
-  const kwh=parseFloat(document.getElementById('edit-sess-kwh').value)||0;
-  const startStr=document.getElementById('edit-sess-start').value;
-  const endStr=document.getElementById('edit-sess-end').value;
-  const tariff=cfg.tariff1?parseFloat(cfg.tariff1):ST[adminStation-1].tariff;
-  const startedAt=startStr?new Date(startStr).getTime():editSessObj.startedAt;
-  const stoppedAt=endStr?new Date(endStr).getTime():editSessObj.stoppedAt;
-  const chf=parseFloat((kwh*tariff).toFixed(2));
+  if(!editSessObj) return;
+  const uid    = parseInt(document.getElementById('edit-sess-user').value);
+  const kwh    = parseFloat(document.getElementById('edit-sess-kwh').value)||0;
+  const dateV  = document.getElementById('edit-sess-date').value;
+  const timeV  = document.getElementById('edit-sess-time').value||'12:00';
+  const noteV  = document.getElementById('edit-sess-note').value.trim();
+  const altV   = parseFloat(document.getElementById('edit-sess-kwh-alt').value)||null;
+  const neuV   = parseFloat(document.getElementById('edit-sess-kwh-neu').value)||null;
 
-  // Update im lokalen Array
-  const idx=sessions.findIndex(s=>s.startedAt===editSessObj.startedAt);
-  if(idx>=0) sessions[idx]={...sessions[idx],userId:uid,kwh,chf,startedAt,stoppedAt};
-  save();
+  const stSt   = dateV ? new Date(`${dateV}T${timeV}:00`).getTime() : editSessObj.startedAt;
+  // Für Buchli: stoppedAt = startedAt (kein echtes Ende)
+  const stEnd  = editSessObj.is_manual ? stSt : (editSessObj.stoppedAt||stSt);
 
-  if(supaOnline&&editSessObj.id){
-    try{
-      await sbPatch('sessions',`id=eq.${editSessObj.id}`,
-        {user_id:uid,kwh,chf,started_at:new Date(startedAt).toISOString(),stopped_at:stoppedAt?new Date(stoppedAt).toISOString():null});
-    }catch(e){console.warn(e);}
+  const stIdxArr = editSessObj.stationId===2 ? 1 : 0;
+  const tariff = ST[stIdxArr] ? ST[stIdxArr].tariff : 0.25;
+  const chf    = parseFloat((kwh * tariff).toFixed(2));
+
+  const supaData = {
+    user_id: uid, kwh, chf, tariff,
+    started_at:  new Date(stSt).toISOString(),
+    stopped_at:  new Date(stEnd).toISOString(),
+    note: noteV||editSessObj.note||null,
+    manual_start_kwh: altV,
+    manual_stop_kwh:  neuV
+  };
+  const localUpdate = {
+    ...editSessObj, userId:uid, kwh, chf, tariff,
+    startedAt: stSt, stoppedAt: stEnd,
+    note: supaData.note,
+    manual_start_kwh: altV, manual_stop_kwh: neuV
+  };
+
+  // Update lokal
+  const idx = sessions.findIndex(s=>s.id===editSessObj.id);
+  if(idx>=0) sessions[idx] = localUpdate;
+  else sessions.unshift(localUpdate);
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+
+  // Update Supabase
+  if(editSessObj.id){
+    const res = await sbPatch('sessions',`id=eq.${editSessObj.id}`, supaData);
+    if(res===null) { alert('⚠ Lokal gespeichert, Supabase nicht erreichbar'); }
   }
-  closeSessEdit();renderAdmSessions();updateAdminCounters();
-  renderSessions();renderBilling();
-  alert('✓ Session gespeichert.');
+
+  // Wenn Brail: letzten Zähler updaten
+  if(neuV && editSessObj.stationId===2) {
+    await sbPatch('stations','id=eq.2',{last_meter_reading: neuV});
+    if(ST[1]) ST[1].lastMeterReading = neuV;
+  }
+
+  closeSessEdit();
+  renderAdmSessions(); updateAdminCounters();
+  renderSessions(); renderBilling();
+  if(cs===2 && ST[1] && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
+  alert('✓ Gespeichert!');
 }
 
 async function admSessDelete(){
