@@ -10,7 +10,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ChargeGörtz EV">
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
 <title>ChargeGörtz EV — Neerach &amp; Brail</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -267,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17.8</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17.6</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -283,15 +282,31 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">SYSTEM STATUS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <div class="st-row"><span class="st-dot" id="st-pi"></span><span class="st-lbl">Pi Backend</span><span class="st-val" id="stv-pi">—</span></div>
-      <div class="st-row"><span class="st-dot" id="st-shelly"></span><span class="st-lbl">Shelly 3EM</span><span class="st-val" id="stv-shelly">—</span></div>
+      <div class="st-row" id="row-shelly" ><span class="st-dot" id="st-shelly"></span><span class="st-lbl">Shelly 3EM</span><span class="st-val" id="stv-shelly">—</span></div>
       <div class="st-row"><span class="st-dot" id="st-db"></span><span class="st-lbl">Datenbank</span><span class="st-val" id="stv-db">—</span></div>
-      <div class="st-row"><span class="st-dot" id="st-relay"></span><span class="st-lbl">Shelly Mini</span><span class="st-val" id="stv-relay">—</span></div>
+      <div class="st-row" id="row-relay" ><span class="st-dot" id="st-relay"></span><span class="st-lbl">Shelly Mini</span><span class="st-val" id="stv-relay">—</span></div>
     </div>
     <div id="status-help" style="display:none;margin-top:8px;padding:8px;background:rgba(255,160,0,.08);border-radius:8px;font-size:11px;color:#ffa000;line-height:1.6"></div>
   </div>
     <div id="net-mode-banner" style="display:none"></div>
     <div id="net-help-box" style="display:none;padding:10px;background:rgba(255,160,0,.08);border:1px solid #ffa00044;border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:8px"></div>
-  <div class="card" style="padding:14px;margin-bottom:10px">
+
+  <!-- v17.6: Brail Modus-Umschalter — sichtbar nur wenn cs=2 -->
+  <div id="brail-mode-bar" style="display:none;margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:10px">BRAIL — STATIONS-MODUS</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button id="dash-mode-buchli" onclick="saveBrailMode('buchli')"
+        style="padding:14px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.4">
+        📖 Ladebüchlein<br><span style="font-size:11px;font-weight:400;opacity:.8">Manueller Zähler</span>
+      </button>
+      <button id="dash-mode-shelly" onclick="saveBrailMode('shelly')"
+        style="padding:14px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.4">
+        ⚡ Shelly<br><span style="font-size:11px;font-weight:400;opacity:.8">Nach HW-Installation</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card" id="shelly-live-card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
       <div id="live-badge" style="font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text-dim)">STANDBY</div>
@@ -335,8 +350,69 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="relay-sub" id="relay-sub">Shelly 1 Mini — 192.168.3.224</div></div>
     <div class="kipp" id="kipp" onclick="toggleRelay()"><div class="kipp-track"></div><div class="kipp-thumb"></div></div>
   </div>
+  <!-- ✅ v18: Brail Büchlein Card (hidden for Neerach/Shelly mode) -->
+  <!-- ═══ BRAIL LADEBÜCHLEIN ═══ -->
+  <div id="brail-buchli-card" style="display:none;margin-bottom:10px">
+
+    <!-- Büchlein Cover — Buchoptik -->
+    <div style="background:#1e1200;border:3px solid #c4a460;border-radius:16px;overflow:hidden;margin-bottom:14px">
+      <!-- Goldstreifen oben -->
+      <div style="height:8px;background:linear-gradient(90deg,#8b5e1a,#f0d080,#c4a460,#f0d080,#8b5e1a)"></div>
+      <div style="display:flex;align-items:stretch">
+        <!-- Buchrücken links -->
+        <div style="width:20px;background:linear-gradient(180deg,#6b4010,#c4a460,#8b5e1a,#c4a460,#6b4010);flex-shrink:0"></div>
+        <div style="flex:1;padding:18px 20px 20px 16px">
+          <!-- Titel -->
+          <div style="text-align:center;margin-bottom:18px">
+            <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#f5e6c0;letter-spacing:.04em">📖 Charge Brail</div>
+            <div style="font-family:Georgia,serif;font-size:13px;color:#c4a460;letter-spacing:.16em;margin-top:6px">DAS LADEBÜCHLEIN</div>
+            <div style="height:2px;background:linear-gradient(90deg,transparent,#c4a460,transparent);margin:10px 0 0 0"></div>
+          </div>
+          <!-- Zählerstand gross -->
+          <div style="background:rgba(196,164,96,.12);border:1px solid #c4a46066;border-radius:12px;padding:16px 18px;margin-bottom:14px;text-align:center">
+            <div style="font-size:12px;color:#c4a460;letter-spacing:.12em;margin-bottom:8px">LETZTER ZÄHLERSTAND</div>
+            <div id="buchli-last-meter" style="font-family:'Space Mono',monospace;font-size:38px;font-weight:700;color:#f5e6c0;line-height:1">— kWh</div>
+          </div>
+          <!-- Stats Heute / Monat -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+            <div style="background:rgba(196,164,96,.08);border:1px solid #c4a46044;border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:12px;color:#c4a460;margin-bottom:6px">HEUTE</div>
+              <div id="buchli-today" style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;color:#f5e6c0">0.0 kWh</div>
+            </div>
+            <div style="background:rgba(196,164,96,.08);border:1px solid #c4a46044;border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:12px;color:#c4a460;margin-bottom:6px">MONAT</div>
+              <div id="buchli-month" style="font-family:'Space Mono',monospace;font-size:24px;font-weight:700;color:#f5e6c0">0 kWh</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Goldstreifen unten -->
+      <div style="height:8px;background:linear-gradient(90deg,#8b5e1a,#f0d080,#c4a460,#f0d080,#8b5e1a)"></div>
+    </div>
+
+    <!-- Einträge als Büchlein-Seite -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:12px">
+      <div style="padding:12px 16px;background:var(--surface2);border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">ALLE EINTRÄGE</div>
+        <div style="display:flex;gap:16px">
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text-dim)">TOTAL kWh</div>
+            <div id="buchli-total-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:#ff7c2a">— kWh</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--text-dim)">TOTAL CHF</div>
+            <div id="buchli-total-chf" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--text)">—</div>
+          </div>
+        </div>
+      </div>
+      <div id="buchli-entries">
+        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">Lade...</div>
+      </div>
+    </div>
+  </div>
+
   <div id="start-wrap">
-    <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
+    <button class="btn-p" style="width:100%;padding:18px;font-size:17px;font-weight:700;border-radius:var(--radius)" onclick="openStartSession()">✍ Ladevorgang eintragen</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -435,12 +511,44 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
   <div class="card">
     <div class="card-title">🌿 BRAIL — Brail Home</div>
-    <div class="s-label">Shelly 3EM IP</div>
-    <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
-    <div class="s-label">Shelly 1 Mini Gen3 IP</div>
-    <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
+
+    <!-- MODUS-SCHALTER -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:10px">STATIONS-MODUS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button id="btn-mode-buchli" onclick="saveBrailMode('buchli')"
+          style="padding:16px 8px;border-radius:10px;border:2px solid #ff7c2a;background:#ff7c2a22;color:#ff7c2a;font-size:15px;font-weight:700;cursor:pointer;line-height:1.5">
+          📖 Ladebüchlein<br><span style="font-size:11px;font-weight:400;opacity:.8">Manueller Zähler</span>
+        </button>
+        <button id="btn-mode-shelly" onclick="saveBrailMode('shelly')"
+          style="padding:16px 8px;border-radius:10px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:15px;font-weight:700;cursor:pointer;line-height:1.5">
+          ⚡ Shelly<br><span style="font-size:11px;font-weight:400;opacity:.8">Nach HW-Installation</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ZÄHLERSTAND SETZEN -->
+    <div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em;margin-bottom:8px">INITIALER ZÄHLERSTAND</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Aktuellen Stromzähler-Stand einmalig eingeben:</div>
+      <div style="display:flex;gap:8px">
+        <input id="brail-init-meter" type="number" step="0.1" placeholder="z.B. 12345.0"
+          style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:16px">
+        <button onclick="setBrailInitMeter()" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer">Setzen</button>
+      </div>
+    </div>
+
     <div class="s-label">Tarif (CHF/kWh)</div>
     <input class="s-input" id="tariff2" value="0.30">
+
+    <!-- Shelly IPs für spätere Installation -->
+    <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:8px">SHELLY IPs (für spätere Installation)</div>
+      <div class="s-label">Shelly 3EM IP</div>
+      <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
+      <div class="s-label">Shelly 1 Mini IP</div>
+      <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
+    </div>
     <button class="btn-p mt8" onclick="saveSettings()">Speichern</button>
   </div>
 
@@ -851,8 +959,8 @@ async function sha256(str) {
 // DATA
 // ═══════════════════════════════════════════════════════════════
 const ST = [
-  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25},
-  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25,lastMeterReading:0}
+  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25,lastMeterReading:0,brailMode:'shelly'},
+  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25,lastMeterReading:0,brailMode:'buchli'}
 ];
 const UDFL = [
   {id:1, name:'Robert Görtz', emoji:'⚡',plate:'ZH 100 RG',pin:'2204',role:'admin',stations:[1,2],color:'#00d4ff'},
@@ -914,6 +1022,7 @@ function applyConfig() {
   if(cfg.ip3em2)  ST[1].ip3em   = cfg.ip3em2;
   if(cfg.ipMini2) ST[1].ipMini  = cfg.ipMini2;
   if(cfg.tariff2) ST[1].tariff  = parseFloat(cfg.tariff2);
+  if(cfg.brailMode2) ST[1].brailMode = cfg.brailMode2;
 }
 
 async function syncFromSupabase() {
@@ -945,7 +1054,12 @@ async function syncFromSupabase() {
     sessions = sbSess.map(s => ({
       id: s.id, userId: s.user_id, stationId: s.station_id,
       startedAt: s.started_at, stoppedAt: s.stopped_at,
-      kwh: s.kwh || 0, chf: s.chf || 0, tariff: s.tariff || 0.30
+      kwh: s.kwh || 0, chf: s.chf || 0, tariff: s.tariff || 0.30,
+      // ✅ v17.5/v18 Felder
+      is_manual: s.is_manual || false,
+      manual_start_kwh: s.manual_start_kwh || null,
+      manual_stop_kwh: s.manual_stop_kwh || null,
+      note: s.note || null
     }));
     localStorage.setItem('cg_s', JSON.stringify(sessions));
   }
@@ -955,7 +1069,8 @@ async function syncFromSupabase() {
   if(active && active.length > 0) {
     const a = active[0];
     activeSession = {id:a.id, userId:a.user_id, stationId:a.station_id,
-      startedAt:a.started_at, kwh:a.kwh||0, chf:a.chf||0, tariff:a.tariff||0.30};
+      startedAt:a.started_at, kwh:a.kwh||0, chf:a.chf||0, tariff:a.tariff||0.30,
+      isManual: a.is_manual||false, manualStartKwh: a.manual_start_kwh||null};
     relayOn = true;
     localStorage.setItem('cg_as', JSON.stringify(activeSession));
   }
@@ -965,13 +1080,23 @@ async function syncFromSupabase() {
   if(sbSt && sbSt.length > 0) {
     sbSt.forEach(s => {
       const st = ST.find(x => x.id === s.id);
-      if(st) { st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30; st.lastMeterReading=parseFloat(s.last_meter_reading||0); }
+      if(st) {
+        st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30;
+        st.lastMeterReading=parseFloat(s.last_meter_reading||0);
+        st.brailMode=s.brail_mode||'buchli';
+      }
     });
   }
 
   setBanner('online');
   renderDashboard();
   updateRelayUI();
+  // Update BRAIL mode buttons if in settings
+  if(typeof updateBrailModeButtons==='function') updateBrailModeButtons(ST[1].brailMode||'buchli');
+  // If BRAIL is active station, refresh Büchlein
+  if(cs===2 && ST[1].brailMode==='buchli') {
+    switchStation(2);
+  }
 }
 
 function setBanner(mode) {
@@ -1090,7 +1215,9 @@ Soll ich diese Energie als "UNBEKANNT" speichern?`);
   relayOn = true;
   save();
   renderDashboard();
+  renderSessions();
   updateRelayUI();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
 
   // Relay nur für NEERACH
   if(cs === 1) {
@@ -1146,12 +1273,22 @@ async function stopSession() {
     await sbPatch('sessions', `id=eq.${activeSession.id}`, updateData);
   }
 
-  sessions.unshift({...activeSession, stoppedAt:Date.now(), kwh, chf});
+  // Update local session record with all fields
+  const sessIdx = sessions.findIndex(s=>s.id===activeSession.id);
+  const updatedSess = {
+    ...activeSession, 
+    stoppedAt: new Date().toISOString(),
+    kwh, chf,
+    manual_stop_kwh: manualStopKwh
+  };
+  if(sessIdx>=0) sessions[sessIdx] = updatedSess;
+  else sessions.unshift(updatedSess);
+  
   activeSession = null;
   relayOn = false;
 
-  // Relay nur für NEERACH
-  if(cs === 1) {
+  // Relay nur für NEERACH/Shelly-Modus
+  if(cs === 1 || (cs===2 && ST[1].brailMode==='shelly')) {
     const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
     try{
       const r=await fetch(`${piBase}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)});
@@ -1162,7 +1299,9 @@ async function stopSession() {
   
   save();
   renderDashboard();
+  renderSessions();
   updateRelayUI();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1180,9 +1319,14 @@ async function saveSettings() {
 
   if(supaOnline) {
     await sbPatch('stations','id=eq.1',{ip_3em:cfg.ip3em1,ip_mini:cfg.ipMini1,tariff:parseFloat(cfg.tariff1)||.30});
-    await sbPatch('stations','id=eq.2',{ip_3em:cfg.ip3em2,ip_mini:cfg.ipMini2,tariff:parseFloat(cfg.tariff2)||.30});
+    await sbPatch('stations','id=eq.2',{
+      ip_3em:cfg.ip3em2, ip_mini:cfg.ipMini2,
+      tariff:parseFloat(cfg.tariff2)||.30,
+      brail_mode: ST[1].brailMode||'buchli'
+    });
   }
   save();
+  switchStation(cs); // Refresh UI nach Speichern
   alert('✓ Gespeichert' + (supaOnline ? ' (lokal + Supabase ☁)' : ' (nur lokal)'));
 }
 
@@ -1358,11 +1502,12 @@ async function saveNachtrag() {
   
   try {
     const saved = await sbPost('sessions', session);
-    if(saved && saved.length > 0) {
-      sessions.unshift(Array.isArray(saved) ? saved[0] : saved);
-      await loadData(); // Reload all data
+    // Supabase returns array on success, null on error
+    if(saved !== null) {
+      await syncFromSupabase(); // Reload all data fresh
       renderBilanz();
       renderSessions();
+      if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
       alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
       closeNachtrag();
     } else {
@@ -1371,6 +1516,124 @@ async function saveNachtrag() {
   } catch(e) {
     console.error('Nachtrag save error:', e);
     alert('❌ Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// BRAIL BÜCHLEIN STATUS
+// ═══════════════════════════════════════════
+function renderBrailBuchliStatus() {
+  const brailSess = sessions.filter(s=>s.stationId===2);
+
+  // Letzter Zählerstand
+  const lastEl = document.getElementById('buchli-last-meter');
+  if(lastEl) lastEl.textContent = (ST[1].lastMeterReading||0).toFixed(1) + ' kWh';
+
+  // Heute / Monat
+  const now = new Date();
+  const today = brailSess.filter(s=>{
+    const d=new Date(s.startedAt);
+    return d.toDateString()===now.toDateString();
+  }).reduce((a,s)=>a+(s.kwh||0),0);
+  const month = brailSess.filter(s=>{
+    const d=new Date(s.startedAt);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).reduce((a,s)=>a+(s.kwh||0),0);
+
+  const tEl=document.getElementById('buchli-today');
+  if(tEl) tEl.textContent = today.toFixed(1)+' kWh';
+  const mEl=document.getElementById('buchli-month');
+  if(mEl) mEl.textContent = month.toFixed(0)+' kWh';
+
+  // Total
+  const totalKwh = brailSess.reduce((a,s)=>a+(s.kwh||0),0);
+  const totalChf = brailSess.reduce((a,s)=>a+(s.chf||0),0);
+  const tkEl=document.getElementById('buchli-total-kwh');
+  if(tkEl) tkEl.textContent = totalKwh.toFixed(1)+' kWh';
+  const tcEl=document.getElementById('buchli-total-chf');
+  if(tcEl) tcEl.textContent = totalChf.toFixed(2)+' CHF';
+
+  // Büchlein Einträge — alle Sessions, gross und lesbar
+  const entriesEl = document.getElementById('buchli-entries');
+  if(!entriesEl) return;
+
+  if(brailSess.length===0){
+    entriesEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:14px">Noch keine Einträge</div>';
+    return;
+  }
+
+  entriesEl.innerHTML = brailSess.map((s,i) => {
+    const u = users.find(x=>x.id===s.userId);
+    const dt = new Date(s.startedAt);
+    const dateStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const timeStr = dt.toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'});
+    const kwh = (s.kwh||0).toFixed(2);
+    const chf = (s.chf || (s.kwh||0)*(s.tariff||ST[1].tariff)).toFixed(2);
+    const icon = s.is_manual ? '✋' : '🤖';
+    const name = u ? (u.emoji+' '+u.name) : '❓ Unbek.';
+    const note = s.note && s.note!=='Hand-Nachtrag' ? s.note : '';
+    // Zählerstand Anzeige
+    const meterInfo = (s.manual_start_kwh!=null && s.manual_stop_kwh!=null)
+      ? `<div style="font-size:13px;color:var(--text-dim);margin-top:3px;font-family:'Space Mono',monospace">${s.manual_start_kwh.toFixed(1)} → ${s.manual_stop_kwh.toFixed(1)} kWh</div>`
+      : '';
+    const noteHtml = note ? `<div style="font-size:12px;color:var(--text-dim);margin-top:2px;font-style:italic">${note}</div>` : '';
+    const isActive = !s.stoppedAt;
+    const bg = isActive ? 'rgba(255,124,42,.06)' : (i%2===0 ? 'var(--surface2)' : 'transparent');
+    const borderL = isActive ? '4px solid #ff7c2a' : '4px solid transparent';
+    const activeBadge = isActive ? '<span style="font-size:10px;background:#ff7c2a;color:#000;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:6px">AKTIV</span>' : '';
+    return `<div style="padding:14px 14px 12px 14px;background:${bg};border-bottom:1px solid var(--border);border-left:${borderL}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${name}${activeBadge}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#ff7c2a;line-height:1">${kwh} kWh</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end">
+        <div>
+          <div style="font-size:13px;color:var(--text-dim)">${dateStr} · ${timeStr} ${icon}</div>
+          ${meterInfo}
+          ${noteHtml}
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:16px;color:var(--text-dim);text-align:right">${chf} CHF</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveBrailMode(mode) {
+  ST[1].brailMode = mode;
+  // Button-Highlight sofort
+  updateBrailModeButtons(mode);
+  sbPatch('stations','id=eq.2',{brail_mode:mode}).then(()=>{
+    alert(mode==='buchli' ? '✓ Ladebüchlein aktiv' : '✓ Shelly-Modus — IPs in Einstellungen konfigurieren!');
+    switchStation(2);
+  });
+}
+
+function updateBrailModeButtons(mode) {
+  // Settings-Buttons UND Dashboard-Buttons updaten
+  ['btn-mode-buchli','dash-mode-buchli'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b)return;
+    if(mode==='buchli'){b.style.border='3px solid #ff7c2a';b.style.background='#ff7c2a33';b.style.color='#ff7c2a';}
+    else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';}
+  });
+  ['btn-mode-shelly','dash-mode-shelly'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b)return;
+    if(mode==='shelly'){b.style.border='3px solid #00d4ff';b.style.background='#00d4ff22';b.style.color='#00d4ff';}
+    else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';}
+  });
+}
+
+async function setBrailInitMeter() {
+  const val = parseFloat(document.getElementById('brail-init-meter').value);
+  if(isNaN(val)||val<0){ alert('❌ Bitte gültigen Zählerstand eingeben'); return; }
+  const res = await sbPatch('stations','id=eq.2',{last_meter_reading:val});
+  if(res!==null){
+    ST[1].lastMeterReading = val;
+    alert('✓ Zählerstand auf '+val.toFixed(1)+' kWh gesetzt');
+    renderBrailBuchliStatus();
+  } else {
+    alert('❌ Fehler beim Speichern');
   }
 }
 
@@ -1423,25 +1686,43 @@ function switchStation(id){
   const col=ST[id-1].color;
   document.documentElement.style.setProperty('--accent',col);
   document.documentElement.style.setProperty('--accent-dim',hex2rgba(col,.15));
-
-  const dash = document.getElementById('tab-dashboard');
-  const buch = document.getElementById('tab-buchli');
-
-  if(id===2){
-    // BRAIL — nur Ladebüchlein, kein Shelly
-    if(dash) dash.style.display='none';
-    if(buch) buch.style.display='block';
-    blRefreshStats();
-    return;
-  }
-  // NEERACH — normales Dashboard
-  if(dash) dash.style.display='block';
-  if(buch) buch.style.display='none';
-  document.getElementById('relay-card').className='relay-card';
+  document.getElementById('relay-card').className=id===2?'relay-card st2':'relay-card';
   document.getElementById('relay-sub').textContent=`Shelly 1 Mini — ${ST[id-1].ipMini||'IP nicht konfiguriert'}`;
   document.getElementById('gauge-st-name').textContent=ST[id-1].name+' '+ST[id-1].loc;
   document.getElementById('v-tariff').textContent=ST[id-1].tariff.toFixed(2)+' CHF/kWh';
-  renderDashboard(); updateRelayUI(); updateGauges(0,230,0);
+  // v17.6: Brail Büchlein/Shelly-Modus UI umschalten
+  const isBuchli = (id===2 && ST[1].brailMode==='buchli');
+  const isBrail  = (id===2);
+  // Shelly-Elemente: ausblenden bei Büchlein-Modus
+  ['row-shelly','row-relay'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
+  ['shelly-live-card','relay-card'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
+  // Status-Karte: nur DB-Zeile zeigen bei Büchlein
+  const statusCard = document.getElementById('status-card');
+  if(statusCard) statusCard.style.display = '';
+  // Büchlein-Card
+  const buchliCard = document.getElementById('brail-buchli-card');
+  if(buchliCard) buchliCard.style.display = isBuchli ? 'block' : 'none';
+  // Modus-Bar im Dashboard: nur bei Brail anzeigen
+  const modeBar = document.getElementById('brail-mode-bar');
+  if(modeBar) modeBar.style.display = isBrail ? 'block' : 'none';
+  // Ladevorgang Button Text
+  const startBtn = document.querySelector('#start-wrap .btn-p');
+  if(startBtn) startBtn.textContent = isBuchli ? '✍ Ladevorgang eintragen' : '⚡ Ladevorgang starten';
+  // Modus-Buttons markieren (Dashboard + Settings)
+  const mode = ST[id-1] ? (ST[1].brailMode||'buchli') : 'shelly';
+  ['btn-mode-buchli','dash-mode-buchli'].forEach(bid=>{
+    const b=document.getElementById(bid);
+    if(b){ if(isBuchli){b.style.border='3px solid #ff7c2a';b.style.background='#ff7c2a33';b.style.color='#ff7c2a';}
+           else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';} }
+  });
+  ['btn-mode-shelly','dash-mode-shelly'].forEach(bid=>{
+    const b=document.getElementById(bid);
+    if(b){ if(!isBuchli&&isBrail){b.style.border='3px solid #00d4ff';b.style.background='#00d4ff22';b.style.color='#00d4ff';}
+           else{b.style.border='2px solid var(--border)';b.style.background='var(--surface2)';b.style.color='var(--text-dim)';} }
+  });
+  renderDashboard(); updateRelayUI();
+  if(isBuchli) renderBrailBuchliStatus();
+  else updateGauges(0,230,0);
 }
 
 function hex2rgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
@@ -1657,6 +1938,16 @@ function saveTailscaleIP(){
 }
 
 async function pollShelly(){
+  // ✅ v18: BRAIL Büchlein-Modus — kein Shelly, kein Pi-Poll
+  if(cs === 2 && ST[1].brailMode === 'buchli') {
+    // Nur Sessions-Daten zeigen, kein Live-Strom
+    liveTotalKwh = 0;
+    liveKw = 0;
+    updateGauges(0, 0, 0);
+    renderDashboard();
+    renderBrailBuchliStatus();
+    return;
+  }
   if(!piBaseUrl){
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
@@ -2122,169 +2413,7 @@ function printSessions(){
   const sub=document.getElementById('sess-sub').textContent;
   const list=document.getElementById('sess-list').innerHTML;
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'
-<!-- ════════════════════════════════════════════════════════ -->
-<!-- BRAIL LADEBÜCHLEIN v17.8 — komplett eigenständig        -->
-<!-- ════════════════════════════════════════════════════════ -->
-<div id="tab-buchli" style="display:none;padding:0 0 80px">
-
-  <!-- STATISTIK-STREIFEN -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center">
-      <div style="font-family:Caveat,cursive;font-size:11px;color:var(--text-dim)">Letzter Zähler</div>
-      <div id="bl-stat-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center">
-      <div style="font-family:Caveat,cursive;font-size:11px;color:var(--text-dim)">Monat</div>
-      <div id="bl-stat-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">—</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center">
-      <div style="font-family:Caveat,cursive;font-size:11px;color:var(--text-dim)">Total</div>
-      <div id="bl-stat-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">—</div>
-    </div>
-  </div>
-
-  <!-- DAS BUCH -->
-  <div style="position:relative;width:100%;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.3)">
-
-    <!-- Buchbild Hintergrund -->
-    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCAHgAXwDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3CiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAqanqVlpVqbnULmO3hBC7nPUnoB6mucuPiP4bhkZBcXMjKcEJaSHtn09Kw/jUZPsmjIjYDXLkjdgE7OK8ykjcMdsy4Ayyl2yP05rnq1nCVjppUVONz2Bvih4fChhHqDKVLgi24IHfrUX/C19AaIyRQX8qjH3Ilzz0/irxuSKKVlSILtboGRgW+mK07fwrq10wks7OSNG6mb92v4A81msRJmjoQW56fb/FXSLmYxQWGoMwGWyqAD8d1Tt8SdOAP+g3Zx1wUwPxzXnNv8PtXaZi11YxIUHy7mP6ADj8a0Yvh/MGUPqsPIxtWE/1ah1Kjfui9nSW52A+J1gQSNOu+P9tOf1pzfEvTwu77DcEeokT/ABrh5fDVtZymK6ubsgDAKRoAfpnNKNH0SMgtNqrg+hjXn8q3jQxkldL8jCVbCLRs7hfiVYsF/wCJfdDd0BePP86P+Fl2OVH9m3nPTDR//FVw403Qs48jU2B65ulH/stSR6VorN8lndYOMeZeE/XoKtYXGdvyI+s4Q7ZPiTYOMiwuvf54+P8Ax6nD4jWGVBsLsFjjG6P/AOKrizpGjqx2WbYPIP2iTrUEukac7Ei3K9sCZzj9auODxb7EvFYVdGd5/wALG0/dtNjd9cdU/wDiqVfiLp7HAsL09s/J/wDFVwP9kab0NvkEY5dv8alOjaXwRadRg/M3+NU8Fil1RP1vDdmd1/wsSw5zp96AO/yc/T5qRviNpq8/Y7sjrkGPke3zVxMej6Why1grH/fccfgaf/ZujglTpibT0/fycfrU/U8X3Q/rWG7M7Q/ETTRnNpdAgZPMfH/j1IPiLpne0uhn1Mf/AMVXFjSNJ37v7Ojx7yyHH47qd/ZOkZBGnR47jzpOf/HqPqmK7oPrOG7M7P8A4WLpn/Ppd/nH/wDFUv8AwsLT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/iFVwmhaeM8Efa+1M/4Q3xCQVOhWAUjBH2zrXr9FH1amH1mZ5B/whevgMF0DTwG4P+mdRSDwVr6oQmhaeMjDAXfBH417BRR9Wph9ZmeOHwTr/RNBsgp6/wCm/wCeKF8EeIVUqNFs8HqPtvWvY6KPq0BfWJnjZ8D+IQCsei2gBHJN51/Xj8KYngjxHHuC6FbAHqReg5/M8fhXs9FH1eA/rM/I8WPgrxIoIXw/DyMH/TVP824rK1bwP4jjtZJf7BVEjRmeT7YhwByeC3p6V79WR4siu7jw3qUGnQ+ddSwNHEgYDJbjqeO9HsIrVB7eUnZ2PAbKWJYbBWxtX5m65xirh1S2QfJGAM9lFdLpHwm1O4KHVb6GziChfLh/ev8AmflH6122mfDfwzYxFZLI3jkYMl05Y/gBgD8BXH9SlN3eh7rzalRXLDU8jTWYQ2SgHPPFZF4s2q2kFlYW7TTyz7FjUjc5z2yf5165qvwi0W53Nptzc2LE5C581B+Dc/rXNv8AC/xHpk6y6bcWNy0ciyxybjGwYHIyCMY/GnHCOnJNak1M0p16bjezaMax8LeIYIx5nhi+3gjowIx9N+Ksjw/rmMv4W1EtnO7f/Tfivc7QyvbRNcxrHOUBkRWyFbHIB781NgeldboRep4aryR4SNE1olmfwrqYcnPyNgfluxTn0PWXbc/hjVTk9A2OP++8V7pgelGB6Uvq0B/WJHgzeH9ckO4+GdSVv7qnaP0aoG8La8bqGaPw1qAKsSwfawOR7txX0BgUYFP6vAX1iR4VH4d8UpIzp4euWLY+88YAx043VMnhPxZLA8I0N1RyS3mXSA4PYfNXt9FT9Vpj+tTPH9I+HfiOfVLW51KS0tYYLhJiN/mO21gcDHAzj1r2CiitoQUFZGM5ubuwoooqyQooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP//Z"
-         style="width:100%;display:block;height:auto;min-height:340px;object-fit:cover;object-position:center top">
-
-    <!-- Buchinhalt-Overlay (sitzt über dem Bild auf dem Papierbereich) -->
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:26% 9% 18% 8%">
-
-      <!-- Seiten-Header -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-        <div style="font-family:Caveat,cursive;font-size:14px;font-weight:700;color:#1a3a6a" id="bl-page-title">Seite 1</div>
-        <div style="font-family:Caveat,cursive;font-size:12px;color:#666" id="bl-page-count">— Einträge</div>
-      </div>
-      <div style="height:1.5px;background:#3a6aaa;opacity:.5;margin-bottom:3px"></div>
-
-      <!-- Spalten-Header -->
-      <div style="display:grid;grid-template-columns:44px 1fr 40px 40px 38px;gap:1px;margin-bottom:2px">
-        <div style="font-family:Caveat,cursive;font-size:10px;color:#1a3a6a;font-weight:700">Datum</div>
-        <div style="font-family:Caveat,cursive;font-size:10px;color:#1a3a6a;font-weight:700">Benutzer</div>
-        <div style="font-family:Caveat,cursive;font-size:10px;color:#3a6aaa;text-align:right">alt</div>
-        <div style="font-family:Caveat,cursive;font-size:10px;color:#3a6aaa;text-align:right">neu</div>
-        <div style="font-family:Caveat,cursive;font-size:10px;color:#1a3a6a;text-align:right;font-weight:700">kWh</div>
-      </div>
-      <div style="height:1px;background:#3a6aaa;opacity:.3;margin-bottom:2px"></div>
-
-      <!-- Eintragszeilen -->
-      <div id="bl-entries" style="flex:1;overflow:hidden">
-        <div style="font-family:Caveat,cursive;font-size:13px;color:#aaa">Lade...</div>
-      </div>
-
-      <!-- Seiten-Summe -->
-      <div style="height:1px;background:#3a6aaa;opacity:.4;margin-top:2px;margin-bottom:3px"></div>
-      <div style="display:flex;justify-content:space-between">
-        <div style="font-family:Caveat,cursive;font-size:13px;color:#cc3333;font-weight:700">Seiten-Summe:</div>
-        <div id="bl-page-sum" style="font-family:Caveat,cursive;font-size:14px;color:#cc3333;font-weight:700">—</div>
-      </div>
-
-    </div><!-- /overlay -->
-  </div><!-- /buch -->
-
-  <!-- NAVIGATION -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px">
-    <button onclick="blPrev()"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:9px 16px;font-family:Caveat,cursive;font-size:17px;cursor:pointer;color:var(--text)">← Zurück</button>
-    <div id="bl-nav-ind" style="font-family:Caveat,cursive;font-size:16px;color:var(--text-dim);background:var(--surface2);border-radius:20px;padding:7px 14px;border:1px solid var(--border)">Seite 1 / 1</div>
-    <button onclick="blNext()"
-      style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:9px 16px;font-family:Caveat,cursive;font-size:17px;cursor:pointer;color:var(--text)">Weiter →</button>
-  </div>
-
-  <!-- NEUER EINTRAG BUTTON -->
-  <button onclick="blModalOpen(null)"
-    style="width:100%;margin-top:8px;padding:15px;font-family:Caveat,cursive;font-size:21px;font-weight:700;
-           background:#2fa64a;color:#fff;border:none;border-radius:12px;cursor:pointer;
-           box-shadow:0 3px 10px rgba(47,166,74,.4)">
-    ✍ Neuer Eintrag
-  </button>
-
-</div><!-- /tab-buchli -->
-
-
-<!-- ════ BUCHLI EINTRAG MODAL ════ -->
-<div id="bl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;align-items:flex-end;justify-content:center">
-  <div style="background:#fffef5;border-radius:20px 20px 0 0;border-top:3px solid #c8a84b;
-              padding:18px 16px 40px;width:100%;max-width:480px;box-shadow:0 -4px 32px rgba(0,0,0,.3);
-              max-height:92vh;overflow-y:auto">
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-family:Caveat,cursive;font-size:24px;font-weight:700;color:#1a3a6a" id="bl-modal-title">✍ Eintrag erfassen</div>
-      <button onclick="blModalClose()" style="background:none;border:none;font-size:24px;color:#999;cursor:pointer">✕</button>
-    </div>
-
-    <!-- Status -->
-    <div id="bl-status" style="display:none;padding:9px 12px;border-radius:8px;margin-bottom:12px;font-family:Caveat,cursive;font-size:16px;text-align:center"></div>
-
-    <!-- Benutzer -->
-    <div style="margin-bottom:11px">
-      <div style="font-family:Caveat,cursive;font-size:17px;color:#1a3a6a;margin-bottom:4px;font-weight:700">Benutzer:</div>
-      <select id="bl-user" style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:11px 12px;font-family:Caveat,cursive;font-size:19px;color:#1a1a1a;box-sizing:border-box"></select>
-    </div>
-
-    <!-- Datum -->
-    <div style="margin-bottom:11px">
-      <div style="font-family:Caveat,cursive;font-size:17px;color:#1a3a6a;margin-bottom:4px;font-weight:700">Datum:</div>
-      <input type="date" id="bl-date" style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;padding:11px 12px;font-family:'Courier New',monospace;font-size:17px;color:#1a1a1a;box-sizing:border-box">
-    </div>
-
-    <!-- Zähler alt / neu -->
-    <div style="margin-bottom:6px">
-      <div style="font-family:Caveat,cursive;font-size:17px;color:#1a3a6a;margin-bottom:6px;font-weight:700">Zählerstand:</div>
-      <div style="display:grid;grid-template-columns:1fr 20px 1fr;gap:6px;align-items:center">
-        <div>
-          <div style="font-family:Caveat,cursive;font-size:12px;color:#666;text-align:center;margin-bottom:3px">alt (kWh)</div>
-          <input type="number" id="bl-alt" step="1" inputmode="decimal" placeholder="12345"
-            style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;
-                   padding:12px 4px;font-family:'Courier New',monospace;font-size:22px;font-weight:700;
-                   color:#1a1a1a;box-sizing:border-box;text-align:center"
-            oninput="blCalcDelta()">
-        </div>
-        <div style="font-family:Caveat,cursive;font-size:20px;color:#aaa;text-align:center">→</div>
-        <div>
-          <div style="font-family:Caveat,cursive;font-size:12px;color:#666;text-align:center;margin-bottom:3px">neu (kWh)</div>
-          <input type="number" id="bl-neu" step="1" inputmode="decimal" placeholder="12567"
-            style="width:100%;background:#fff;border:2px solid #3a6aaa;border-radius:10px;
-                   padding:12px 4px;font-family:'Courier New',monospace;font-size:22px;font-weight:700;
-                   color:#1a1a1a;box-sizing:border-box;text-align:center"
-            oninput="blCalcDelta()">
-        </div>
-      </div>
-    </div>
-
-    <!-- Delta -->
-    <div id="bl-delta-box" style="display:none;background:#ddeaff;border:2px solid #3a6aaa;border-radius:10px;padding:8px 14px;margin-bottom:12px;text-align:center">
-      <div style="font-family:Caveat,cursive;font-size:13px;color:#3a6aaa">Geladen (Dif):</div>
-      <div id="bl-delta" style="font-family:'Courier New',monospace;font-size:32px;font-weight:700;color:#1a3a6a">—</div>
-    </div>
-
-    <!-- Bemerkung -->
-    <div style="margin-bottom:16px">
-      <div style="font-family:Caveat,cursive;font-size:17px;color:#1a3a6a;margin-bottom:4px;font-weight:700">Bemerkung:</div>
-      <input type="text" id="bl-note" placeholder="optional..."
-        style="width:100%;background:#fff;border:2px solid #ccc;border-radius:10px;padding:11px 12px;font-family:Caveat,cursive;font-size:17px;color:#333;box-sizing:border-box">
-    </div>
-
-    <!-- Speichern -->
-    <button onclick="blSave()" id="bl-save-btn"
-      style="width:100%;padding:14px;font-family:Caveat,cursive;font-size:22px;font-weight:700;
-             background:#2fa64a;color:#fff;border:none;border-radius:12px;cursor:pointer">💾 Speichern</button>
-
-    <!-- Löschen (nur beim Editieren) -->
-    <div id="bl-del-row" style="display:none;margin-top:8px">
-      <button onclick="blDelete()"
-        style="width:100%;padding:11px;font-family:Caveat,cursive;font-size:17px;font-weight:700;
-               background:#fff;color:#cc3333;border:2px solid #cc3333;border-radius:10px;cursor:pointer">🗑 Eintrag löschen</button>
-    </div>
-
-  </div>
-</div>
-
-</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</body></html>');
   w.document.close();w.print();
 }
 
@@ -2848,16 +2977,25 @@ async function admResetShelly(){
 async function admResetSessions(){
   const cnt=sessions.filter(s=>s.stationId===adminStation).length;
   if(!confirm(`⚠ ALLE ${cnt} Sessions für ${ST[adminStation-1].loc} löschen?\nDieser Vorgang kann nicht rückgängig gemacht werden!`))return;
-  sessions=sessions.filter(s=>s.stationId!==adminStation);
-  save();
+  // Supabase zuerst löschen
   if(supaOnline){
     try{
       await sbDelete('sessions',`station_id=eq.${adminStation}`);
     }catch(e){console.warn('Supabase delete failed',e);}
   }
+  // Dann lokales Array bereinigen
+  sessions = sessions.filter(s=>s.stationId!==adminStation);
+  activeSession = null;
+  localStorage.removeItem('cg_as');
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  // Alle Views aktualisieren
   updateAdminCounters();
   renderAdmSessions();
-  alert('✓ Sessions gelöscht.');
+  renderSessions();
+  renderBilling();
+  renderDashboard();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
+  alert('✓ Sessions gelöscht — alle Ansichten aktualisiert.');
 }
 
 // ── Sessions Liste (editierbar) ────────────────────────────────
@@ -2985,14 +3123,19 @@ async function admSessSave(){
 
 async function admSessDelete(){
   if(!editSessObj||!confirm('Session wirklich löschen?'))return;
-  const idx=sessions.findIndex(s=>s.startedAt===editSessObj.startedAt);
-  if(idx>=0)sessions.splice(idx,1);
-  save();
+  // Supabase zuerst
   if(supaOnline&&editSessObj.id){
     try{await sbDelete('sessions',`id=eq.${editSessObj.id}`);}catch(e){console.warn(e);}
   }
-  closeSessEdit();renderAdmSessions();updateAdminCounters();
-  renderSessions();renderBilling();
+  // Lokales Array
+  const idx=sessions.findIndex(s=>s.id===editSessObj.id||(s.startedAt===editSessObj.startedAt&&s.stationId===editSessObj.stationId));
+  if(idx>=0)sessions.splice(idx,1);
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  closeSessEdit();
+  // Alle Views neu rendern
+  renderAdmSessions(); updateAdminCounters();
+  renderSessions(); renderBilling(); renderDashboard();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
   alert('✓ Session gelöscht.');
 }
 
@@ -3364,262 +3507,6 @@ async function verifyPinSupabase(userId,pin){
     return (await r.json()).ok;
   }catch(e){const u=users.find(x=>x.id===userId);return u&&u.pin===pin;}
 }
-
-// ════════════════════════════════════════════════════════
-// BRAIL LADEBÜCHLEIN — v17.8
-// ════════════════════════════════════════════════════════
-
-const BL_PER_PAGE = 7;
-let blPage = 0;
-let blEditId = null;
-
-// Statistiken im Header aktualisieren
-function blRefreshStats() {
-  const sess = sessions.filter(s => s.stationId === 2);
-  const now  = new Date();
-  const total = sess.reduce((a,s)=>a+(s.kwh||0), 0);
-  const month = sess.filter(s=>{
-    const d=new Date(s.startedAt);
-    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-  }).reduce((a,s)=>a+(s.kwh||0), 0);
-  const lastMeter = (ST[1] && ST[1].lastMeterReading) ? ST[1].lastMeterReading : 0;
-
-  const e = id => document.getElementById(id);
-  if(e('bl-stat-last'))  e('bl-stat-last').textContent  = lastMeter>0 ? Math.round(lastMeter).toLocaleString('de-CH')+' kWh' : '—';
-  if(e('bl-stat-month')) e('bl-stat-month').textContent = month.toFixed(1)+' kWh';
-  if(e('bl-stat-total')) e('bl-stat-total').textContent = total.toFixed(1)+' kWh';
-  blRenderPage();
-}
-
-// Seite rendern
-function blRenderPage() {
-  const sorted = sessions
-    .filter(s => s.stationId === 2)
-    .sort((a,b) => new Date(b.startedAt) - new Date(a.startedAt));
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / BL_PER_PAGE));
-  if(blPage >= totalPages) blPage = totalPages - 1;
-
-  const pageEntries = sorted.slice(blPage * BL_PER_PAGE, (blPage+1) * BL_PER_PAGE);
-  const pageSum = pageEntries.reduce((a,s)=>a+(s.kwh||0), 0);
-
-  const e = id => document.getElementById(id);
-  if(e('bl-page-title')) e('bl-page-title').textContent = `Seite ${blPage+1}`;
-  if(e('bl-page-count')) e('bl-page-count').textContent = `${sorted.length} Einträge total`;
-  if(e('bl-nav-ind'))    e('bl-nav-ind').textContent    = `Seite ${blPage+1} / ${totalPages}`;
-  if(e('bl-page-sum'))   e('bl-page-sum').textContent   = pageSum.toFixed(1)+' kWh';
-
-  const el = e('bl-entries');
-  if(!el) return;
-
-  if(pageEntries.length === 0) {
-    el.innerHTML = '<div style="font-family:Caveat,cursive;font-size:14px;color:#aaa;padding:6px 0">Noch keine Einträge – ersten Eintrag hinzufügen!</div>';
-    return;
-  }
-
-  el.innerHTML = pageEntries.map((s,i) => {
-    const u      = users.find(x => x.id === s.userId);
-    const dt     = new Date(s.startedAt);
-    const dStr   = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    const name   = u ? u.name.split(' ').slice(-1)[0] : '?';
-    const mAlt   = s.manual_start_kwh != null ? Math.round(s.manual_start_kwh).toLocaleString('de-CH') : '—';
-    const mNeu   = s.manual_stop_kwh  != null ? Math.round(s.manual_stop_kwh).toLocaleString('de-CH')  : '—';
-    const kwh    = (s.kwh||0).toFixed(1);
-    const bg     = i%2===0 ? 'rgba(255,255,255,.55)' : 'rgba(235,245,255,.5)';
-    const sData  = JSON.stringify({
-      id:s.id, userId:s.userId, startedAt:s.startedAt,
-      manual_start_kwh:s.manual_start_kwh, manual_stop_kwh:s.manual_stop_kwh,
-      kwh:s.kwh, note:s.note
-    }).replace(/"/g,'&quot;');
-    return `<div onclick="blModalOpen(JSON.parse(this.dataset.s))" data-s="${sData}"
-      style="display:grid;grid-template-columns:44px 1fr 40px 40px 38px;gap:1px;
-             padding:3px 2px;background:${bg};border-bottom:1px solid rgba(58,106,170,.15);
-             cursor:pointer;border-radius:3px">
-      <div style="font-family:Courier New,monospace;font-size:10px;color:#555;padding-top:1px">${dStr}</div>
-      <div style="font-family:Caveat,cursive;font-size:13px;font-weight:700;color:#1a3a6a;overflow:hidden;white-space:nowrap">${name}</div>
-      <div style="font-family:Courier New,monospace;font-size:10px;color:#666;text-align:right;padding-top:1px">${mAlt}</div>
-      <div style="font-family:Courier New,monospace;font-size:10px;color:#666;text-align:right;padding-top:1px">${mNeu}</div>
-      <div style="font-family:Courier New,monospace;font-size:12px;font-weight:700;color:#1a3a6a;text-align:right">${kwh}</div>
-    </div>`;
-  }).join('');
-}
-
-function blPrev() { if(blPage>0){ blPage--; blRenderPage(); } }
-function blNext() {
-  const total = Math.max(1, Math.ceil(sessions.filter(s=>s.stationId===2).length/BL_PER_PAGE));
-  if(blPage < total-1){ blPage++; blRenderPage(); }
-}
-
-// ── Modal ──────────────────────────────────────────────
-function blModalOpen(editSess) {
-  blEditId = editSess ? editSess.id : null;
-  const ov = document.getElementById('bl-modal');
-  if(!ov) return;
-
-  // Benutzer-Dropdown
-  const sel = document.getElementById('bl-user');
-  const brailUsers = users.filter(u => u.stations && u.stations.includes(2));
-  sel.innerHTML = brailUsers.length
-    ? brailUsers.map(u=>`<option value="${u.id}">${u.emoji||''} ${u.name}</option>`).join('')
-    : users.map(u=>`<option value="${u.id}">${u.emoji||''} ${u.name}</option>`).join('');
-
-  // Reset
-  document.getElementById('bl-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('bl-alt').value  = '';
-  document.getElementById('bl-neu').value  = '';
-  document.getElementById('bl-note').value = '';
-  document.getElementById('bl-delta-box').style.display = 'none';
-  document.getElementById('bl-status').style.display = 'none';
-  const btn = document.getElementById('bl-save-btn');
-  if(btn){ btn.disabled=false; btn.textContent='💾 Speichern'; }
-  const delRow = document.getElementById('bl-del-row');
-
-  if(editSess) {
-    document.getElementById('bl-modal-title').textContent = '✏ Eintrag editieren';
-    if(sel) sel.value = editSess.userId;
-    const d = new Date(editSess.startedAt);
-    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    document.getElementById('bl-date').value = ds;
-    if(editSess.manual_start_kwh != null) document.getElementById('bl-alt').value = editSess.manual_start_kwh;
-    if(editSess.manual_stop_kwh  != null) document.getElementById('bl-neu').value  = editSess.manual_stop_kwh;
-    if(editSess.note && editSess.note !== 'Buchli-Eintrag') document.getElementById('bl-note').value = editSess.note;
-    if(delRow) delRow.style.display = 'block';
-    blCalcDelta();
-  } else {
-    document.getElementById('bl-modal-title').textContent = '✍ Eintrag erfassen';
-    const last = (ST[1] && ST[1].lastMeterReading) ? ST[1].lastMeterReading : 0;
-    if(last > 0) document.getElementById('bl-alt').value = Math.round(last);
-    if(delRow) delRow.style.display = 'none';
-  }
-
-  ov.style.display = 'flex';
-  setTimeout(()=>{ const n=document.getElementById('bl-neu'); if(n) n.focus(); }, 200);
-}
-
-function blModalClose() {
-  document.getElementById('bl-modal').style.display = 'none';
-  blEditId = null;
-}
-
-function blCalcDelta() {
-  const alt = parseFloat(document.getElementById('bl-alt').value);
-  const neu = parseFloat(document.getElementById('bl-neu').value);
-  const box = document.getElementById('bl-delta-box');
-  const val = document.getElementById('bl-delta');
-  if(!isNaN(alt) && !isNaN(neu) && neu > alt) {
-    if(val) val.textContent = (neu-alt).toFixed(1)+' kWh';
-    if(box) box.style.display = 'block';
-  } else {
-    if(box) box.style.display = 'none';
-  }
-}
-
-function blStatus(msg, bg, col) {
-  const el = document.getElementById('bl-status');
-  if(!el) return;
-  el.textContent = msg;
-  el.style.background = bg;
-  el.style.color = col;
-  el.style.border = '1px solid '+col+'44';
-  el.style.display = 'block';
-}
-
-async function blSave() {
-  const userId  = parseInt(document.getElementById('bl-user').value);
-  const kwhAlt  = parseFloat(document.getElementById('bl-alt').value);
-  const kwhNeu  = parseFloat(document.getElementById('bl-neu').value);
-  const datum   = document.getElementById('bl-date').value;
-  const note    = document.getElementById('bl-note').value.trim();
-
-  if(!userId)                             { blStatus('❌ Benutzer wählen','#ffeded','#cc3333'); return; }
-  if(isNaN(kwhAlt) || kwhAlt < 0)        { blStatus('❌ Zähler alt eingeben','#ffeded','#cc3333'); return; }
-  if(isNaN(kwhNeu) || kwhNeu <= kwhAlt)  { blStatus('❌ Zähler neu muss grösser sein','#ffeded','#cc3333'); return; }
-  if(!datum)                              { blStatus('❌ Datum wählen','#ffeded','#cc3333'); return; }
-
-  const kwh     = parseFloat((kwhNeu - kwhAlt).toFixed(2));
-  const tariff  = (ST[1] && ST[1].tariff) ? ST[1].tariff : 0.25;
-  const chf     = parseFloat((kwh * tariff).toFixed(2));
-  const startAt = new Date(datum + 'T12:00:00').toISOString();
-
-  const data = {
-    station_id:2, user_id:userId,
-    started_at:startAt, stopped_at:startAt,
-    kwh, chf, tariff, is_manual:true,
-    manual_start_kwh:kwhAlt, manual_stop_kwh:kwhNeu,
-    note: note || 'Buchli-Eintrag'
-  };
-
-  const btn = document.getElementById('bl-save-btn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Speichern...'; }
-  blStatus('⏳ Wird gespeichert...','#eef4ff','#3a6aaa');
-
-  try {
-    // Supabase immer versuchen (ignoriert supaOnline-Flag)
-    const origOnline = supaOnline;
-    supaOnline = true;
-    let ok = false;
-
-    if(blEditId) {
-      const res = await sbPatch('sessions', `id=eq.${blEditId}`, data);
-      ok = (res !== null);
-      if(ok) {
-        const idx = sessions.findIndex(s => s.id === blEditId);
-        const updated = { ...(idx>=0 ? sessions[idx] : {}),
-          id:blEditId, userId, stationId:2,
-          startedAt:startAt, stoppedAt:startAt,
-          kwh, chf, tariff, is_manual:true,
-          manual_start_kwh:kwhAlt, manual_stop_kwh:kwhNeu, note:data.note };
-        if(idx>=0) sessions[idx]=updated; else sessions.unshift(updated);
-      }
-    } else {
-      const res = await sbPost('sessions', data);
-      ok = (res !== null);
-      if(ok) {
-        const newId = (Array.isArray(res) && res[0]) ? res[0].id : Date.now();
-        sessions.unshift({ id:newId, userId, stationId:2,
-          startedAt:startAt, stoppedAt:startAt,
-          kwh, chf, tariff, is_manual:true,
-          manual_start_kwh:kwhAlt, manual_stop_kwh:kwhNeu, note:data.note });
-      }
-    }
-    supaOnline = origOnline;
-
-    if(ok) {
-      // Letzten Zählerstand updaten
-      await sbPatch('stations','id=eq.2',{last_meter_reading: kwhNeu});
-      if(ST[1]) ST[1].lastMeterReading = kwhNeu;
-      localStorage.setItem('cg_s', JSON.stringify(sessions));
-
-      blStatus('✓ Gespeichert!','#eaffea','#2a7a2a');
-      setTimeout(()=>{
-        blModalClose();
-        blRefreshStats();
-        renderSessions();
-        renderBilling();
-      }, 600);
-    } else {
-      blStatus('❌ Supabase nicht erreichbar — Verbindung prüfen!','#ffeded','#cc3333');
-      if(btn){ btn.disabled=false; btn.textContent='💾 Speichern'; }
-    }
-  } catch(e) {
-    blStatus('❌ Fehler: '+e.message,'#ffeded','#cc3333');
-    if(btn){ btn.disabled=false; btn.textContent='💾 Speichern'; }
-  }
-}
-
-async function blDelete() {
-  if(!blEditId || !confirm('Eintrag wirklich löschen?')) return;
-  const origOnline = supaOnline; supaOnline = true;
-  await sbDelete('sessions', `id=eq.${blEditId}`);
-  supaOnline = origOnline;
-  sessions = sessions.filter(s => s.id !== blEditId);
-  localStorage.setItem('cg_s', JSON.stringify(sessions));
-  blModalClose();
-  blRefreshStats();
-  renderSessions();
-  renderBilling();
-}
-
 </script>
 <!-- NACHTRAG MODAL -->
 <div id="nachtrag-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:center;justify-content:center;padding:16px">
