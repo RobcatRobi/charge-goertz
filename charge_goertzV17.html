@@ -291,6 +291,86 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </div>
     <div id="net-mode-banner" style="display:none"></div>
     <div id="net-help-box" style="display:none;padding:10px;background:rgba(255,160,0,.08);border:1px solid #ffa00044;border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:8px"></div>
+
+  <!-- BRAIL LADEBÜCHLEIN direkt im Dashboard -->
+  <div id="brail-dash-buchli" style="display:none">
+    <!-- Stats Strip -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">LETZTER Z&#196;HLER</div>
+        <div id="bld-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">DIESEN MONAT</div>
+        <div id="bld-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">TOTAL</div>
+        <div id="bld-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+    </div>
+
+    <!-- Neuer Eintrag Card -->
+    <div style="background:var(--surface);border:1px solid #ff7c2a44;border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:#ff7c2a;margin-bottom:12px">&#9997; <span id="bld-form-title">Neuer Eintrag</span></div>
+
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Benutzer:</div>
+      <select id="bld-user" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:15px;margin-bottom:10px;box-sizing:border-box"></select>
+
+      <div style="display:grid;grid-template-columns:1fr 20px 1fr;gap:4px;align-items:end;margin-bottom:6px">
+        <div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Z&#228;hler alt (kWh):</div>
+          <input type="number" id="bld-alt" step="1" inputmode="decimal" placeholder="12345"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--text);box-sizing:border-box;text-align:center" oninput="bldCalc()">
+        </div>
+        <div style="text-align:center;color:var(--text-dim);font-size:16px;padding-bottom:6px">&#8594;</div>
+        <div>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Z&#228;hler neu (kWh):</div>
+          <input type="number" id="bld-neu" step="1" inputmode="decimal" placeholder="12567"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);box-sizing:border-box;text-align:center" oninput="bldCalc()">
+        </div>
+      </div>
+
+      <div id="bld-delta-box" style="display:none;background:var(--surface2);border:1px solid var(--accent)44;border-radius:8px;padding:8px;text-align:center;margin-bottom:10px">
+        <div style="font-size:10px;color:var(--text-dim)">VERBRAUCH</div>
+        <div id="bld-delta" style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Datum:</div>
+      <input type="date" id="bld-datum" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:15px;margin-bottom:10px;box-sizing:border-box">
+
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">Bemerkung (optional):</div>
+      <input type="text" id="bld-note" placeholder="z.B. Besuch Familie..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:14px;margin-bottom:12px;box-sizing:border-box">
+
+      <div id="bld-status" style="display:none;padding:8px;border-radius:8px;font-size:13px;text-align:center;margin-bottom:10px"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="bldSave()" id="bld-save-btn"
+          style="padding:14px;background:#ff7c2a;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">
+          &#128190; Speichern
+        </button>
+        <button id="bld-delete-btn" onclick="bldDelete()" style="display:none;padding:14px;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">
+          &#128465; L&#246;schen
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabelle -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:8px 10px;background:var(--surface2);border-bottom:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--text-dim)">Datum</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text-dim)">Benutzer</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:right">Z.alt</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:right">Z.neu</div>
+        <div style="font-size:10px;font-weight:700;color:var(--accent);text-align:right">kWh</div>
+      </div>
+      <div id="bld-rows"><div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Lade...</div></div>
+      <div style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:8px 10px;background:var(--surface2);border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text);grid-column:1/5">TOTAL</div>
+        <div id="bld-total-row" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);text-align:right">---</div>
+      </div>
+    </div>
+  </div><!-- /brail-dash-buchli -->
   <div class="card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
@@ -692,9 +772,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
     <span class="ti">⚡</span>Live
   </button>
-  <button class="tab-btn" data-tab="sessions" onclick="switchTab('sessions')">
-    <span class="ti">📋</span>Sessions
-  </button>
+  
   <button class="tab-btn" data-tab="users" onclick="switchTab('users')">
     <span class="ti">👥</span>Benutzer
   </button>
@@ -1429,23 +1507,31 @@ function switchStation(id){
   document.getElementById('gauge-st-name').textContent=ST[id-1].name+' '+ST[id-1].loc;
   document.getElementById('v-tariff').textContent=ST[id-1].tariff.toFixed(2)+' CHF/kWh';
 
-  // BRAIL: alle Shelly-Elemente ausblenden, nur Buchli-Button zeigen
+  // BRAIL vs NEERACH UI
   const isBrail = (id===2);
-  const shellyIds = ['relay-card','phases-display','live-badge'];
-  // Die grosse Live-Card (kW/Volt/Amp/Shelly-Total) ausblenden bei Brail
+  // Live-Card (kW/Volt/Shelly)
   const liveCard = document.querySelector('#tab-dashboard .card');
   if(liveCard) liveCard.style.display = isBrail ? 'none' : '';
-  // Relay-Card ausblenden
+  // Relay-Card
   const rc = document.getElementById('relay-card');
   if(rc) rc.style.display = isBrail ? 'none' : '';
-  // Start-Button: bei Brail ausblenden (Buchli-Button im Header reicht)
+  // Start-Button
   const sw = document.getElementById('start-wrap');
   if(sw) sw.style.display = isBrail ? 'none' : '';
-  // Status-Card: Shelly-Zeilen ausblenden bei Brail
+  // Shelly-Statuszeilen ausblenden
   const stShelly = document.getElementById('st-shelly');
   const stRelay  = document.getElementById('st-relay');
   if(stShelly) stShelly.closest('.st-row').style.display = isBrail ? 'none' : '';
   if(stRelay)  stRelay.closest('.st-row').style.display  = isBrail ? 'none' : '';
+  // Status-Help (Shelly-Fehlermeldung) ausblenden
+  const sh = document.getElementById('status-help');
+  if(sh && isBrail) sh.style.display = 'none';
+  // Buchli direkt im Dashboard anzeigen
+  const bld = document.getElementById('brail-dash-buchli');
+  if(bld) { bld.style.display = isBrail ? 'block' : 'none'; if(isBrail) blpDashRender(); }
+  // 📖 Button im Header ausblenden (jetzt im Admin)
+  const bb = document.getElementById('buchli-open-btn');
+  if(bb) bb.style.display = 'none';
 
   if(!isBrail) { renderDashboard(); updateRelayUI(); updateGauges(0,230,0); }
 }
@@ -3352,6 +3438,171 @@ async function blpSave(){
   }catch(err){blpStatus(err.message,false);}
   if(btn){btn.disabled=false;btn.textContent='Speichern';}
 }
+
+// ════ BRAIL DASHBOARD LADEBÜCHLEIN (bld*) ════
+let bldEditId = null;
+
+function blpDashRender() {
+  // Init user dropdown
+  var sel = document.getElementById('bld-user');
+  if(sel && sel.options.length === 0) {
+    var bu = users.filter(function(u){return u.stations&&u.stations.includes(2);});
+    sel.innerHTML = (bu.length?bu:users).map(function(u){return '<option value="'+u.id+'">'+(u.emoji||'')+' '+u.name+'</option>';}).join('');
+  }
+  // Set today as default
+  var d = document.getElementById('bld-datum');
+  if(d && !d.value) d.value = new Date().toISOString().split('T')[0];
+  // Pre-fill Zaehler alt
+  var a = document.getElementById('bld-alt');
+  if(a && !a.value && ST[1] && ST[1].lastMeterReading > 0)
+    a.value = Math.round(ST[1].lastMeterReading);
+
+  // Stats
+  var sess = sessions.filter(function(s){return s.stationId===2;});
+  var now = new Date();
+  var total = sess.reduce(function(a,s){return a+(s.kwh||0);}, 0);
+  var month = sess.filter(function(s){
+    var d=new Date(s.startedAt||s.started_at||0);
+    return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+  }).reduce(function(a,s){return a+(s.kwh||0);}, 0);
+  var last = (ST[1]&&ST[1].lastMeterReading>0) ? Math.round(ST[1].lastMeterReading).toLocaleString('de-CH')+' kWh' : '---';
+
+  var e = function(id){return document.getElementById(id);};
+  if(e('bld-last'))  e('bld-last').textContent  = last;
+  if(e('bld-month')) e('bld-month').textContent = month.toFixed(1)+' kWh';
+  if(e('bld-total')) e('bld-total').textContent = total.toFixed(1)+' kWh';
+  if(e('bld-total-row')) e('bld-total-row').textContent = total.toFixed(1)+' kWh';
+
+  // Rows
+  var el = e('bld-rows');
+  if(!el) return;
+  var sorted = sess.slice().sort(function(a,b){return new Date(b.startedAt||b.started_at||0)-new Date(a.startedAt||a.started_at||0);});
+  if(!sorted.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Noch keine Eintraege</div>';
+    return;
+  }
+  el.innerHTML = sorted.map(function(s,i){
+    var u = users.find(function(x){return x.id===s.userId;});
+    var dt = new Date(s.startedAt||s.started_at||0);
+    var dStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    var name = u ? u.name.split(' ').slice(-1)[0] : '?';
+    var uColor = (u&&u.color) ? u.color : 'var(--accent)';
+    var uEmoji = (u&&u.emoji) ? u.emoji : '';
+    var mAlt = s.manual_start_kwh!=null ? Math.round(s.manual_start_kwh).toLocaleString('de-CH') : '---';
+    var mNeu = s.manual_stop_kwh!=null  ? Math.round(s.manual_stop_kwh).toLocaleString('de-CH')  : '---';
+    var kwh  = (s.kwh||0).toFixed(1);
+    var bg   = i%2===0 ? 'var(--surface)' : 'var(--surface2)';
+    var sd   = JSON.stringify({id:s.id,userId:s.userId,startedAt:s.startedAt||s.started_at,manual_start_kwh:s.manual_start_kwh,manual_stop_kwh:s.manual_stop_kwh,kwh:s.kwh,note:s.note}).replace(/"/g,'&quot;');
+    return '<div onclick="bldEdit(JSON.parse(this.dataset.s))" data-s="'+sd+'" style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:9px 10px;background:'+bg+';border-bottom:1px solid var(--border);cursor:pointer;border-left:3px solid '+uColor+'66" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''+bg+''">'
+      +'<div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim)">'+dStr+'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:'+uColor+'">'+uEmoji+' '+name+'</div>'
+      +'<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mAlt+'</div>'
+      +'<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mNeu+'</div>'
+      +'<div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:'+uColor+';text-align:right">'+kwh+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function bldCalc() {
+  var alt = parseFloat(document.getElementById('bld-alt').value);
+  var neu = parseFloat(document.getElementById('bld-neu').value);
+  var box = document.getElementById('bld-delta-box');
+  var val = document.getElementById('bld-delta');
+  if(!isNaN(alt)&&!isNaN(neu)&&neu>alt){if(val)val.textContent=(neu-alt).toFixed(1)+' kWh';if(box)box.style.display='block';}
+  else{if(box)box.style.display='none';}
+}
+
+function bldEdit(s) {
+  bldEditId = s.id;
+  var e = function(id){return document.getElementById(id);};
+  if(e('bld-user')) e('bld-user').value = s.userId;
+  if(e('bld-alt'))  e('bld-alt').value  = s.manual_start_kwh || '';
+  if(e('bld-neu'))  e('bld-neu').value  = s.manual_stop_kwh  || '';
+  if(e('bld-note')) e('bld-note').value = (s.note&&s.note!=='Buchli-Eintrag') ? s.note : '';
+  var dt = new Date(s.startedAt||0);
+  if(e('bld-datum')) e('bld-datum').value = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  var title = e('bld-form-title'); if(title) title.textContent = 'Eintrag bearbeiten';
+  var delBtn = e('bld-delete-btn'); if(delBtn) delBtn.style.display = 'block';
+  bldCalc();
+  document.getElementById('brail-dash-buchli').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function bldStatus(msg, ok) {
+  var el = document.getElementById('bld-status'); if(!el) return;
+  el.textContent = msg;
+  el.style.background = ok ? 'rgba(0,212,255,.1)' : 'rgba(255,68,68,.1)';
+  el.style.color = ok ? 'var(--accent)' : 'var(--red)';
+  el.style.display = 'block';
+}
+
+function bldReset() {
+  bldEditId = null;
+  var e = function(id){return document.getElementById(id);};
+  if(e('bld-neu'))  e('bld-neu').value  = '';
+  if(e('bld-note')) e('bld-note').value = '';
+  if(e('bld-delta-box')) e('bld-delta-box').style.display = 'none';
+  if(e('bld-status'))    e('bld-status').style.display    = 'none';
+  if(e('bld-delete-btn'))e('bld-delete-btn').style.display= 'none';
+  var title = e('bld-form-title'); if(title) title.textContent = 'Neuer Eintrag';
+  // Pre-fill alt with last meter
+  var a = e('bld-alt');
+  if(a && ST[1] && ST[1].lastMeterReading > 0) a.value = Math.round(ST[1].lastMeterReading);
+}
+
+async function bldDelete() {
+  if(!bldEditId) return;
+  if(!confirm('Eintrag wirklich loeschen?')) return;
+  var orig = supaOnline; supaOnline = true;
+  await sbDelete('sessions', 'id=eq.'+bldEditId);
+  supaOnline = orig;
+  sessions = sessions.filter(function(s){return s.id!==bldEditId;});
+  localStorage.setItem('cg_s', JSON.stringify(sessions));
+  bldReset();
+  blpDashRender();
+}
+
+async function bldSave() {
+  var e = function(id){return document.getElementById(id);};
+  var uid  = parseInt(e('bld-user').value);
+  var alt  = parseFloat(e('bld-alt').value);
+  var neu  = parseFloat(e('bld-neu').value);
+  var dat  = e('bld-datum').value;
+  var note = e('bld-note').value.trim();
+  if(!uid)              {bldStatus('Benutzer waehlen',false);return;}
+  if(isNaN(alt)||alt<0) {bldStatus('Zaehler alt eingeben',false);return;}
+  if(isNaN(neu)||neu<=alt){bldStatus('Zaehler neu muss groesser sein',false);return;}
+  if(!dat)              {bldStatus('Datum waehlen',false);return;}
+  var kwh    = parseFloat((neu-alt).toFixed(2));
+  var tariff = (ST[1]&&ST[1].tariff)||0.25;
+  var chf    = parseFloat((kwh*tariff).toFixed(2));
+  var startAt = new Date(dat+'T12:00:00+00:00').getTime();
+  var data = {station_id:2,user_id:uid,started_at:startAt,stopped_at:startAt,
+              kwh:kwh,chf:chf,tariff:tariff,is_manual:true,
+              manual_start_kwh:alt,manual_stop_kwh:neu,note:note||'Buchli-Eintrag'};
+  var btn = e('bld-save-btn'); if(btn){btn.disabled=true;btn.textContent='...';}
+  bldStatus('Speichern...',true);
+  try {
+    var orig = supaOnline; supaOnline = true; var ok = false;
+    if(bldEditId) {
+      var r = await sbPatch('sessions','id=eq.'+bldEditId,data); ok=r!==null;
+      if(ok){var idx=sessions.findIndex(function(s){return s.id===bldEditId;});var upd=Object.assign({},sessions[idx]||{},{id:bldEditId,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note});if(idx>=0)sessions[idx]=upd;else sessions.unshift(upd);}
+    } else {
+      var r2 = await sbPost('sessions',data); ok=r2!==null;
+      if(ok){var nid=(Array.isArray(r2)&&r2[0])?r2[0].id:Date.now();sessions.unshift({id:nid,userId:uid,stationId:2,startedAt:startAt,stoppedAt:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:data.note});}
+    }
+    supaOnline = orig;
+    if(ok) {
+      await sbPatch('stations','id=eq.2',{last_meter_reading:neu});
+      if(ST[1]) ST[1].lastMeterReading = neu;
+      localStorage.setItem('cg_s',JSON.stringify(sessions));
+      bldStatus('OK Gespeichert!',true);
+      bldReset();
+      setTimeout(function(){blpDashRender();renderBilling();},300);
+    } else { bldStatus('Supabase Fehler!',false); }
+  } catch(err) { bldStatus(err.message,false); }
+  if(btn){btn.disabled=false;btn.textContent='Speichern';}
+}
+
 </script>
 
 <div id="buchli-page" style="display:none;position:fixed;inset:0;background:#060a0f;z-index:1000;overflow-y:auto">
