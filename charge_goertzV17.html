@@ -1530,8 +1530,8 @@ function switchStation(id){
   const bld = document.getElementById('brail-dash-buchli');
   if(bld) { bld.style.display = isBrail ? 'block' : 'none'; if(isBrail) blpDashRender(); }
   // 📖 Button im Header ausblenden (jetzt im Admin)
-  const bb = document.getElementById('buchli-open-btn');
-  if(bb) bb.style.display = 'none';
+  const bbtn = document.getElementById('buchli-open-btn');
+  if(bbtn) bbtn.style.display = 'none';
 
   if(!isBrail) { renderDashboard(); updateRelayUI(); updateGauges(0,230,0); }
 }
@@ -3493,12 +3493,12 @@ function blpDashRender() {
     var kwh  = (s.kwh||0).toFixed(1);
     var bg   = i%2===0 ? 'var(--surface)' : 'var(--surface2)';
     var sd   = JSON.stringify({id:s.id,userId:s.userId,startedAt:s.startedAt||s.started_at,manual_start_kwh:s.manual_start_kwh,manual_stop_kwh:s.manual_stop_kwh,kwh:s.kwh,note:s.note}).replace(/"/g,'&quot;');
-    return '<div onclick="bldEdit(JSON.parse(this.dataset.s))" data-s="'+sd+'" style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:9px 10px;background:'+bg+';border-bottom:1px solid var(--border);cursor:pointer;border-left:3px solid '+uColor+'66" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''+bg+''">'
-      +'<div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim)">'+dStr+'</div>'
+    return '<div onclick="bldEdit(JSON.parse(this.dataset.s))" data-s="'+sd+'" style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:9px 10px;background:'+bg+';border-bottom:1px solid var(--border);cursor:pointer;border-left:3px solid '+uColor+'66" onmouseover="this.style.background=\'var(--surface3)\'" onmouseout="this.style.background=\''+bg+'\'">'
+      +'<div style="font-family:monospace;font-size:9px;color:var(--text-dim)">'+dStr+'</div>'
       +'<div style="font-size:13px;font-weight:700;color:'+uColor+'">'+uEmoji+' '+name+'</div>'
-      +'<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mAlt+'</div>'
-      +'<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mNeu+'</div>'
-      +'<div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:'+uColor+';text-align:right">'+kwh+'</div>'
+      +'<div style="font-family:monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mAlt+'</div>'
+      +'<div style="font-family:monospace;font-size:10px;color:var(--text-dim);text-align:right">'+mNeu+'</div>'
+      +'<div style="font-family:monospace;font-size:13px;font-weight:700;color:'+uColor+';text-align:right">'+kwh+'</div>'
       +'</div>';
   }).join('');
 }
