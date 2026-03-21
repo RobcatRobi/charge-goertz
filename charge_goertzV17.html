@@ -266,7 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <div id="header">
   <div class="logo" style="line-height:1.1">
-    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v17</span></span>
+    ⚡ Charge<span>Görtz</span><span style="font-size:9px;font-weight:300;color:var(--text-dim);display:block;letter-spacing:.04em">EV · Neerach &amp; Brail · <span id="app-version">v18</span></span>
   </div>
   <div class="station-toggle">
     <button class="station-btn active" data-station="1" onclick="switchStation(1)">NEERACH</button>
@@ -282,15 +282,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">SYSTEM STATUS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
       <div class="st-row"><span class="st-dot" id="st-pi"></span><span class="st-lbl">Pi Backend</span><span class="st-val" id="stv-pi">—</span></div>
-      <div class="st-row"><span class="st-dot" id="st-shelly"></span><span class="st-lbl">Shelly 3EM</span><span class="st-val" id="stv-shelly">—</span></div>
+      <div class="st-row" id="row-shelly" ><span class="st-dot" id="st-shelly"></span><span class="st-lbl">Shelly 3EM</span><span class="st-val" id="stv-shelly">—</span></div>
       <div class="st-row"><span class="st-dot" id="st-db"></span><span class="st-lbl">Datenbank</span><span class="st-val" id="stv-db">—</span></div>
-      <div class="st-row"><span class="st-dot" id="st-relay"></span><span class="st-lbl">Shelly Mini</span><span class="st-val" id="stv-relay">—</span></div>
+      <div class="st-row" id="row-relay" ><span class="st-dot" id="st-relay"></span><span class="st-lbl">Shelly Mini</span><span class="st-val" id="stv-relay">—</span></div>
     </div>
     <div id="status-help" style="display:none;margin-top:8px;padding:8px;background:rgba(255,160,0,.08);border-radius:8px;font-size:11px;color:#ffa000;line-height:1.6"></div>
   </div>
     <div id="net-mode-banner" style="display:none"></div>
     <div id="net-help-box" style="display:none;padding:10px;background:rgba(255,160,0,.08);border:1px solid #ffa00044;border-radius:8px;font-size:11px;color:var(--text-dim);line-height:1.7;margin-bottom:8px"></div>
-  <div class="card" style="padding:14px;margin-bottom:10px">
+  <div class="card" id="shelly-live-card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.06em">⚡ <span id="gauge-st-name">NEERACH</span></div>
       <div id="live-badge" style="font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text-dim)">STANDBY</div>
@@ -334,8 +334,43 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="relay-sub" id="relay-sub">Shelly 1 Mini — 192.168.3.224</div></div>
     <div class="kipp" id="kipp" onclick="toggleRelay()"><div class="kipp-track"></div><div class="kipp-thumb"></div></div>
   </div>
+  <!-- ✅ v18: Brail Büchlein Card (hidden for Neerach/Shelly mode) -->
+  <div id="brail-buchli-card" style="display:none;margin-bottom:10px">
+    <!-- Büchlein Header -->
+    <div style="background:linear-gradient(135deg,#2d1a05 0%,#4a2e0a 50%,#2d1a05 100%);border:2px solid #c4a460;border-radius:14px;padding:0;overflow:hidden;margin-bottom:10px">
+      <!-- Buchrücken + Titel -->
+      <div style="display:flex;align-items:stretch">
+        <div style="width:18px;background:linear-gradient(180deg,#8b5e1a,#c4a460,#8b5e1a);flex-shrink:0"></div>
+        <div style="flex:1;padding:14px 14px 10px 14px">
+          <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#f5e6c0;text-align:center;letter-spacing:.06em;text-shadow:0 1px 3px rgba(0,0,0,.5)">📖 Charge Brail</div>
+          <div style="font-family:Georgia,serif;font-size:10px;color:#c4a460;text-align:center;letter-spacing:.12em;margin-top:2px">DAS LADEBÜCHLEIN</div>
+          <!-- Liniertes Feld aktueller Zähler -->
+          <div style="margin-top:10px;background:rgba(245,230,192,.07);border:1px solid #c4a46055;border-radius:8px;padding:8px 12px">
+            <div style="font-size:9px;color:#c4a460;letter-spacing:.1em;margin-bottom:4px">LETZTER ZÄHLERSTAND</div>
+            <div id="buchli-last-meter" style="font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:#f5e6c0">— kWh</div>
+          </div>
+          <!-- Stats Zeile -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+            <div style="background:rgba(245,230,192,.06);border:1px solid #c4a46044;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:9px;color:#c4a460;margin-bottom:3px">HEUTE</div>
+              <div id="buchli-today" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#f5e6c0">0.0 kWh</div>
+            </div>
+            <div style="background:rgba(245,230,192,.06);border:1px solid #c4a46044;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:9px;color:#c4a460;margin-bottom:3px">MONAT</div>
+              <div id="buchli-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#f5e6c0">0 kWh</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Letzte Einträge als Büchlein-Zeilen -->
+    <div id="buchli-recent" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">LETZTE EINTRÄGE</div>
+      <div id="buchli-entries" style="font-size:12px;color:var(--text-dim)">Lade...</div>
+    </div>
+  </div>
   <div id="start-wrap">
-    <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">⚡ Ladevorgang starten</button>
+    <button class="btn-p" style="width:100%;padding:16px;font-size:16px;border-radius:var(--radius)" onclick="openStartSession()">✍ Ladevorgang eintragen</button>
   </div>
   <div id="push-hint" style="display:none;margin-top:8px;padding:10px 12px;background:rgba(255,160,0,.1);border:1px solid #ffa000;border-radius:10px;font-size:11px;color:#ffa000;text-align:center">
     🔔 Push aktivieren — Alarm bei unbekanntem Laden
@@ -434,12 +469,35 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
   <div class="card">
     <div class="card-title">🌿 BRAIL — Brail Home</div>
-    <div class="s-label">Shelly 3EM IP</div>
-    <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
-    <div class="s-label">Shelly 1 Mini Gen3 IP</div>
-    <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
+    <!-- v18: Modus-Schalter -->
+    <div style="margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.08em;margin-bottom:8px">STATIONS-MODUS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button id="btn-mode-buchli" onclick="saveBrailMode('buchli')"
+          style="padding:10px 8px;border-radius:8px;border:2px solid #ff7c2a;background:#ff7c2a22;color:#ff7c2a;font-size:12px;font-weight:700;cursor:pointer">
+          📖 Ladebüchlein<br><span style="font-size:10px;font-weight:400;opacity:.8">Manueller Zähler</span>
+        </button>
+        <button id="btn-mode-shelly" onclick="saveBrailMode('shelly')"
+          style="padding:10px 8px;border-radius:8px;border:2px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer">
+          ⚡ Shelly (HW)<br><span style="font-size:10px;font-weight:400;opacity:.8">Nach Installation</span>
+        </button>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.5">Büchlein = aktuell aktiv. Sobald Shelly 3EM installiert → auf Shelly umschalten.</div>
+    </div>
+    <div id="brail-shelly-fields">
+      <div class="s-label">Shelly 3EM IP</div>
+      <input class="s-input" id="ip3em2" placeholder="noch nicht konfiguriert">
+      <div class="s-label">Shelly 1 Mini Gen3 IP</div>
+      <input class="s-input" id="ipMini2" placeholder="noch nicht konfiguriert">
+    </div>
     <div class="s-label">Tarif (CHF/kWh)</div>
     <input class="s-input" id="tariff2" value="0.30">
+    <!-- v18: Admin: Initialer Zählerstand setzen -->
+    <div class="s-label mt8">Initialer Zählerstand (kWh) — einmalig setzen</div>
+    <div style="display:flex;gap:8px">
+      <input class="s-input" id="brail-init-meter" type="number" step="0.1" placeholder="z.B. 12345.0" style="flex:1">
+      <button onclick="setBrailInitMeter()" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Setzen</button>
+    </div>
     <button class="btn-p mt8" onclick="saveSettings()">Speichern</button>
   </div>
 
@@ -850,8 +908,8 @@ async function sha256(str) {
 // DATA
 // ═══════════════════════════════════════════════════════════════
 const ST = [
-  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25},
-  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25}
+  {id:1,name:'Görtz Home',loc:'Neerach',color:'#00d4ff',ip3em:'192.168.3.223',ipMini:'192.168.3.224',tariff:.25,lastMeterReading:0,brailMode:'shelly'},
+  {id:2,name:'Brail Home', loc:'Brail',  color:'#ff7c2a',ip3em:'',            ipMini:'',             tariff:.25,lastMeterReading:0,brailMode:'buchli'}
 ];
 const UDFL = [
   {id:1, name:'Robert Görtz', emoji:'⚡',plate:'ZH 100 RG',pin:'2204',role:'admin',stations:[1,2],color:'#00d4ff'},
@@ -913,6 +971,7 @@ function applyConfig() {
   if(cfg.ip3em2)  ST[1].ip3em   = cfg.ip3em2;
   if(cfg.ipMini2) ST[1].ipMini  = cfg.ipMini2;
   if(cfg.tariff2) ST[1].tariff  = parseFloat(cfg.tariff2);
+  if(cfg.brailMode2) ST[1].brailMode = cfg.brailMode2;
 }
 
 async function syncFromSupabase() {
@@ -944,7 +1003,12 @@ async function syncFromSupabase() {
     sessions = sbSess.map(s => ({
       id: s.id, userId: s.user_id, stationId: s.station_id,
       startedAt: s.started_at, stoppedAt: s.stopped_at,
-      kwh: s.kwh || 0, chf: s.chf || 0, tariff: s.tariff || 0.30
+      kwh: s.kwh || 0, chf: s.chf || 0, tariff: s.tariff || 0.30,
+      // ✅ v17.5/v18 Felder
+      is_manual: s.is_manual || false,
+      manual_start_kwh: s.manual_start_kwh || null,
+      manual_stop_kwh: s.manual_stop_kwh || null,
+      note: s.note || null
     }));
     localStorage.setItem('cg_s', JSON.stringify(sessions));
   }
@@ -954,7 +1018,8 @@ async function syncFromSupabase() {
   if(active && active.length > 0) {
     const a = active[0];
     activeSession = {id:a.id, userId:a.user_id, stationId:a.station_id,
-      startedAt:a.started_at, kwh:a.kwh||0, chf:a.chf||0, tariff:a.tariff||0.30};
+      startedAt:a.started_at, kwh:a.kwh||0, chf:a.chf||0, tariff:a.tariff||0.30,
+      isManual: a.is_manual||false, manualStartKwh: a.manual_start_kwh||null};
     relayOn = true;
     localStorage.setItem('cg_as', JSON.stringify(activeSession));
   }
@@ -964,7 +1029,12 @@ async function syncFromSupabase() {
   if(sbSt && sbSt.length > 0) {
     sbSt.forEach(s => {
       const st = ST.find(x => x.id === s.id);
-      if(st) { st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30; }
+      if(st) {
+        st.ip3em=s.ip_3em||''; st.ipMini=s.ip_mini||''; st.tariff=s.tariff||0.30;
+        st.lastMeterReading=parseFloat(s.last_meter_reading||0);
+        // brail_mode: 'buchli' (nur Zähler) oder 'shelly' (mit Shelly HW)
+        st.brailMode=s.brail_mode||'buchli';
+      }
     });
   }
 
@@ -1089,7 +1159,9 @@ Soll ich diese Energie als "UNBEKANNT" speichern?`);
   relayOn = true;
   save();
   renderDashboard();
+  renderSessions();
   updateRelayUI();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
 
   // Relay nur für NEERACH
   if(cs === 1) {
@@ -1145,12 +1217,22 @@ async function stopSession() {
     await sbPatch('sessions', `id=eq.${activeSession.id}`, updateData);
   }
 
-  sessions.unshift({...activeSession, stoppedAt:Date.now(), kwh, chf});
+  // Update local session record with all fields
+  const sessIdx = sessions.findIndex(s=>s.id===activeSession.id);
+  const updatedSess = {
+    ...activeSession, 
+    stoppedAt: new Date().toISOString(),
+    kwh, chf,
+    manual_stop_kwh: manualStopKwh
+  };
+  if(sessIdx>=0) sessions[sessIdx] = updatedSess;
+  else sessions.unshift(updatedSess);
+  
   activeSession = null;
   relayOn = false;
 
-  // Relay nur für NEERACH
-  if(cs === 1) {
+  // Relay nur für NEERACH/Shelly-Modus
+  if(cs === 1 || (cs===2 && ST[1].brailMode==='shelly')) {
     const piBase=piBaseUrl||cfg.cfUrl||'https://charge.robcat.ch';
     try{
       const r=await fetch(`${piBase}/api/relay/${cs}/off`,{signal:AbortSignal.timeout(3000)});
@@ -1161,7 +1243,9 @@ async function stopSession() {
   
   save();
   renderDashboard();
+  renderSessions();
   updateRelayUI();
+  if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1179,9 +1263,14 @@ async function saveSettings() {
 
   if(supaOnline) {
     await sbPatch('stations','id=eq.1',{ip_3em:cfg.ip3em1,ip_mini:cfg.ipMini1,tariff:parseFloat(cfg.tariff1)||.30});
-    await sbPatch('stations','id=eq.2',{ip_3em:cfg.ip3em2,ip_mini:cfg.ipMini2,tariff:parseFloat(cfg.tariff2)||.30});
+    await sbPatch('stations','id=eq.2',{
+      ip_3em:cfg.ip3em2, ip_mini:cfg.ipMini2,
+      tariff:parseFloat(cfg.tariff2)||.30,
+      brail_mode: ST[1].brailMode||'buchli'
+    });
   }
   save();
+  switchStation(cs); // Refresh UI nach Speichern
   alert('✓ Gespeichert' + (supaOnline ? ' (lokal + Supabase ☁)' : ' (nur lokal)'));
 }
 
@@ -1357,11 +1446,12 @@ async function saveNachtrag() {
   
   try {
     const saved = await sbPost('sessions', session);
-    if(saved && saved.length > 0) {
-      sessions.unshift(Array.isArray(saved) ? saved[0] : saved);
-      await loadData(); // Reload all data
+    // Supabase returns array on success, null on error
+    if(saved !== null) {
+      await syncFromSupabase(); // Reload all data fresh
       renderBilanz();
       renderSessions();
+      if(cs===2 && ST[1].brailMode==='buchli') renderBrailBuchliStatus();
       alert(`✓ ${kwh} kWh für ${u?.name} eingetragen!`);
       closeNachtrag();
     } else {
@@ -1370,6 +1460,71 @@ async function saveNachtrag() {
   } catch(e) {
     console.error('Nachtrag save error:', e);
     alert('❌ Fehler: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+// BRAIL BÜCHLEIN STATUS
+// ═══════════════════════════════════════════
+function renderBrailBuchliStatus() {
+  // Update Büchlein card stats
+  const lastEl = document.getElementById('buchli-last-meter');
+  if(lastEl) lastEl.textContent = (ST[1].lastMeterReading||0).toFixed(1) + ' kWh';
+
+  const today = sessions.filter(s=>{
+    const d=new Date(s.startedAt); const now=new Date();
+    return s.stationId===2 && d.toDateString()===now.toDateString();
+  }).reduce((a,s)=>a+s.kwh,0);
+  const month = sessions.filter(s=>{
+    const d=new Date(s.startedAt); const now=new Date();
+    return s.stationId===2 && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).reduce((a,s)=>a+s.kwh,0);
+
+  const tEl=document.getElementById('buchli-today'); if(tEl) tEl.textContent=today.toFixed(1)+' kWh';
+  const mEl=document.getElementById('buchli-month'); if(mEl) mEl.textContent=month.toFixed(0)+' kWh';
+
+  // Last 5 sessions as Büchlein entries
+  const entriesEl = document.getElementById('buchli-entries');
+  if(!entriesEl) return;
+  const brailSess = sessions.filter(s=>s.stationId===2).slice(0,5);
+  if(brailSess.length===0){ entriesEl.innerHTML='<div style="color:var(--text-dim);font-size:11px;text-align:center;padding:8px">Noch keine Einträge</div>'; return; }
+
+  entriesEl.innerHTML = brailSess.map((s,i) => {
+    const u = users.find(x=>x.id===s.userId);
+    const dt = new Date(s.startedAt);
+    const dateStr = dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const kwh = (s.kwh||0).toFixed(1);
+    const start = s.manual_start_kwh!=null ? s.manual_start_kwh.toFixed(1) : '—';
+    const stop  = s.manual_stop_kwh!=null  ? s.manual_stop_kwh.toFixed(1)  : '—';
+    const chf = ((s.kwh||0)*(s.tariff||ST[1].tariff)).toFixed(2);
+    const bg = i%2===0 ? 'rgba(196,164,96,.04)' : 'transparent';
+    return `<div style="display:grid;grid-template-columns:60px 1fr 70px 50px;gap:4px;padding:5px 4px;border-bottom:1px solid var(--border);background:${bg};font-size:11px">
+      <div style="color:var(--text-dim);font-family:'Space Mono',monospace">${dateStr}</div>
+      <div style="color:var(--text);font-weight:500">${u?u.emoji+' '+u.name:'?'}</div>
+      <div style="color:var(--accent);font-family:'Space Mono',monospace;text-align:right">${kwh} kWh</div>
+      <div style="color:var(--text-dim);font-family:'Space Mono',monospace;text-align:right">${chf}</div>
+    </div>`;
+  }).join('');
+}
+
+function saveBrailMode(mode) {
+  ST[1].brailMode = mode;
+  sbPatch('stations','id=eq.2',{brail_mode:mode}).then(()=>{
+    alert(mode==='buchli' ? '✓ Büchlein-Modus aktiviert' : '✓ Shelly-Modus aktiviert — IPs konfigurieren!');
+    switchStation(cs);
+  });
+}
+
+async function setBrailInitMeter() {
+  const val = parseFloat(document.getElementById('brail-init-meter').value);
+  if(isNaN(val)||val<0){ alert('❌ Bitte gültigen Zählerstand eingeben'); return; }
+  const res = await sbPatch('stations','id=eq.2',{last_meter_reading:val});
+  if(res!==null){
+    ST[1].lastMeterReading = val;
+    alert('✓ Zählerstand auf '+val.toFixed(1)+' kWh gesetzt');
+    renderBrailBuchliStatus();
+  } else {
+    alert('❌ Fehler beim Speichern');
   }
 }
 
@@ -1426,7 +1581,20 @@ function switchStation(id){
   document.getElementById('relay-sub').textContent=`Shelly 1 Mini — ${ST[id-1].ipMini||'IP nicht konfiguriert'}`;
   document.getElementById('gauge-st-name').textContent=ST[id-1].name+' '+ST[id-1].loc;
   document.getElementById('v-tariff').textContent=ST[id-1].tariff.toFixed(2)+' CHF/kWh';
-  renderDashboard(); updateRelayUI(); updateGauges(0,230,0);
+  // v18: Brail Büchlein-Modus — Shelly-Elemente ausblenden
+  const isBuchli = (id===2 && ST[1].brailMode==='buchli');
+  ['row-shelly','row-relay'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
+  ['shelly-live-card','relay-card'].forEach(elId=>{const e=document.getElementById(elId);if(e)e.style.display=isBuchli?'none':'';});
+  const statusCard = document.getElementById('status-card');
+  if(statusCard) statusCard.style.display = (isBuchli && !supaOnline) ? 'none' : '';
+  const buchliCard = document.getElementById('brail-buchli-card');
+  if(buchliCard) buchliCard.style.display = isBuchli ? 'block' : 'none';
+  // Update Ladevorgang button text
+  const startBtn = document.querySelector('#start-wrap .btn-p');
+  if(startBtn) startBtn.textContent = isBuchli ? '✍ Ladevorgang eintragen' : '⚡ Ladevorgang starten';
+  renderDashboard(); updateRelayUI();
+  if(isBuchli) renderBrailBuchliStatus();
+  else updateGauges(0,230,0);
 }
 
 function hex2rgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
@@ -1642,6 +1810,16 @@ function saveTailscaleIP(){
 }
 
 async function pollShelly(){
+  // ✅ v18: BRAIL Büchlein-Modus — kein Shelly, kein Pi-Poll
+  if(cs === 2 && ST[1].brailMode === 'buchli') {
+    // Nur Sessions-Daten zeigen, kein Live-Strom
+    liveTotalKwh = 0;
+    liveKw = 0;
+    updateGauges(0, 0, 0);
+    renderDashboard();
+    renderBrailBuchliStatus();
+    return;
+  }
   if(!piBaseUrl){
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
