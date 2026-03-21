@@ -515,96 +515,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <button id="adm-st2" onclick="setAdminStation(2)" class="adm-st-btn">&#127807; Brail</button>
     </div>
 
-    <div class="card">
-      <div class="card-title">&#128260; ZÄHLER ZURÜCKSTELLEN</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--text-dim)">SHELLY TOTAL</div>
-          <div id="adm-shelly-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)">—</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--text-dim)">SESSIONS TOTAL</div>
-          <div id="adm-sess-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">—</div>
-        </div>
-      </div>
-      <div id="adm-warn" style="display:none;background:rgba(255,68,68,0.1);border:1px solid #ff4444;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.4"></div>
-      <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
-        ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
-      </button>
-      <button onclick="admResetSessions()" style="width:100%;background:rgba(255,160,0,.1);border:1px solid #ffa000;color:#ffa000;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">
-        &#128465; Alle Sessions löschen
-      </button>
-    </div>
-
-    <!-- ✅ FIX 9: Unbekannte/Gap Sessions -->
-    <div class="card" id="gap-sessions-card" style="display:none">
-      <div class="card-title">⚠️ UNBEKANNTE LADEVORGÄNGE</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Energie während Pi offline geladen — bitte zuordnen</div>
-      <div id="gap-sess-list"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">&#9999; SESSIONS EDITIEREN</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Tippe auf Session zum Bearbeiten</div>
-      <div id="adm-sess-list" style="max-height:280px;overflow-y:auto"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">&#128101; BENUTZER</div>
-      <div id="adm-users-list"></div>
-      <button onclick="admAddUser()" style="width:100%;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">+ Benutzer hinzufügen</button>
-    </div>
-
-    <div class="card">
-      <div class="card-title">&#127912; DESIGN — THEME</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Neerach</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <button onclick="setTheme(1,'cyan')" class="theme-btn" id="th1-cyan">&#11044; Cyan</button>
-        <button onclick="setTheme(1,'green')" class="theme-btn" id="th1-green">&#11044; Grün</button>
-        <button onclick="setTheme(1,'orange')" class="theme-btn" id="th1-orange">&#11044; Orange</button>
-        <button onclick="setTheme(1,'purple')" class="theme-btn" id="th1-purple">&#11044; Violett</button>
-      </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Brail</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button onclick="setTheme(2,'cyan')" class="theme-btn" id="th2-cyan">&#11044; Cyan</button>
-        <button onclick="setTheme(2,'green')" class="theme-btn" id="th2-green">&#11044; Grün</button>
-        <button onclick="setTheme(2,'orange')" class="theme-btn" id="th2-orange">&#11044; Orange</button>
-        <button onclick="setTheme(2,'purple')" class="theme-btn" id="th2-purple">&#11044; Violett</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">&#9881; STATION KONFIGURATION</div>
-      <div id="adm-cfg-name" style="font-weight:700;margin-bottom:10px">Neerach</div>
-      <div class="s-label">Shelly 3EM IP</div>
-      <input class="s-input" id="adm-ip3em" style="width:100%">
-      <div class="s-label mt8">Shelly 1 Mini IP</div>
-      <input class="s-input" id="adm-ipMini" style="width:100%">
-      <div class="s-label mt8">Tarif (CHF/kWh)</div>
-      <input class="s-input" id="adm-tariff" type="number" step="0.01" style="width:100%">
-      <div class="s-label mt8">Stationsname</div>
-      <input class="s-input" id="adm-stname" style="width:100%">
-      <button onclick="admSaveCfg()" style="width:100%;margin-top:10px;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">&#128190; Speichern</button>
-    </div>
-
-
-    <div class="card">
-      <div class="card-title">🔒 TAILSCALE — FERNZUGRIFF</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.6">Für Fernzugriff von überall — Pi wird deine private Cloud:</div>
-      <div style="background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;font-size:10px;font-family:'Space Mono',monospace;color:var(--accent);line-height:1.8">
-        curl -fsSL https://tailscale.com/install.sh | sh<br>sudo tailscale up<br>tailscale ip -4
-      </div>
-      <div class="s-label">Tailscale-IP eingeben:</div>
-      <input class="s-input" id="ts-ip-admin" placeholder="100.x.x.x:5000" style="width:100%;margin-bottom:8px" value="100.103.254.108:5000">
-      <button onclick="saveTailscaleIP()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Speichern &amp; Testen</button>
-      <div id="ts-test-result" style="margin-top:8px;font-size:11px;text-align:center"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">&#9881; EINSTELLUNGEN</div>
-      <button onclick="switchTab('settings')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Erweiterte Einstellungen öffnen</button>
-    </div>
-
-    <!-- ═══ BRAIL LADEBÜCHLEIN (nur sichtbar wenn Brail gewählt) ═══ -->
+        <!-- ═══ BRAIL LADEBÜCHLEIN (nur sichtbar wenn Brail gewählt) ═══ -->
     <div id="adm-buchli-section" style="display:none">
       <div style="height:1px;background:var(--border);margin:8px 0 14px"></div>
 
@@ -718,6 +629,97 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
       </div><!-- /adm-buchli-ui -->
     </div><!-- /adm-buchli-section -->
+
+    <div class="card">
+      <div class="card-title">&#128260; ZÄHLER ZURÜCKSTELLEN</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text-dim)">SHELLY TOTAL</div>
+          <div id="adm-shelly-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)">—</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--text-dim)">SESSIONS TOTAL</div>
+          <div id="adm-sess-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">—</div>
+        </div>
+      </div>
+      <div id="adm-warn" style="display:none;background:rgba(255,68,68,0.1);border:1px solid #ff4444;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.4"></div>
+      <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
+        ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
+      </button>
+      <button onclick="admResetSessions()" style="width:100%;background:rgba(255,160,0,.1);border:1px solid #ffa000;color:#ffa000;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">
+        &#128465; Alle Sessions löschen
+      </button>
+    </div>
+
+    <!-- ✅ FIX 9: Unbekannte/Gap Sessions -->
+    <div class="card" id="gap-sessions-card" style="display:none">
+      <div class="card-title">⚠️ UNBEKANNTE LADEVORGÄNGE</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Energie während Pi offline geladen — bitte zuordnen</div>
+      <div id="gap-sess-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#9999; SESSIONS EDITIEREN</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Tippe auf Session zum Bearbeiten</div>
+      <div id="adm-sess-list" style="max-height:280px;overflow-y:auto"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#128101; BENUTZER</div>
+      <div id="adm-users-list"></div>
+      <button onclick="admAddUser()" style="width:100%;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer">+ Benutzer hinzufügen</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#127912; DESIGN — THEME</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Neerach</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button onclick="setTheme(1,'cyan')" class="theme-btn" id="th1-cyan">&#11044; Cyan</button>
+        <button onclick="setTheme(1,'green')" class="theme-btn" id="th1-green">&#11044; Grün</button>
+        <button onclick="setTheme(1,'orange')" class="theme-btn" id="th1-orange">&#11044; Orange</button>
+        <button onclick="setTheme(1,'purple')" class="theme-btn" id="th1-purple">&#11044; Violett</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Brail</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="setTheme(2,'cyan')" class="theme-btn" id="th2-cyan">&#11044; Cyan</button>
+        <button onclick="setTheme(2,'green')" class="theme-btn" id="th2-green">&#11044; Grün</button>
+        <button onclick="setTheme(2,'orange')" class="theme-btn" id="th2-orange">&#11044; Orange</button>
+        <button onclick="setTheme(2,'purple')" class="theme-btn" id="th2-purple">&#11044; Violett</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#9881; STATION KONFIGURATION</div>
+      <div id="adm-cfg-name" style="font-weight:700;margin-bottom:10px">Neerach</div>
+      <div class="s-label">Shelly 3EM IP</div>
+      <input class="s-input" id="adm-ip3em" style="width:100%">
+      <div class="s-label mt8">Shelly 1 Mini IP</div>
+      <input class="s-input" id="adm-ipMini" style="width:100%">
+      <div class="s-label mt8">Tarif (CHF/kWh)</div>
+      <input class="s-input" id="adm-tariff" type="number" step="0.01" style="width:100%">
+      <div class="s-label mt8">Stationsname</div>
+      <input class="s-input" id="adm-stname" style="width:100%">
+      <button onclick="admSaveCfg()" style="width:100%;margin-top:10px;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">&#128190; Speichern</button>
+    </div>
+
+
+    <div class="card">
+      <div class="card-title">🔒 TAILSCALE — FERNZUGRIFF</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.6">Für Fernzugriff von überall — Pi wird deine private Cloud:</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;font-size:10px;font-family:'Space Mono',monospace;color:var(--accent);line-height:1.8">
+        curl -fsSL https://tailscale.com/install.sh | sh<br>sudo tailscale up<br>tailscale ip -4
+      </div>
+      <div class="s-label">Tailscale-IP eingeben:</div>
+      <input class="s-input" id="ts-ip-admin" placeholder="100.x.x.x:5000" style="width:100%;margin-bottom:8px" value="100.103.254.108:5000">
+      <button onclick="saveTailscaleIP()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Speichern &amp; Testen</button>
+      <div id="ts-test-result" style="margin-top:8px;font-size:11px;text-align:center"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#9881; EINSTELLUNGEN</div>
+      <button onclick="switchTab('settings')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Erweiterte Einstellungen öffnen</button>
+    </div>
+
+
 
   </div>
 </div>
@@ -2602,7 +2604,10 @@ function setAdminStation(sid){
   // Ladebüchlein-Sektion nur bei Brail
   const sec = document.getElementById('adm-buchli-section');
   if(sec) sec.style.display = (sid===2) ? 'block' : 'none';
-  if(sid===2) { blRefreshTable(); admUpdateBrailModeButtons(); }
+  if(sid===2) {
+    try { admUpdateBrailModeButtons(); } catch(e) { console.warn('admUpdateBrailModeButtons:',e); }
+    try { blRefreshTable(); } catch(e) { console.warn('blRefreshTable:',e); }
+  }
 }
 
 function refreshAdminContent(){
