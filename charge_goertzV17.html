@@ -3316,7 +3316,7 @@ async function blpSave(){
   var kwh=parseFloat((neu-alt).toFixed(2));
   var tariff=(ST[1]&&ST[1].tariff)||0.25;
   var chf=parseFloat((kwh*tariff).toFixed(2));
-  var startAt=new Date(dat+'T12:00:00').toISOString();
+  var startAt=new Date(dat+'T12:00:00').toISOString().replace('.000Z','+00:00');
   var data={station_id:2,user_id:uid,started_at:startAt,stopped_at:startAt,kwh:kwh,chf:chf,tariff:tariff,is_manual:true,manual_start_kwh:alt,manual_stop_kwh:neu,note:note||'Buchli-Eintrag'};
   var btn=e('blp-save-btn');if(btn){btn.disabled=true;btn.textContent='...';}
   blpStatus('Speichern...',true);
