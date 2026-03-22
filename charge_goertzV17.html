@@ -362,8 +362,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
     </div>
 
-    <!-- Stats Strip UNTEN -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+    <!-- Stats + Systemstatus + Cloudflare GANZ UNTEN -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
         <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">LETZTER Z&#196;HLER</div>
         <div id="bld-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
@@ -377,6 +377,17 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div id="bld-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
       </div>
     </div>
+
+    <!-- Systemstatus (Brail: nur Pi + DB, kein Shelly) -->
+    <div id="bld-status-card" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px"><span class="st-dot" id="bld-st-pi"></span><span style="font-size:10px;color:var(--text-dim);flex:1">Pi Backend</span><span style="font-size:10px" id="bld-stv-pi">—</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="st-dot" id="bld-st-db"></span><span style="font-size:10px;color:var(--text-dim);flex:1">Datenbank</span><span style="font-size:10px" id="bld-stv-db">—</span></div>
+      </div>
+    </div>
+
+    <!-- Cloudflare Banner -->
+    <div id="bld-net-banner" style="background:rgba(0,50,80,.3);border:1px solid #0d335144;border-radius:8px;padding:5px 10px;text-align:center;font-size:9px;color:#00d4ff;margin-bottom:4px">&#9729; Cloudflare Tunnel &#8212; &#220;berall</div>
 
   </div><!-- /brail-dash-buchli -->
   <div class="card" style="padding:14px;margin-bottom:10px">
@@ -1536,6 +1547,13 @@ function switchStation(id){
   // act-session-wrap ausblenden bei Brail
   const asw = document.getElementById('act-session-wrap');
   if(asw) asw.style.display = isBrail ? 'none' : '';
+  // Status-Card und Net-Banner OBEN ausblenden bei Brail (sind unten im Buchli)
+  const scTop = document.getElementById('status-card');
+  if(scTop) scTop.style.display = isBrail ? 'none' : '';
+  const nmb = document.getElementById('net-mode-banner');
+  if(nmb) nmb.style.display = isBrail ? 'none' : '';
+  const nhb = document.getElementById('net-help-box');
+  if(nhb) nhb.style.display = isBrail ? 'none' : '';
   // Buchli direkt im Dashboard anzeigen
   const bld = document.getElementById('brail-dash-buchli');
   if(bld) { bld.style.display = isBrail ? 'block' : 'none'; if(isBrail) blpDashRender(); }
@@ -3484,6 +3502,20 @@ function blpDashRender() {
   if(e('bld-total-row')) e('bld-total-row').textContent = total.toFixed(1)+' kWh';
 
   // Rows
+  // Sync Pi/DB status dots to bottom panel
+  ['pi','db'].forEach(function(k){
+    var src=document.getElementById('st-'+k);
+    var dst=document.getElementById('bld-st-'+k);
+    if(src&&dst){dst.className=src.className;}
+    var sv=document.getElementById('stv-'+k);
+    var dv=document.getElementById('bld-stv-'+k);
+    if(sv&&dv){dv.textContent=sv.textContent;dv.style.color=sv.style.color||'';}
+  });
+  // Sync Cloudflare banner
+  var nb=document.getElementById('net-mode-banner');
+  var bldnb=document.getElementById('bld-net-banner');
+  if(nb&&bldnb&&nb.textContent.trim()){bldnb.textContent=nb.textContent;}
+
   var el = e('bld-rows');
   if(!el) return;
   var sorted = sess.slice().sort(function(a,b){return new Date(b.startedAt||b.started_at||0)-new Date(a.startedAt||a.started_at||0);});
