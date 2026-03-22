@@ -294,20 +294,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
   <!-- BRAIL LADEBÜCHLEIN direkt im Dashboard -->
   <div id="brail-dash-buchli" style="display:none">
-    <!-- Stats Strip -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
-        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">LETZTER Z&#196;HLER</div>
-        <div id="bld-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
-        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">DIESEN MONAT</div>
-        <div id="bld-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
-        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">TOTAL</div>
-        <div id="bld-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
-      </div>
+
+    <!-- TITEL -->
+    <div style="text-align:center;padding:10px 0 14px">
+      <div style="font-family:Georgia,serif;font-style:italic;font-size:22px;font-weight:700;color:#ff7c2a">Charge Brail</div>
+      <div style="font-size:12px;color:var(--text-dim);font-style:italic;margin-top:2px">Das Ladeb&#252;chlein</div>
     </div>
 
     <!-- Neuer Eintrag Card -->
@@ -355,8 +346,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
     </div>
 
-    <!-- Tabelle -->
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
+    <!-- Tabelle — neueste oben, sehr lang -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px">
       <div style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:8px 10px;background:var(--surface2);border-bottom:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;color:var(--text-dim)">Datum</div>
         <div style="font-size:10px;font-weight:700;color:var(--text-dim)">Benutzer</div>
@@ -364,12 +355,29 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:right">Z.neu</div>
         <div style="font-size:10px;font-weight:700;color:var(--accent);text-align:right">kWh</div>
       </div>
-      <div id="bld-rows"><div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Lade...</div></div>
+      <div id="bld-rows" style="max-height:none"><div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Lade...</div></div>
       <div style="display:grid;grid-template-columns:46px 1fr 52px 52px 48px;padding:8px 10px;background:var(--surface2);border-top:1px solid var(--border)">
         <div style="font-size:12px;font-weight:700;color:var(--text);grid-column:1/5">TOTAL</div>
         <div id="bld-total-row" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);text-align:right">---</div>
       </div>
     </div>
+
+    <!-- Stats Strip UNTEN -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">LETZTER Z&#196;HLER</div>
+        <div id="bld-last" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">DIESEN MONAT</div>
+        <div id="bld-month" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;text-align:center">
+        <div style="font-size:9px;color:var(--text-dim);margin-bottom:2px">TOTAL</div>
+        <div id="bld-total" style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent)">---</div>
+      </div>
+    </div>
+
   </div><!-- /brail-dash-buchli -->
   <div class="card" style="padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -1525,6 +1533,9 @@ function switchStation(id){
   // Status-Help (Shelly-Fehlermeldung) ausblenden
   const sh = document.getElementById('status-help');
   if(sh && isBrail) sh.style.display = 'none';
+  // act-session-wrap ausblenden bei Brail
+  const asw = document.getElementById('act-session-wrap');
+  if(asw) asw.style.display = isBrail ? 'none' : '';
   // Buchli direkt im Dashboard anzeigen
   const bld = document.getElementById('brail-dash-buchli');
   if(bld) { bld.style.display = isBrail ? 'block' : 'none'; if(isBrail) blpDashRender(); }
