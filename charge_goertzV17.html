@@ -1185,7 +1185,8 @@ Soll ich diese Energie als "UNBEKANNT" speichern?`);
     chf:0, 
     tariff:ST[cs-1].tariff,
     isManual: (cs === 2),
-    manualStartKwh: manualStartKwh
+    manualStartKwh: manualStartKwh,
+    startTotalKwh: liveTotalKwh  // Shelly Zählerstand bei Session-Start
   };
   relayOn = true;
   save();
@@ -1839,8 +1840,14 @@ async function pollShelly(){
       }
     }
     if(activeSession&&activeSession.stationId===cs&&d.power_w>50){
-      const elH=(Date.now()-activeSession.startedAt)/3600000;
-      activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
+      // RICHTIG: Shelly Zähler jetzt - Zähler bei Session-Start
+      if(activeSession.startTotalKwh>0 && liveTotalKwh>activeSession.startTotalKwh){
+        activeSession.kwh=parseFloat((liveTotalKwh-activeSession.startTotalKwh).toFixed(3));
+      } else {
+        // Fallback: Durchschnittsleistung × Zeit (wenn kein Startzähler)
+        const elH=(Date.now()-activeSession.startedAt)/3600000;
+        activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
+      }
       activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
     }
     
