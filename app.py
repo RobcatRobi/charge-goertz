@@ -1,4 +1,4 @@
-import time, requests, hashlib, os
+import time, requests, hashlib, os, threading
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
@@ -13,6 +13,11 @@ STATIONS = {
     1: {"ip_3em": "192.168.3.223", "ip_mini": "192.168.3.224", "tariff": 0.25, "name": "Neerach"},
     2: {"ip_3em": "",              "ip_mini": "",               "tariff": 0.25, "name": "Brail"},
 }
+
+# ── AUTO-STOP STATE ──────────────────────────────────────────
+_low_power_since = {}   # {station_id: timestamp_seit_niedrig}
+LOW_POWER_THRESHOLD = 0.2   # kW
+LOW_POWER_DURATION  = 60    # Sekunden
 
 def supa_get(table, params=""):
     try:
@@ -40,6 +45,79 @@ def supa_delete(table, filt):
         return True
     except: return False
 
+# ── AUTO-STOP BACKGROUND THREAD ──────────────────────────────
+def auto_stop_loop():
+    """Alle 15s: prüft ob Leistung < 0.2kW für 60s → Session stoppen"""
+    time.sleep(20)  # Warte beim Start bis alles bereit ist
+    while True:
+        try:
+            for sid, st in STATIONS.items():
+                if not st["ip_3em"]:
+                    continue
+                # Aktive Session (stopped_at = null)
+                sessions = supa_get("sessions",
+                    f"select=id,user_id,started_at,kwh,tariff,start_total_kwh"
+                    f"&station_id=eq.{sid}&stopped_at=is.null"
+                    f"&order=started_at.desc&limit=1")
+                if not sessions:
+                    _low_power_since.pop(sid, None)
+                    continue
+                sess = sessions[0]
+                # Shelly Leistung holen
+                try:
+                    r = requests.get(f"http://{st['ip_3em']}/status", timeout=4).json()
+                    em = r.get("emeters", [])
+                    total_w = r.get("total_power", sum(e.get("power", 0) for e in em))
+                    total_kwh = round(sum(e.get("total", 0) for e in em) / 1000, 3)
+                    power_kw = total_w / 1000
+                except Exception as e:
+                    print(f"[AutoStop] Shelly {sid} nicht erreichbar: {e}")
+                    _low_power_since.pop(sid, None)
+                    continue
+
+                if power_kw < LOW_POWER_THRESHOLD:
+                    if sid not in _low_power_since:
+                        _low_power_since[sid] = time.time()
+                        print(f"[AutoStop] Sta.{sid}: {power_kw:.3f}kW < {LOW_POWER_THRESHOLD}kW — Timer START")
+                    else:
+                        elapsed = time.time() - _low_power_since[sid]
+                        print(f"[AutoStop] Sta.{sid}: {elapsed:.0f}s/{LOW_POWER_DURATION}s @ {power_kw:.3f}kW")
+                        if elapsed >= LOW_POWER_DURATION:
+                            # ── SESSION BEENDEN ──
+                            now_ms = int(time.time() * 1000)
+                            # kWh: delta von Shelly-Zähler wenn vorhanden
+                            start_kwh = sess.get("start_total_kwh")
+                            if start_kwh and total_kwh > float(start_kwh):
+                                kwh = round(total_kwh - float(start_kwh), 3)
+                            else:
+                                kwh = round(float(sess.get("kwh") or 0), 3)
+                            tariff = float(sess.get("tariff") or st["tariff"])
+                            chf = round(kwh * tariff, 2)
+                            supa_patch("sessions", f"id=eq.{sess['id']}",
+                                {"stopped_at": now_ms, "kwh": kwh, "chf": chf})
+                            # Relay AUS
+                            if st["ip_mini"]:
+                                try:
+                                    requests.get(f"http://{st['ip_mini']}/relay/0?turn=off", timeout=3)
+                                except: pass
+                            _low_power_since.pop(sid, None)
+                            u = supa_get("cg_users", f"id=eq.{sess['user_id']}&select=name")
+                            uname = u[0]["name"] if u else "?"
+                            print(f"[AutoStop] ✅ Sta.{sid} STOP: {uname} — {kwh:.2f}kWh / {chf:.2f}CHF")
+                else:
+                    if sid in _low_power_since:
+                        print(f"[AutoStop] Sta.{sid}: Leistung {power_kw:.3f}kW — Timer RESET")
+                    _low_power_since.pop(sid, None)
+
+        except Exception as e:
+            print(f"[AutoStop] Fehler im Loop: {e}")
+        time.sleep(15)
+
+# Thread beim Start starten
+_autostop_thread = threading.Thread(target=auto_stop_loop, daemon=True)
+_autostop_thread.start()
+print(f"[AutoStop] Thread gestartet — Schwelle: {LOW_POWER_THRESHOLD}kW / {LOW_POWER_DURATION}s")
+
 # ── STATUS ──────────────────────────────────────────────────
 @APP.route("/api/status")
 def status():
@@ -48,7 +126,7 @@ def status():
         with open("/opt/charge-goertz/tunnel_url.txt") as f:
             cf = f.read().strip()
     except: pass
-    return jsonify({"status":"ok","version":"4.0","pi":True,"ts":int(time.time()*1000),"cf_url":cf})
+    return jsonify({"status":"ok","version":"4.1","pi":True,"ts":int(time.time()*1000),"cf_url":cf})
 
 # ── TUNNEL URL ───────────────────────────────────────────────
 @APP.route("/api/tunnel")
@@ -75,7 +153,6 @@ def tunnel():
 @APP.route("/api/users", methods=["GET"])
 def get_users():
     users = supa_get("cg_users", "select=*&active=eq.true&order=id.asc")
-    # PIN nicht zurückgeben
     for u in users:
         u.pop("pin", None)
     return jsonify(users)
@@ -89,7 +166,6 @@ def get_user(uid):
 
 @APP.route("/api/users/verify", methods=["POST"])
 def verify_user():
-    """Prüft PIN eines Benutzers"""
     data = request.json or {}
     uid = data.get("user_id")
     pin = str(data.get("pin",""))
@@ -105,20 +181,15 @@ def verify_user():
 
 @APP.route("/api/users", methods=["POST"])
 def create_user():
-    """Neuen Benutzer erstellen (nur Admin)"""
     data = request.json or {}
     required = ["name","pin","emoji"]
     if not all(k in data for k in required):
         return jsonify({"error":"name, pin, emoji required"}), 400
     user = {
-        "name": data["name"],
-        "emoji": data.get("emoji","👤"),
-        "pin": str(data["pin"]),
-        "role": data.get("role","user"),
-        "stations": data.get("stations",[1]),
-        "color": data.get("color","#00d4ff"),
-        "plate": data.get("plate","—"),
-        "active": True
+        "name": data["name"], "emoji": data.get("emoji","👤"),
+        "pin": str(data["pin"]), "role": data.get("role","user"),
+        "stations": data.get("stations",[1]), "color": data.get("color","#00d4ff"),
+        "plate": data.get("plate","—"), "active": True
     }
     result = supa_post("cg_users", user)
     if result:
@@ -136,33 +207,28 @@ def update_user(uid):
 
 @APP.route("/api/users/<int:uid>", methods=["DELETE"])
 def delete_user(uid):
-    # Soft delete
     ok = supa_patch("cg_users", f"id=eq.{uid}", {"active":False})
     return jsonify({"ok":ok})
 
-# ── DEVICE REGISTRATION (Handy Auto-Login) ───────────────────
+# ── DEVICE REGISTRATION ───────────────────────────────────────
 @APP.route("/api/device/register", methods=["POST"])
 def register_device():
-    """Gerät einem Benutzer zuordnen"""
     data = request.json or {}
     device_id = data.get("device_id")
     user_id = data.get("user_id")
     device_name = data.get("device_name","Unbekannt")
     if not device_id or not user_id:
         return jsonify({"error":"device_id and user_id required"}), 400
-    # Prüfe ob Gerät existiert
     existing = supa_get("devices", f"device_id=eq.{device_id}")
     if existing:
         supa_patch("devices", f"device_id=eq.{device_id}",
             {"user_id":user_id,"device_name":device_name,"last_seen":"now()"})
     else:
-        supa_post("devices", {"device_id":device_id,"user_id":user_id,
-            "device_name":device_name})
+        supa_post("devices", {"device_id":device_id,"user_id":user_id,"device_name":device_name})
     return jsonify({"ok":True,"device_id":device_id,"user_id":user_id})
 
 @APP.route("/api/device/<device_id>", methods=["GET"])
 def get_device(device_id):
-    """Benutzer für Gerät abrufen → Auto-Login"""
     devices = supa_get("devices", f"device_id=eq.{device_id}&select=user_id,device_name")
     if not devices: return jsonify({"user":None})
     uid = devices[0]["user_id"]
