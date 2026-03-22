@@ -1440,12 +1440,12 @@ async function saveNachtrag() {
   const tariff = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
   
   // ✅ v17.5: Speichern als MANUELLE SESSION (nicht nachtraege!)
-  const startDate = new Date(date + 'T00:00:00');
+  const startDate = new Date(date + 'T12:00:00+00:00');
   const session = {
     station_id: cs,
     user_id: userId,
-    started_at: startDate.toISOString(),
-    stopped_at: null, // NULL = manueller Eintrag!
+    started_at: startDate.getTime(),
+    stopped_at: startDate.getTime(),
     kwh: kwh,
     chf: parseFloat((kwh * tariff).toFixed(2)),
     tariff: tariff,
