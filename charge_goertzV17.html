@@ -1498,7 +1498,6 @@ function switchStation(id){
   cs=id;
   document.querySelectorAll('.station-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector(`[data-station="${id}"]`).classList.add('active');
-  const bb=document.getElementById('buchli-open-btn');if(bb)bb.style.display=(id===2)?'inline-block':'none';
   const col=ST[id-1].color;
   document.documentElement.style.setProperty('--accent',col);
   document.documentElement.style.setProperty('--accent-dim',hex2rgba(col,.15));
