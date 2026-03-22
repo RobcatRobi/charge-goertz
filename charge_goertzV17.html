@@ -335,7 +335,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
       <div id="bld-status" style="display:none;padding:8px;border-radius:8px;font-size:13px;text-align:center;margin-bottom:10px"></div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <button onclick="bldSave()" id="bld-save-btn"
           style="padding:14px;background:#ff7c2a;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">
           &#128190; Speichern
@@ -344,6 +344,9 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           &#128465; L&#246;schen
         </button>
       </div>
+      <button onclick="printBuchli()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:13px;cursor:pointer">
+        &#128196; Ladeb&#252;chlein drucken
+      </button>
     </div>
 
     <!-- Tabelle — neueste oben, sehr lang -->
@@ -2239,10 +2242,11 @@ function renderSessions(){
 }
 
 function printSessions(){
+  const stName = ST[cs-1] ? (ST[cs-1].name+' '+ST[cs-1].loc) : '';
   const sub=document.getElementById('sess-sub').textContent;
   const list=document.getElementById('sess-list').innerHTML;
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Sessions '+stName+'</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</html>');
   w.document.close();w.print();
 }
 
@@ -2360,10 +2364,38 @@ function renderBilling(){
 }
 
 function printBilling(){
+  // BRAIL: Ladebüchlein drucken statt Abrechnung
+  if(cs===2) { printBuchli(); return; }
+  const stName = ST[cs-1] ? (ST[cs-1].name+' '+ST[cs-1].loc) : '';
   const pu=document.getElementById('bill-per-user')?document.getElementById('bill-per-user').innerHTML:'';
   const bc=document.getElementById('bill-content')?document.getElementById('bill-content').innerHTML:'';
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Abrechnung</title><style>body{font-family:sans-serif;padding:20px;color:#000;max-width:800px;margin:auto}h2,h3{border-bottom:1px solid #ddd;padding-bottom:6px}.card{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:10px}.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}button{display:none}</style></head><body><h2>ChargeGörtz — Abrechnung</h2><p style="color:#666;font-size:11px">'+new Date().toLocaleString('de-CH')+'</p><h3>Gesamt pro Benutzer</h3>'+pu+'<h3>Monatsdetail</h3>'+bc+'</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Abrechnung '+stName+'</title><style>body{font-family:sans-serif;padding:20px;color:#000;max-width:800px;margin:auto}h2,h3{border-bottom:1px solid #ddd;padding-bottom:6px}.card{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:10px}.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}button{display:none}</style></head><body><h2>ChargeGörtz Neerach — Abrechnung</h2><p style="color:#666;font-size:11px">'+new Date().toLocaleString('de-CH')+'</p><h3>Gesamt pro Benutzer</h3>'+pu+'<h3>Monatsdetail</h3>'+bc+'</body></html>');
+  w.document.close();w.print();
+}
+
+function printBuchli(){
+  const sess=sessions.filter(function(s){return s.stationId===2;}).sort(function(a,b){return new Date(b.startedAt||b.started_at||0)-new Date(a.startedAt||a.started_at||0);});
+  const total=sess.reduce(function(a,s){return a+(s.kwh||0);},0);
+  const rows=sess.map(function(s){
+    const u=users.find(function(x){return x.id===s.userId;});
+    const dt=new Date(s.startedAt||s.started_at||0);
+    const dStr=dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const name=u?u.name:'?';
+    const alt=s.manual_start_kwh!=null?Math.round(s.manual_start_kwh).toLocaleString('de-CH'):'—';
+    const neu=s.manual_stop_kwh!=null?Math.round(s.manual_stop_kwh).toLocaleString('de-CH'):'—';
+    const kwh=(s.kwh||0).toFixed(1);
+    const chf=(s.chf||0).toFixed(2);
+    return '<tr><td>'+dStr+'</td><td>'+name+'</td><td style="text-align:right">'+alt+'</td><td style="text-align:right">'+neu+'</td><td style="text-align:right"><b>'+kwh+'</b></td><td style="text-align:right">'+chf+' CHF</td></tr>';
+  }).join('');
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Charge Brail — Ladebüchlein</title><style>body{font-family:Georgia,serif;padding:24px;color:#000;max-width:700px;margin:auto}h1{font-style:italic;color:#8b4513;margin-bottom:4px}h2{font-size:14px;color:#666;font-weight:normal;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f0e8;padding:8px 10px;text-align:left;border-bottom:2px solid #8b4513;font-size:11px;letter-spacing:.05em}td{padding:7px 10px;border-bottom:1px solid #ddd}tr:nth-child(even) td{background:#fafaf5}tfoot td{font-weight:bold;border-top:2px solid #8b4513;background:#f5f0e8}th:nth-child(n+3),td:nth-child(n+3){text-align:right}.sub{color:#888;font-size:11px;margin-bottom:16px}@media print{button{display:none}}</style></head><body>'
+    +'<h1>Charge Brail</h1><h2>Das Ladebüchlein</h2>'
+    +'<p class="sub">Gedruckt: '+new Date().toLocaleString('de-CH')+'</p>'
+    +'<table><thead><tr><th>Datum</th><th>Benutzer</th><th>Zähler alt</th><th>Zähler neu</th><th>kWh</th><th>CHF</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td colspan="4">Total</td><td>'+total.toFixed(1)+'</td><td>'+sess.reduce(function(a,s){return a+(s.chf||0);},0).toFixed(2)+' CHF</td></tr></tfoot>'
+    +'</table></body></html>');
   w.document.close();w.print();
 }
 function selMonth(m){billingMonth=m;renderBilling();}
