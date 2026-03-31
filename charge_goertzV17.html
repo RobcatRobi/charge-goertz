@@ -1688,7 +1688,7 @@ function updateRelayUI(){
 // ═══════════════════════════════════════════
 
 // ═══ AUTO NETZWERK ═══
-let netMode='detecting', piBaseUrl='http://192.168.3.103:5000';
+let netMode='detecting', piBaseUrl='https://charge.robcat.ch';
 
 async function autoDetectNetwork(){
   showNetBanner('detecting');
@@ -2536,7 +2536,7 @@ setInterval(async ()=>{
   
   console.log(`[Auto-Stop Check] Session aktiv, Power: ${lastPower} kW, Timer: ${window.autoStopTimer?'läuft':'null'}`);
   
-  if(lastPower < 0.1) {
+  if(lastPower < 0.2) {
     if(!window.autoStopTimer) {
       window.autoStopTimer = Date.now();
       console.log('[Auto-Stop] ⏱️ Timer gestartet - 0kW erkannt');
