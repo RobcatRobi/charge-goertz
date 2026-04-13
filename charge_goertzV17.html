@@ -335,7 +335,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
       <div id="bld-status" style="display:none;padding:8px;border-radius:8px;font-size:13px;text-align:center;margin-bottom:10px"></div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <button onclick="bldSave()" id="bld-save-btn"
           style="padding:14px;background:#ff7c2a;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">
           &#128190; Speichern
@@ -344,9 +344,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           &#128465; L&#246;schen
         </button>
       </div>
-      <button onclick="printBuchli()" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-size:13px;cursor:pointer">
-        &#128196; Ladeb&#252;chlein drucken
-      </button>
     </div>
 
     <!-- Tabelle — neueste oben, sehr lang -->
@@ -1188,6 +1185,10 @@ Soll ich diese Energie als "UNBEKANNT" speichern?`);
     manualStartKwh: manualStartKwh,
     startTotalKwh: liveTotalKwh  // Shelly Zählerstand bei Session-Start
   };
+  // Startstand in Supabase speichern
+  if(supaOnline && sessId && cs===1) {
+    sbPatch('sessions', 'id=eq.'+sessId, {start_total_kwh: liveTotalKwh}).catch(()=>{});
+  }
   relayOn = true;
   save();
   renderDashboard();
@@ -1228,9 +1229,17 @@ async function stopSession() {
     await sbPatch('stations', `id=eq.${cs}`, {last_meter_reading: manualStopKwh});
     ST[cs-1].lastMeterReading = manualStopKwh;
   } else {
-    // Auto: Shelly
-    const el = (Date.now()-activeSession.startedAt)/3600000;
-    kwh = parseFloat((7.4*el).toFixed(3));
+    // Auto: Shelly Delta — exakt!
+    const startKwh = activeSession.startTotalKwh || 0;
+    if(startKwh > 0 && liveTotalKwh >= startKwh) {
+      kwh = parseFloat((liveTotalKwh - startKwh).toFixed(3));
+    } else if(activeSession.kwh > 0) {
+      kwh = parseFloat(activeSession.kwh.toFixed(3));
+    } else {
+      // Fallback: Zeit × Leistung (nur wenn kein Shelly-Delta)
+      const el = (Date.now()-activeSession.startedAt)/3600000;
+      kwh = parseFloat((d_power_kw_last * el).toFixed(3));
+    }
   }
   
   const chf = parseFloat((kwh*activeSession.tariff).toFixed(2));
@@ -1444,12 +1453,12 @@ async function saveNachtrag() {
   const tariff = cfg.tariff1 ? parseFloat(cfg.tariff1) : ST[cs-1].tariff;
   
   // ✅ v17.5: Speichern als MANUELLE SESSION (nicht nachtraege!)
-  const startDate = new Date(date + 'T12:00:00+00:00');
+  const startDate = new Date(date + 'T00:00:00');
   const session = {
     station_id: cs,
     user_id: userId,
-    started_at: startDate.getTime(),
-    stopped_at: startDate.getTime(),
+    started_at: startDate.toISOString(),
+    stopped_at: null, // NULL = manueller Eintrag!
     kwh: kwh,
     chf: parseFloat((kwh * tariff).toFixed(2)),
     tariff: tariff,
@@ -1565,12 +1574,7 @@ function switchStation(id){
   const bbtn = document.getElementById('buchli-open-btn');
   if(bbtn) bbtn.style.display = 'none';
 
-  if(!isBrail) { 
-    // Shelly Status zurücksetzen damit er neu pollt
-    statusState.shelly='unknown'; statusState.relay='unknown';
-    renderDashboard(); updateRelayUI(); updateGauges(0,230,0);
-    setTimeout(pollShelly, 100);
-  }
+  if(!isBrail) { renderDashboard(); updateRelayUI(); updateGauges(0,230,0); }
 }
 
 function hex2rgba(h,a){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
@@ -1624,13 +1628,10 @@ function updateStatusHelp(){
   const h=document.getElementById('status-help');if(!h)return;
   const msgs=[];
   if(statusState.pi==='err')msgs.push('❌ Pi nicht erreichbar — WLAN/Tailscale prüfen');
-  // Shelly-Fehler nur bei Neerach anzeigen
-  if(cs!==2){
-    if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM nicht erreichbar — Pi kann Shelly nicht pingen. IP prüfen: 192.168.3.223');
-    if(statusState.shelly==='warn')msgs.push('⚠ Shelly 3EM: Phase fehlt oder schwach');
-    if(statusState.relay==='warn')msgs.push('⚠ Shelly Mini: IP nicht konfiguriert');
-  }
+  if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM nicht erreichbar — Pi kann Shelly nicht pingen. IP prüfen: 192.168.3.223');
+  if(statusState.shelly==='warn')msgs.push('⚠ Shelly 3EM: Phase fehlt oder schwach');
   if(statusState.db==='err')msgs.push('❌ Supabase offline — Internet prüfen');
+  if(statusState.relay==='warn')msgs.push('⚠ Shelly Mini: IP nicht konfiguriert');
   if(msgs.length){h.style.display='block';h.innerHTML=msgs.join('<br>');}else h.style.display='none';
 }
 function updatePhasesUI(){
@@ -1688,7 +1689,7 @@ function updateRelayUI(){
 // ═══════════════════════════════════════════
 
 // ═══ AUTO NETZWERK ═══
-let netMode='detecting', piBaseUrl='https://charge.robcat.ch';
+let netMode='detecting', piBaseUrl='http://192.168.3.103:5000';
 
 async function autoDetectNetwork(){
   showNetBanner('detecting');
@@ -1789,8 +1790,6 @@ function saveTailscaleIP(){
 }
 
 async function pollShelly(){
-  // BRAIL hat kein Shelly — kein Poll
-  if(cs===2){ checkUnknownCharging(); return; }
   if(!piBaseUrl){
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
@@ -1839,16 +1838,17 @@ async function pollShelly(){
         banner.style.opacity='0';banner.style.maxHeight='0';banner.style.padding='0';
       }
     }
-    if(activeSession&&activeSession.stationId===cs&&d.power_w>50){
+    if(activeSession&&activeSession.stationId===cs){
       // RICHTIG: Shelly Zähler jetzt - Zähler bei Session-Start
-      if(activeSession.startTotalKwh>0 && liveTotalKwh>activeSession.startTotalKwh){
-        activeSession.kwh=parseFloat((liveTotalKwh-activeSession.startTotalKwh).toFixed(3));
-      } else {
-        // Fallback: Durchschnittsleistung × Zeit (wenn kein Startzähler)
-        const elH=(Date.now()-activeSession.startedAt)/3600000;
-        activeSession.kwh=parseFloat((d.power_kw*elH).toFixed(3));
+      const startKwh = activeSession.startTotalKwh || 0;
+      if(startKwh > 0 && liveTotalKwh >= startKwh) {
+        // Delta vom Shelly-Gesamtzähler — exakt!
+        activeSession.kwh = parseFloat((liveTotalKwh - startKwh).toFixed(3));
+      } else if(startKwh === 0 && liveTotalKwh > 0) {
+        // Kein Startstand bekannt → setze ihn jetzt
+        activeSession.startTotalKwh = liveTotalKwh;
       }
-      activeSession.chf=parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
+      activeSession.chf = parseFloat((activeSession.kwh*(cfg.tariff1?parseFloat(cfg.tariff1):ST[cs-1].tariff)).toFixed(2));
     }
     
     // (Auto-Stop wurde verschoben zu eigenem setInterval - läuft jetzt immer!)
@@ -2259,11 +2259,10 @@ function renderSessions(){
 }
 
 function printSessions(){
-  const stName = ST[cs-1] ? (ST[cs-1].name+' '+ST[cs-1].loc) : '';
   const sub=document.getElementById('sess-sub').textContent;
   const list=document.getElementById('sess-list').innerHTML;
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Sessions '+stName+'</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Sessions</title><style>body{font-family:sans-serif;padding:20px;color:#000}.sess-row,.sess-row-unknown{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}.sess-group-hd{font-size:11px;color:#666;padding:10px 0 2px;font-weight:700;text-transform:uppercase}.sess-name{font-weight:700;font-size:13px}.sess-date{font-size:11px;color:#666}.badge-unknown{background:#ff4444;color:#fff;font-size:9px;padding:2px 5px;border-radius:3px}button{display:none}</style></head><body><h2>ChargeGörtz — '+sub+'</h2><p style="color:#666;font-size:12px">'+new Date().toLocaleString('de-CH')+'</p>'+list+'</html>');
   w.document.close();w.print();
 }
 
@@ -2381,38 +2380,10 @@ function renderBilling(){
 }
 
 function printBilling(){
-  // BRAIL: Ladebüchlein drucken statt Abrechnung
-  if(cs===2) { printBuchli(); return; }
-  const stName = ST[cs-1] ? (ST[cs-1].name+' '+ST[cs-1].loc) : '';
   const pu=document.getElementById('bill-per-user')?document.getElementById('bill-per-user').innerHTML:'';
   const bc=document.getElementById('bill-content')?document.getElementById('bill-content').innerHTML:'';
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Abrechnung '+stName+'</title><style>body{font-family:sans-serif;padding:20px;color:#000;max-width:800px;margin:auto}h2,h3{border-bottom:1px solid #ddd;padding-bottom:6px}.card{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:10px}.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}button{display:none}</style></head><body><h2>ChargeGörtz Neerach — Abrechnung</h2><p style="color:#666;font-size:11px">'+new Date().toLocaleString('de-CH')+'</p><h3>Gesamt pro Benutzer</h3>'+pu+'<h3>Monatsdetail</h3>'+bc+'</body></html>');
-  w.document.close();w.print();
-}
-
-function printBuchli(){
-  const sess=sessions.filter(function(s){return s.stationId===2;}).sort(function(a,b){return new Date(b.startedAt||b.started_at||0)-new Date(a.startedAt||a.started_at||0);});
-  const total=sess.reduce(function(a,s){return a+(s.kwh||0);},0);
-  const rows=sess.map(function(s){
-    const u=users.find(function(x){return x.id===s.userId;});
-    const dt=new Date(s.startedAt||s.started_at||0);
-    const dStr=dt.toLocaleDateString('de-CH',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const name=u?u.name:'?';
-    const alt=s.manual_start_kwh!=null?Math.round(s.manual_start_kwh).toLocaleString('de-CH'):'—';
-    const neu=s.manual_stop_kwh!=null?Math.round(s.manual_stop_kwh).toLocaleString('de-CH'):'—';
-    const kwh=(s.kwh||0).toFixed(1);
-    const chf=(s.chf||0).toFixed(2);
-    return '<tr><td>'+dStr+'</td><td>'+name+'</td><td style="text-align:right">'+alt+'</td><td style="text-align:right">'+neu+'</td><td style="text-align:right"><b>'+kwh+'</b></td><td style="text-align:right">'+chf+' CHF</td></tr>';
-  }).join('');
-  const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Charge Brail — Ladebüchlein</title><style>body{font-family:Georgia,serif;padding:24px;color:#000;max-width:700px;margin:auto}h1{font-style:italic;color:#8b4513;margin-bottom:4px}h2{font-size:14px;color:#666;font-weight:normal;margin-bottom:20px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f0e8;padding:8px 10px;text-align:left;border-bottom:2px solid #8b4513;font-size:11px;letter-spacing:.05em}td{padding:7px 10px;border-bottom:1px solid #ddd}tr:nth-child(even) td{background:#fafaf5}tfoot td{font-weight:bold;border-top:2px solid #8b4513;background:#f5f0e8}th:nth-child(n+3),td:nth-child(n+3){text-align:right}.sub{color:#888;font-size:11px;margin-bottom:16px}@media print{button{display:none}}</style></head><body>'
-    +'<h1>Charge Brail</h1><h2>Das Ladebüchlein</h2>'
-    +'<p class="sub">Gedruckt: '+new Date().toLocaleString('de-CH')+'</p>'
-    +'<table><thead><tr><th>Datum</th><th>Benutzer</th><th>Zähler alt</th><th>Zähler neu</th><th>kWh</th><th>CHF</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'<tfoot><tr><td colspan="4">Total</td><td>'+total.toFixed(1)+'</td><td>'+sess.reduce(function(a,s){return a+(s.chf||0);},0).toFixed(2)+' CHF</td></tr></tfoot>'
-    +'</table></body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Abrechnung</title><style>body{font-family:sans-serif;padding:20px;color:#000;max-width:800px;margin:auto}h2,h3{border-bottom:1px solid #ddd;padding-bottom:6px}.card{border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:10px}.bill-user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}button{display:none}</style></head><body><h2>ChargeGörtz — Abrechnung</h2><p style="color:#666;font-size:11px">'+new Date().toLocaleString('de-CH')+'</p><h3>Gesamt pro Benutzer</h3>'+pu+'<h3>Monatsdetail</h3>'+bc+'</body></html>');
   w.document.close();w.print();
 }
 function selMonth(m){billingMonth=m;renderBilling();}
@@ -2536,7 +2507,7 @@ setInterval(async ()=>{
   
   console.log(`[Auto-Stop Check] Session aktiv, Power: ${lastPower} kW, Timer: ${window.autoStopTimer?'läuft':'null'}`);
   
-  if(lastPower < 0.2) {
+  if(lastPower < 0.1) {
     if(!window.autoStopTimer) {
       window.autoStopTimer = Date.now();
       console.log('[Auto-Stop] ⏱️ Timer gestartet - 0kW erkannt');
