@@ -519,7 +519,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 <!-- EINSTELLUNGEN -->
 <div id="tab-settings" class="tab-content">
   <div class="section-hd">Einstellungen</div>
-  <div class="section-sub">Konfiguration, IPs, Tailscale</div>
+  <div class="section-sub">Konfiguration & IPs</div>
 
   <div class="card">
     <div class="card-title">🏠 NEERACH — Görtz Home</div>
@@ -543,90 +543,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <button class="btn-p mt8" onclick="saveSettings()">Speichern</button>
   </div>
 
-  <div class="card">
-    <div class="card-title">🔒 TAILSCALE — Fernzugriff</div>
-    <div class="ts-box">
-      <strong>Schritt 1 — Tailscale auf Raspberry Pi installieren:</strong>
-      <code>curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up</code>
-      <strong>Schritt 2 — Tailscale IP anzeigen:</strong>
-      <code>tailscale ip -4</code>
-      <strong>Schritt 3 — App über Tailscale öffnen:</strong>
-      <code>http://[tailscale-ip]:8080</code>
-      <div style="color:var(--green);margin-top:6px">✓ Tailscale Personal: gratis für bis zu 3 Geräte</div>
-      <div style="color:var(--green)">✓ Kein Port-Forwarding, keine statische IP nötig</div>
-      <div style="margin-top:4px">💡 Supabase (Cloud DB): gratis bis 500MB / 2 Projekte</div>
-    </div>
-    <div class="s-label mt8">Tailscale / Backend-IP:Port</div>
-    <input class="s-input" id="ts-ip" placeholder="100.x.x.x:5000">
-    <button class="btn-p mt8" onclick="saveTS()">Speichern</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">👤 BENUTZERVERWALTUNG</div>
-    <div id="admin-users"></div>
-    <button class="btn-s mt8" onclick="addUser()">+ Benutzer hinzufügen</button>
-  </div>
-</div>
-
-
-<!-- ADMIN PANEL -->
-<div id="tab-admin" class="tab-content">
-  <div class="section-hd">⚙ Admin-Panel</div>
-  <div class="section-sub">Nur für Administratoren</div>
-
-  <div id="admin-lock" style="text-align:center;padding:30px 16px">
-    <div style="font-size:40px;margin-bottom:12px">🔐</div>
-    <div style="font-size:15px;font-weight:700;margin-bottom:6px">Admin-Zugang</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">PIN eingeben</div>
-    <div style="display:flex;justify-content:center;gap:8px;margin-bottom:12px">
-      <div class="pin-dot" id="apd0"></div>
-      <div class="pin-dot" id="apd1"></div>
-      <div class="pin-dot" id="apd2"></div>
-      <div class="pin-dot" id="apd3"></div>
-    </div>
-    <div id="admin-pin-err" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:10px"></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
-      <button class="pin-key" onclick="adminPP(1)">1</button>
-      <button class="pin-key" onclick="adminPP(2)">2</button>
-      <button class="pin-key" onclick="adminPP(3)">3</button>
-      <button class="pin-key" onclick="adminPP(4)">4</button>
-      <button class="pin-key" onclick="adminPP(5)">5</button>
-      <button class="pin-key" onclick="adminPP(6)">6</button>
-      <button class="pin-key" onclick="adminPP(7)">7</button>
-      <button class="pin-key" onclick="adminPP(8)">8</button>
-      <button class="pin-key" onclick="adminPP(9)">9</button>
-      <button class="pin-key" onclick="adminPDel()" style="font-size:16px">&#x232B;</button>
-      <button class="pin-key" onclick="adminPP(0)">0</button>
-      <button class="pin-key" style="opacity:0" disabled></button>
-    </div>
-  </div>
-
-  <div id="admin-content" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:12px;color:var(--green)">&#10003; <span id="admin-logged-name"></span></div>
-      <button onclick="adminLogout()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text-dim);font-size:11px;cursor:pointer">Abmelden</button>
-    </div>
-    
-    <!-- PIN ändern Button -->
-    <button class="btn-s" style="width:100%;padding:10px;font-size:13px;margin-bottom:12px" onclick="openChangePinModal()">🔐 Mein PIN ändern</button>
-
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button id="adm-st1" onclick="setAdminStation(1)" class="adm-st-btn active">&#127968; Neerach</button>
-      <button id="adm-st2" onclick="setAdminStation(2)" class="adm-st-btn">&#127807; Brail</button>
-    </div>
-
-    <div class="card">
-      <div class="card-title">&#128260; ZÄHLER ZURÜCKSTELLEN</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--text-dim)">SHELLY TOTAL</div>
-          <div id="adm-shelly-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent)">—</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--text-dim)">SESSIONS TOTAL</div>
-          <div id="adm-sess-kwh" style="font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">—</div>
-        </div>
-      </div>
+  
       <div id="adm-warn" style="display:none;background:rgba(255,68,68,0.1);border:1px solid #ff4444;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.4"></div>
       <button onclick="admResetShelly()" style="width:100%;background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px">
         ⚠️ HARDWARE-RESET: Shelly auf 0 kWh
@@ -688,24 +605,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
 
 
-    <div class="card">
-      <div class="card-title">🔒 TAILSCALE — FERNZUGRIFF</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;line-height:1.6">Für Fernzugriff von überall — Pi wird deine private Cloud:</div>
-      <div style="background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;font-size:10px;font-family:'Space Mono',monospace;color:var(--accent);line-height:1.8">
-        curl -fsSL https://tailscale.com/install.sh | sh<br>sudo tailscale up<br>tailscale ip -4
-      </div>
-      <div class="s-label">Tailscale-IP eingeben:</div>
-      <input class="s-input" id="ts-ip-admin" placeholder="100.x.x.x:5000" style="width:100%;margin-bottom:8px" value="100.103.254.108:5000">
-      <button onclick="saveTailscaleIP()" style="width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer">💾 Speichern &amp; Testen</button>
-      <div id="ts-test-result" style="margin-top:8px;font-size:11px;text-align:center"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">&#9881; EINSTELLUNGEN</div>
-      <button onclick="switchTab('settings')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">Erweiterte Einstellungen öffnen</button>
-    </div>
-
-  </div>
-</div>
+    
 
 <!-- SESSION EDIT MODAL -->
 <div id="sess-edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:16px">
@@ -1297,9 +1197,9 @@ async function saveSettings() {
 }
 
 function saveTS() {
-  cfg.tsIp = document.getElementById('ts-ip').value;
+  
   save();
-  alert('✓ Tailscale IP gespeichert');
+  
 }
 
 
@@ -1627,7 +1527,7 @@ function setStatus(key,state,val){
 function updateStatusHelp(){
   const h=document.getElementById('status-help');if(!h)return;
   const msgs=[];
-  if(statusState.pi==='err')msgs.push('❌ Pi nicht erreichbar — WLAN/Tailscale prüfen');
+  if(statusState.pi==='err')msgs.push('❌ Pi nicht erreichbar — WLAN prüfen');
   if(statusState.shelly==='err')msgs.push('❌ Shelly 3EM nicht erreichbar — Pi kann Shelly nicht pingen. IP prüfen: 192.168.3.223');
   if(statusState.shelly==='warn')msgs.push('⚠ Shelly 3EM: Phase fehlt oder schwach');
   if(statusState.db==='err')msgs.push('❌ Supabase offline — Internet prüfen');
@@ -1715,24 +1615,10 @@ async function autoDetectNetwork(){
       fetch('http://192.168.3.103:5000/api/tunnel').then(r=>r.json()).then(d=>{
         if(d.url){cfg.cfUrl=d.url;localStorage.setItem('cg_cf_url',d.url);localStorage.setItem('cg_cfg',JSON.stringify(cfg));}
       }).catch(()=>{});
-      cfg.tsIp=piBaseUrl;showNetBanner('local');setStatus('pi','ok','Heimnetz');return;
+      showNetBanner('local');setStatus('pi','ok','Heimnetz');return;
     }
   }catch(e){}
-  // 2. Tailscale
-  const tsUrl=cfg.tsIp&&cfg.tsIp!=='http://192.168.3.103:5000'?cfg.tsIp:'http://100.103.254.108:5000';
-  if(tsUrl){
-    try{
-      const r=await fetch(`${tsUrl}/api/status`,{signal:AbortSignal.timeout(3000)});
-      if((await r.json()).status==='ok'){
-        netMode='tailscale';piBaseUrl=tsUrl;
-        // Hole Cloudflare URL für künftige Nutzung
-        fetch(`${tsUrl}/api/tunnel`).then(r=>r.json()).then(d=>{
-          if(d.url){cfg.cfUrl=d.url;localStorage.setItem('cg_cf_url',d.url);localStorage.setItem('cg_cfg',JSON.stringify(cfg));}
-        }).catch(()=>{});
-        showNetBanner('tailscale');setStatus('pi','ok','Tailscale VPN');return;
-      }
-    }catch(e){}
-  }
+
   // 3. Cloud only
   if(supaOnline){
     netMode='cloud';piBaseUrl=null;showNetBanner('cloud');setStatus('pi','warn','Nur Cloud');
@@ -1751,7 +1637,7 @@ function showNetBanner(mode){
   const M={
     detecting:  {t:'🔍 Netzwerk erkennen...',bg:'rgba(255,160,0,.12)',c:'#ffa000'},
     local:      {t:'🏠 Heimnetz — direkt verbunden',bg:'rgba(0,230,118,.08)',c:'#00e676'},
-    tailscale:  {t:'🔒 Tailscale VPN — Fernzugriff',bg:'rgba(0,212,255,.08)',c:'#00d4ff'},
+
     cloudflare: {t:'☁ Cloudflare Tunnel — Überall',bg:'rgba(0,212,255,.12)',c:'#00d4ff'},
     cloud:    {t:'☁ Cloud-Modus — Pi offline',bg:'rgba(255,160,0,.1)',c:'#ffa000'},
     offline:  {t:'❌ Offline',bg:'rgba(255,68,68,.1)',c:'#ff4444'},
@@ -1767,26 +1653,22 @@ function showNetBanner(mode){
        '② Cloudflare Tunnel installieren (empfohlen):<br>'+
        '<code style="background:rgba(0,0,0,.3);padding:2px 5px;border-radius:4px;display:block;margin:4px 0;font-size:10px">bash cloudflare_setup.sh</code>'+
        '→ URL wird automatisch erkannt<br>'+
-       '③ Oder Tailscale: App unter Admin → Konfig'
+       ''
       :'<b>Keine Verbindung</b> — Zuletzt gespeicherte Daten.';
   }else{h.style.display='none';}
 }
 
-function saveTailscaleIP(){
-  const inp=document.getElementById('ts-ip-admin');
-  const res=document.getElementById('ts-test-result');
-  let ip=inp?inp.value.trim():'';
-  if(!ip){if(res){res.textContent='❌ IP eingeben';res.style.color='#ff4444';}return;}
+return;}
   if(!ip.startsWith('http'))ip='http://'+ip;
   if(res){res.textContent='🔍 Teste...';res.style.color='#ffa000';}
   fetch(ip+'/api/status',{signal:AbortSignal.timeout(4000)})
     .then(r=>r.json()).then(d=>{
       if(d.status==='ok'){
-        cfg.tsIp=ip;localStorage.setItem('cg_cfg',JSON.stringify(cfg));
-        piBaseUrl=ip;netMode='tailscale';showNetBanner('tailscale');
+        
+        
         if(res){res.textContent='✓ Verbunden!';res.style.color='#00e676';}
       }else{if(res){res.textContent='❌ Keine Antwort';res.style.color='#ff4444';}}
-    }).catch(()=>{if(res){res.textContent='❌ Nicht erreichbar — Tailscale installiert?';res.style.color='#ff4444';}});
+    }).catch(()=>{if(res){res.textContent='❌ Nicht erreichbar — Pi erreichbar?t?';res.style.color='#ff4444';}});
 }
 
 async function pollShelly(){
@@ -1870,7 +1752,7 @@ async function pollShelly(){
     renderDashboard();
   }catch(e){
     setStatus('pi','err','Offline');
-    if(netMode==='local'||netMode==='tailscale'){netMode='detecting';setTimeout(()=>autoDetectNetwork(),1000);}
+    if(netMode==='local'||false;setTimeout(()=>autoDetectNetwork(),1000);}
     const kwh=await getSupaTotalKwh();
     if(kwh>0){liveTotalKwh=kwh;const el=document.getElementById('shelly-total-kwh');if(el)el.textContent=kwh.toFixed(2)+' kWh ☁';}
     offlineMode();
@@ -2413,7 +2295,7 @@ function _UNUSED_saveSettings(){
   ST[1].ip3em=cfg.ip3em2;ST[1].ipMini=cfg.ipMini2;ST[1].tariff=parseFloat(cfg.tariff2)||.30;
   save();alert('✓ Gespeichert');
 }
-function saveTS(){cfg.tsIp=document.getElementById('ts-ip').value;save();alert('✓ Tailscale IP gespeichert');}
+
 function renderAdminUsers(){
   document.getElementById('admin-users').innerHTML=users.map(u=>`
     <div style="display:flex;align-items:center;gap:9px;padding:9px;background:var(--surface2);border-radius:8px;margin-bottom:5px">
@@ -2454,7 +2336,6 @@ document.getElementById('tariff1').value=ST[0].tariff;
 if(cfg.ip3em2) document.getElementById('ip3em2').value=cfg.ip3em2;
 if(cfg.ipMini2) document.getElementById('ipMini2').value=cfg.ipMini2;
 document.getElementById('tariff2').value=ST[1].tariff;
-if(cfg.tsIp) document.getElementById('ts-ip').value=cfg.tsIp;
 document.getElementById('v-tariff').textContent=ST[0].tariff.toFixed(2)+' CHF/kWh';
 
 // Auto-Erkennung: läuft App über Cloudflare?
