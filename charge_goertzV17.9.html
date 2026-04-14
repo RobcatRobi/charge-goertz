@@ -1658,7 +1658,6 @@ function showNetBanner(mode){
   }else{h.style.display='none';}
 }
 
-return;}
   if(!ip.startsWith('http'))ip='http://'+ip;
   if(res){res.textContent='🔍 Teste...';res.style.color='#ffa000';}
   fetch(ip+'/api/status',{signal:AbortSignal.timeout(4000)})
