@@ -1658,17 +1658,6 @@ function showNetBanner(mode){
   }else{h.style.display='none';}
 }
 
-  if(!ip.startsWith('http'))ip='http://'+ip;
-  if(res){res.textContent='🔍 Teste...';res.style.color='#ffa000';}
-  fetch(ip+'/api/status',{signal:AbortSignal.timeout(4000)})
-    .then(r=>r.json()).then(d=>{
-      if(d.status==='ok'){
-        
-        
-        if(res){res.textContent='✓ Verbunden!';res.style.color='#00e676';}
-      }else{if(res){res.textContent='❌ Keine Antwort';res.style.color='#ff4444';}}
-    }).catch(()=>{if(res){res.textContent='❌ Nicht erreichbar — Pi erreichbar?t?';res.style.color='#ff4444';}});
-}
 
 async function pollShelly(){
   if(!piBaseUrl){
